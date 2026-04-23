@@ -1,4 +1,4 @@
-package com.infirmierpro.app;
+package com.nplanr.app;
 
 import com.getcapacitor.BridgeActivity;
 
