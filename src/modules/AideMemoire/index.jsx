@@ -46,7 +46,7 @@ async function purgeOldDailyData() {
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 
-export default function AideMemoire({ onBack }) {
+export default function AideMemoire({ onBack, onBackOverride }) {
   const [cryptoKey,  setCryptoKey]  = useState(null);
   const [pinExists,  setPinExists]  = useState(null);
   const [nav,        setNav]        = useState(INITIAL_NAV);
@@ -119,6 +119,11 @@ export default function AideMemoire({ onBack }) {
       }
     });
   }
+
+  useEffect(() => {
+    onBackOverride?.(goBack);
+    return () => onBackOverride?.(null);
+  }, [nav.screen]); // eslint-disable-line
 
   async function handleServiceUpdate(updatedService) {
     setNav(prev => ({ ...prev, service: updatedService }));

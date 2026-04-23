@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { T } from './theme.js';
 import { loadFavs, toggleFav } from './favorites.js';
 import Urgences     from './modules/Urgences/index.jsx';
@@ -72,6 +72,7 @@ export default function App() {
   const [initialTool, setInitialTool] = useState(null);
   const [search,      setSearch]      = useState('');
   const [favs,        setFavs]        = useState(loadFavs);
+  const backOverride = useRef(null);
 
   useEffect(() => {
     let handler = null;
@@ -79,7 +80,8 @@ export default function App() {
       try {
         const { App: CapApp } = await import('@capacitor/app');
         handler = await CapApp.addListener('backButton', () => {
-          if (active !== null) { setActive(null); setInitialTool(null); }
+          if (backOverride.current) { backOverride.current(); }
+          else if (active !== null) { setActive(null); setInitialTool(null); }
           else { CapApp.exitApp(); }
         });
       } catch {}
@@ -93,7 +95,7 @@ export default function App() {
   function handleFavChange() { setFavs(loadFavs()); }
 
   const renderModule = () => {
-    const props = { onBack: handleBack, initialTool, onFavChange: handleFavChange };
+    const props = { onBack: handleBack, initialTool, onFavChange: handleFavChange, onBackOverride: (fn) => { backOverride.current = fn; } };
     switch (active) {
       case 'urg':     return <Urgences     {...props} />;
       case 'ecg':     return <ECG          onBack={handleBack} />;
