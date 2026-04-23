@@ -1,6 +1,6 @@
 {
   "appId": "com.infirmierpro.app",
-  "appName": "InfirmierPro",
+  "appName": "N-Planr",
   "webDir": "dist",
   "server": { "androidScheme": "https" }
 }
