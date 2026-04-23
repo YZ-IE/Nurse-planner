@@ -103,7 +103,7 @@ export default function App() {
       case 'orga':    return <Organisation {...props} />;
       case 'form':    return <Formation    {...props} />;
       case 'meds':    return <Medicaments  {...props} />;
-      case 'aidemem': return <AideMemoire  onBack={handleBack} />;
+      case 'aidemem': return <AideMemoire  onBack={handleBack} onBackOverride={props.onBackOverride} />;
       default: return null;
     }
   };
