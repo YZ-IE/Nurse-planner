@@ -178,7 +178,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'services') return (
     <>{TimeoutBanner}
       <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
-        onSelectService={service => goTo('service', { service, patientId: null })} />
+        onSelectService={service => goTo('service', { service, patientId: null })}
+        onImport={() => goTo('transfer', { service: '__import__' })} />
     </>
   );
 
@@ -221,9 +222,9 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   );
 
   // ── Transfert sécurisé ────────────────────────────────────────────────────
-  if (nav.screen === 'transfer' && nav.service) return (
+  if (nav.screen === 'transfer') return (
     <>{TimeoutBanner}
-      <SecureTransfer service={nav.service} cryptoKey={cryptoKey} onBack={goBack} />
+      <SecureTransfer service={nav.service !== '__import__' ? nav.service : null} cryptoKey={cryptoKey} onBack={goBack} />
     </>
   );
 

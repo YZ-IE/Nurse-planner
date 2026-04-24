@@ -9,7 +9,7 @@ import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { formatDateFR } from './utils.jsx';
 
-export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService }) {
+export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService, onImport }) {
   const C = accentColor;
 
   const [services,       setServices]       = useState([]);
@@ -122,6 +122,8 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
         </div>
         <button onClick={() => setView('create')}
           style={{ ...s.btn(C), width: 40, height: 40, padding: 0, fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+        <button onClick={onImport}
+          style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 10, color: '#6366f1', padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>📥 Import</button>
       </div>
 
       <div style={{ ...s.card, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -135,7 +137,10 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
         <div style={{ textAlign: 'center', marginTop: 80 }}>
           <div style={{ fontSize: 52, marginBottom: 16 }}>🏥</div>
           <div style={{ color: T.text, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucun service configuré</div>
-          <div style={{ color: T.muted, fontSize: 14 }}>Appuyez sur + pour commencer</div>
+          <div style={{ color: T.muted, fontSize: 14, marginBottom: 24 }}>Appuyez sur + pour commencer</div>
+          <button onClick={onImport} style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 12, color: '#6366f1', padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            📥 Importer un service
+          </button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
