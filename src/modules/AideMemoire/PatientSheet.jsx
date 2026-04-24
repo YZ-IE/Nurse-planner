@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, genId, isFlagActive, FieldInput } from './utils.jsx';
 import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
@@ -12,13 +12,16 @@ import CareSchedule from './CareSchedule.jsx';
 import { computeSlots } from './ServiceView.jsx';
 
 // ─── Palette étendue ──────────────────────────────────────────────────────────
-const P = {
-  glass:    'rgba(255,255,255,0.04)',
-  glassBdr: 'rgba(255,255,255,0.08)',
-  blue:     '#3b82f6',
-  purple:   '#8b5cf6',
-  grad:     'linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #0c1a2e 100%)',
-};
+const P = new Proxy({}, {
+  get(_, key) {
+    const dark = loadDarkPref();
+    return {
+      glass:    dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+      glassBdr: dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)',
+      grad:     dark ? 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #0c1a2e 100%)' : T.bg,
+    }[key];
+  }
+});
 
 // ─── Sous-composants ──────────────────────────────────────────────────────────
 

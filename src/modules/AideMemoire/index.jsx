@@ -95,30 +95,19 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   }, [cryptoKey, resetSessionTimer]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  // ── Navigation avec slide animation ─────────────────────────────────────
-  const [slideClass, setSlideClass] = useState('');
-  const slideTimer = useRef(null);
-  const DUR_SLIDE = 260;
+  // ── Navigation avec slide animation (key-based = fiable, bonne direction) ──
+  const [slideDir, setSlideDir] = useState('forward');
 
   const SLIDE_CSS = `
-    @keyframes am-in  { from{transform:translateX(100%);opacity:.6} to{transform:translateX(0);opacity:1} }
-    @keyframes am-out { from{transform:translateX(0);opacity:1} to{transform:translateX(-18px) scale(.98);opacity:0} }
-    @keyframes am-bin { from{transform:translateX(-18px) scale(.98);opacity:0} to{transform:translateX(0) scale(1);opacity:1} }
-    @keyframes am-bout{ from{transform:translateX(0) scale(1);opacity:1} to{transform:translateX(100%);opacity:.6} }
-    .am-in  { animation: am-in  ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
-    .am-out { animation: am-out ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
-    .am-bin { animation: am-bin ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
-    .am-bout{ animation: am-bout ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
+    @keyframes am-from-right { from{transform:translateX(60px);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes am-from-left  { from{transform:translateX(-60px);opacity:0} to{transform:translateX(0);opacity:1} }
+    .am-forward { animation: am-from-right 280ms cubic-bezier(0.32,.72,0,1) both; }
+    .am-back    { animation: am-from-left  280ms cubic-bezier(0.32,.72,0,1) both; }
   `;
 
   function goTo(screen, extras = {}, direction = 'forward') {
-    clearTimeout(slideTimer.current);
-    setSlideClass(direction === 'forward' ? 'am-out' : 'am-bout');
-    slideTimer.current = setTimeout(() => {
-      setNav(prev => ({ ...prev, screen, ...extras }));
-      setSlideClass(direction === 'forward' ? 'am-in' : 'am-bin');
-      slideTimer.current = setTimeout(() => setSlideClass(''), DUR_SLIDE);
-    }, DUR_SLIDE);
+    setSlideDir(direction);
+    setNav(prev => ({ ...prev, screen, ...extras }));
   }
 
   function goBack() {
@@ -151,7 +140,11 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   // ── Chargement ────────────────────────────────────────────────────────────
   const th = getTheme(loadDarkPref());
   const screenWrap = (content) => (
-    <div className={slideClass} style={{ position:'fixed', inset:0, overflowY:'auto', background:th.bg }}>
+    <div
+      key={nav.screen}
+      className={slideDir === 'forward' ? 'am-forward' : 'am-back'}
+      style={{ position:'fixed', inset:0, overflowY:'auto', background:th.bg }}
+    >
       <style>{SLIDE_CSS}</style>
       {content}
     </div>

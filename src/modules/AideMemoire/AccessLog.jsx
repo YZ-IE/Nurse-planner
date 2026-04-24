@@ -115,7 +115,7 @@ export default function AccessLog({ onBack }) {
       <div style={{ padding: '12px 16px 80px' }}>
 
         {/* Bandeau légal */}
-        <div style={{ background: '#0c1a2e', border: '1px solid #1e3a5f', borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
+        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
           <div style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700, marginBottom: 3 }}>ℹ️ Traçabilité des accès</div>
           <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.5 }}>
             Ces logs sont stockés localement (200 entrées max, 30 jours). Ils permettent d'identifier les accès non autorisés. Communicable au DPO sur demande (RGPD / HDS art. L.1111-8).
