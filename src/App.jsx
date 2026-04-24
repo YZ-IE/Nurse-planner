@@ -199,9 +199,16 @@ export default function App() {
   const [search,     setSearch]     = useState('');
   const [favs,       setFavs]       = useState(loadFavs);
   const [toggling,   setToggling]   = useState(false);
-  const backOverride = useRef(null);
-  const timerRef     = useRef(null);
-  const searchRef    = useRef(null);
+  const backOverride  = useRef(null);
+  const timerRef      = useRef(null);
+  const searchRef     = useRef(null);
+  // Refs pour le listener back (évite les stale closures)
+  const activeRef     = useRef(active);
+  const tabRef        = useRef(tab);
+  const handleBackRef = useRef(null);
+
+  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => { tabRef.current   = tab;    }, [tab]);
 
   const TH = getTheme(isDark);
 
@@ -211,21 +218,20 @@ export default function App() {
     if (meta) meta.setAttribute('content', isDark?'#0D1117':'#F0F3F8');
   }, [isDark, TH.bg]);
 
+  // Listener backButton enregistré UNE SEULE FOIS — lit via refs (jamais stale)
   useEffect(() => {
-    let h = null;
     (async () => {
       try {
         const { App: CapApp } = await import('@capacitor/app');
-        h = await CapApp.addListener('backButton', () => {
-          if (backOverride.current) backOverride.current();
-          else if (active)         handleBack();
-          else if (tab!=='home')   setTab('home');
-          else                     CapApp.exitApp();
+        await CapApp.addListener('backButton', () => {
+          if (backOverride.current)         { backOverride.current(); return; }
+          if (activeRef.current)            { handleBackRef.current?.(); return; }
+          if (tabRef.current !== 'home')    { setTab('home'); return; }
+          CapApp.exitApp();
         });
       } catch {}
     })();
-    return () => { if (h) h.remove(); };
-  }, [active, tab]);
+  }, []); // deps vides — enregistrement unique
 
   function openModule(mod, toolId=null) {
     if (phase!=='idle') return;
