@@ -212,18 +212,23 @@ export default function App() {
   }, [isDark, TH.bg]);
 
   // Listener backButton enregistré UNE SEULE FOIS
-  // Bouton retour Android — délégué à window.__backHandler (enregistré dans main.jsx)
-  // Mis à jour à chaque render pour avoir les dernières valeurs de tab/backOverride
+  // Bouton retour Android — recréé à chaque changement de active/tab
+  // comme dans l'original (garantit hasListeners()=true + closure fraîche)
   useEffect(() => {
-    window.__backHandler = async () => {
-      if (backOverride.current) { backOverride.current(); return; }
-      if (tab !== 'home')       { setTab('home'); return; }
+    let h = null;
+    (async () => {
       try {
         const { App: CapApp } = await import('@capacitor/app');
-        CapApp.exitApp();
+        h = await CapApp.addListener('backButton', () => {
+          if (backOverride.current) { backOverride.current(); return; }
+          if (active)               { handleBack(); return; }
+          if (tab !== 'home')       { setTab('home'); return; }
+          CapApp.exitApp();
+        });
       } catch {}
-    };
-  }); // sans deps → toujours à jour
+    })();
+    return () => { if (h) h.remove(); };
+  }, [active, tab]); // recréé à chaque nav — comme l'original
 
   function openModule(mod, toolId=null) {
     if (phase!=='idle') return;
