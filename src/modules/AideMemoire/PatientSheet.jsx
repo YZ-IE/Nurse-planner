@@ -391,7 +391,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10,15,26,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: loadDarkPref() ? 'rgba(10,15,26,0.92)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderBottom: `1px solid ${T.border}` }}>
 
         {/* Ligne 1 : retour + infos + edit */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 8px', overflow: 'hidden' }}>
@@ -422,7 +422,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
               <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
                 style={{ background: prev ? P.glass : 'transparent', border: `1px solid ${prev ? P.glassBdr : 'transparent'}`, borderRadius: '10px 0 0 10px', color: prev ? T.text : T.border, fontSize: 18, padding: '7px 14px', cursor: prev ? 'pointer' : 'default', flexShrink: 0 }}>‹</button>
               <select onChange={e => onNavigate(e.target.value)} value={patientId}
-                style={{ flex: 1, background: 'rgba(15,23,42,0.8)', border: `1px solid ${P.glassBdr}`, borderLeft: 'none', borderRight: 'none', color: T.text, fontSize: 13, fontWeight: 600, padding: '7px 10px', cursor: 'pointer', minWidth: 0 }}>
+                style={{ flex: 1, background: loadDarkPref() ? 'rgba(15,23,42,0.8)' : T.surface, border: `1px solid ${T.border}`, borderLeft: 'none', borderRight: 'none', color: T.text, fontSize: 13, fontWeight: 600, padding: '7px 10px', cursor: 'pointer', minWidth: 0 }}>
                 {present.map(pt => {
                   const slot = computeSlots(service).find(sl => sl.slotIndex === pt.bedNumber);
                   return <option key={pt.id} value={pt.id}>{pt.initials} — {slot ? slot.roomLabel : `Ch.${pt.bedNumber}`}</option>;
@@ -608,7 +608,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       </div>
 
       {/* ── Tab bar bas ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,15,26,0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: loadDarkPref() ? 'rgba(10,15,26,0.95)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderTop: `1px solid ${T.border}`, display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
         {TABS.map(t => (
           <button key={t.idx} onClick={() => setActiveTab(t.idx)}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '12px 2px 10px', background: 'none', border: 'none', cursor: 'pointer', color: activeTab === t.idx ? '#818cf8' : T.muted, fontFamily: 'inherit', fontSize: 11, fontWeight: activeTab === t.idx ? 700 : 400, position: 'relative', WebkitTapHighlightColor: 'transparent', transition: 'color 0.15s' }}>
