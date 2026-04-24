@@ -28,11 +28,12 @@ const MAP = {
   pac:<PAC/>, kta:<KTA/>, dialyse:<Dialyse/>,
 };
 
-export default function Soins({ onBack, initialTool = null, onFavChange }) {
+export default function Soins({ onBack, initialTool = null, onFavChange, onBackOverride }) {
   const C = T.soins;
 
   return (
     <ModuleShell
+      onBackOverride={onBackOverride}
       onBack={onBack}
       color={C}
       dimBg={() => T.soinsDim}

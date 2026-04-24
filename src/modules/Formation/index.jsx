@@ -21,11 +21,12 @@ const MAP = {
   dose:<DoseCalcEntrainement/>, lexique:<Lexique/>,
 };
 
-export default function Formation({ onBack, initialTool = null, onFavChange }) {
+export default function Formation({ onBack, initialTool = null, onFavChange, onBackOverride }) {
   const C = T.form;
 
   return (
     <ModuleShell
+      onBackOverride={onBackOverride}
       onBack={onBack}
       color={C}
       dimBg={() => T.formDim}

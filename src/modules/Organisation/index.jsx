@@ -24,11 +24,12 @@ const MAP = {
   medoc:<ChecklistMedoc/>,
 };
 
-export default function Organisation({ onBack, initialTool = null, onFavChange }) {
+export default function Organisation({ onBack, initialTool = null, onFavChange, onBackOverride }) {
   const C = T.orga;
 
   return (
     <ModuleShell
+      onBackOverride={onBackOverride}
       onBack={onBack}
       color={C}
       dimBg={() => T.orgaDim}

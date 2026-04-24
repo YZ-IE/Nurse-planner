@@ -36,11 +36,12 @@ const MAP = {
   epi:<Convulsions/>, oap:<OAP/>, hk:<Hyperkaliemie/>, intox:<Intoxication/>,
 };
 
-export default function Urgences({ onBack, initialTool = null, onFavChange }) {
+export default function Urgences({ onBack, initialTool = null, onFavChange, onBackOverride }) {
   const C = T.urg;
 
   return (
     <ModuleShell
+      onBackOverride={onBackOverride}
       onBack={onBack}
       color={C}
       dimBg={() => T.urgDim}

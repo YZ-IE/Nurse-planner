@@ -66,12 +66,23 @@ export default function ModuleShell({
   initialTool = null,
   headerExtra,
   onFavChange,
+  onBackOverride,
 }) {
   const [tool,  setTool]  = useState(initialTool);
   const [phase, setPhase] = useState('idle');
   const timer = useRef(null);
 
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  // Bouton retour Android — ferme le détail si ouvert, sinon onBack
+  useEffect(() => {
+    if (!onBackOverride) return;
+    if (tool) {
+      onBackOverride(closeTool);
+    } else {
+      onBackOverride(null);
+    }
+  }, [tool]);
 
   function openTool(id) {
     if (phase !== 'idle') return;
