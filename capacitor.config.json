@@ -2,5 +2,14 @@
   "appId": "com.nplanr.app",
   "appName": "N-Planr",
   "webDir": "dist",
-  "server": { "androidScheme": "https" }
+  "server": { "androidScheme": "https" },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "launchAutoHide": true,
+      "backgroundColor": "#F0F3F8",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
 }
