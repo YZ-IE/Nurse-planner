@@ -259,15 +259,15 @@ export default function App() {
 
   /* ── Module actif ──────────────────────────────────────────────────────── */
   const renderModule = () => {
-    const p = { onBack:handleBack, initialTool, onFavChange:handleFavChange, onBackOverride:fn=>{backOverride.current=fn;} };
+    const p = { onBack:()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }, initialTool, onFavChange:handleFavChange, onBackOverride:fn=>{backOverride.current=fn;} };
     switch(active) {
       case 'urg':     return <Urgences     {...p}/>;
-      case 'ecg':     return <ECG          onBack={handleBack}/>;
+      case 'ecg':     return <ECG          onBack={()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }}/>;
       case 'soins':   return <Soins        {...p}/>;
       case 'orga':    return <Organisation {...p}/>;
       case 'form':    return <Formation    {...p}/>;
       case 'meds':    return <Medicaments  {...p}/>;
-      case 'aidemem': return <AideMemoire  onBack={handleBack} onBackOverride={p.onBackOverride}/>;
+      case 'aidemem': return <AideMemoire  onBack={()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }} onBackOverride={p.onBackOverride}/>;
       default: return null;
     }
   };
