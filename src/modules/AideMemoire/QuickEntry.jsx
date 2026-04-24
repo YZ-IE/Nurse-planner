@@ -37,7 +37,7 @@ function AddCareModal({ patient, onAdd, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', onTouchMove={e => e.stopPropagation()} style={{ padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>💊 Planifier un soin</div>
@@ -94,7 +94,7 @@ function AddRdvModal({ patient, infoFields, onAdd, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', onTouchMove={e => e.stopPropagation()} style={{ padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>📅 RDV / Information</div>
