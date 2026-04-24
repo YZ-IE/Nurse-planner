@@ -276,6 +276,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   const [showEdit,     setShowEdit]     = useState(false);
   const [showMove,     setShowMove]     = useState(false);
   const [showAddField, setShowAddField] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const [allPatients,  setAllPatients]  = useState([]);
 
   const today = todayStr();
@@ -363,168 +364,205 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
     <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box' }}>
 
       {/* Header */}
-      <div style={{ padding: '14px 16px 10px', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ color: T.text, fontSize: 20, fontWeight: 800 }}>{patient.initials}</span>
-              <span style={{ color: T.muted, fontSize: 14 }}>{patient.gender} · {patient.age}a · Ch.{patient.bedNumber}</span>
-        {/* Navigation patient */}
+      <div style={{ background: T.bg, position: 'sticky', top: 0, zIndex: 20, borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px 8px', overflow:'hidden' }}>
+          <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4, flexShrink:0 }}>←</button>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:T.text, fontSize:17, fontWeight:800, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{patient.initials}</div>
+            <div style={{ color:T.muted, fontSize:11, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {patient.gender} · {patient.age}a · {(computeSlots(service).find(sl => sl.slotIndex === patient.bedNumber) || {}).roomLabel || `Ch.${patient.bedNumber}`}
+            </div>
+          </div>
+          <span style={{ background:sp.color+'22', border:`1px solid ${sp.color}44`, borderRadius:6, color:sp.color, fontSize:10, padding:'3px 8px', fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>
+            {sp.label.split(' ')[0]}
+          </span>
+        </div>
         {onNavigate && (() => {
           const present = allPatients.filter(p => p.present).sort((a,b) => a.bedNumber - b.bedNumber);
           const idx = present.findIndex(p => p.id === patientId);
           const prev = present[idx - 1];
           const next = present[idx + 1];
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto', minWidth:0, overflow:'hidden' }}>
+            <div style={{ display:'flex', alignItems:'center', padding:'0 12px 8px', gap:0 }}>
               <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
-                style={{ background:'none', border:`1px solid ${prev ? '#334155' : 'transparent'}`, borderRadius:7, color: prev ? '#f1f5f9' : '#334155', fontSize:16, padding:'4px 10px', cursor: prev ? 'pointer' : 'default' }}>‹</button>
+                style={{ background:prev?T.surface:'transparent', border:`1px solid ${prev?T.border:'transparent'}`, borderRadius:'8px 0 0 8px', color:prev?T.text:T.border, fontSize:18, padding:'7px 14px', cursor:prev?'pointer':'default', flexShrink:0 }}>‹</button>
               <select onChange={e => onNavigate(e.target.value)} value={patientId}
-                style={{ background:'#111827', border:'1px solid #334155', borderRadius:7, color:'#f1f5f9', fontSize:12, padding:'4px 8px', cursor:'pointer' }}>
-                {present.map(pt => (
-                    <option key={pt.id} value={pt.id}>{pt.initials} — {(computeSlots(service).find(sl => sl.slotIndex === pt.bedNumber) || {}).roomLabel || pt.bedNumber}</option>
-                ))}
+                style={{ flex:1, background:'#0f172a', border:`1px solid ${T.border}`, borderLeft:'none', borderRight:'none', color:T.text, fontSize:13, padding:'7px 10px', cursor:'pointer', minWidth:0 }}>
+                {present.map(pt => {
+                  const slot = computeSlots(service).find(sl => sl.slotIndex === pt.bedNumber);
+                  return <option key={pt.id} value={pt.id}>{pt.initials} — {slot ? slot.roomLabel : `Ch.${pt.bedNumber}`}</option>;
+                })}
               </select>
               <button onClick={() => next && onNavigate(next.id)} disabled={!next}
-                style={{ background:'none', border:`1px solid ${next ? '#334155' : 'transparent'}`, borderRadius:7, color: next ? '#f1f5f9' : '#334155', fontSize:16, padding:'4px 10px', cursor: next ? 'pointer' : 'default' }}>›</button>
+                style={{ background:next?T.surface:'transparent', border:`1px solid ${next?T.border:'transparent'}`, borderRadius:'0 8px 8px 0', color:next?T.text:T.border, fontSize:18, padding:'7px 14px', cursor:next?'pointer':'default', flexShrink:0 }}>›</button>
             </div>
           );
         })()}
-            </div>
-          </div>
-          <button onClick={() => setShowEdit(true)}
-            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 16, padding: '6px 10px', cursor: 'pointer' }}>✏️</button>
-          <span style={{ background: sp.color + '22', border: `1px solid ${sp.color}44`, borderRadius: 6, color: sp.color, fontSize: 11, padding: '3px 8px', fontWeight: 700 }}>
-            {sp.label.split(' ')[0]}
-          </span>
+        {/* Tab bar */}
+        <div style={{ display:'flex', borderTop:`1px solid ${T.border}`, overflowX:'auto' }}>
+          {[
+            { label:'🏥 Séjour',      idx:0 },
+            { label:'⚠️ Alertes',     idx:1 },
+            { label:'📋 Journalier',  idx:2 },
+            { label:'💊 Soins',       idx:3 },
+            { label:'🎯 Centres',     idx:4 },
+            { label:'📝 Événements',  idx:5 },
+          ].map(t => (
+            <button key={t.idx} onClick={() => setActiveTab(t.idx)}
+              style={{ flex:'0 0 auto', background:'transparent', border:'none', borderBottom:`2px solid ${activeTab===t.idx ? C : 'transparent'}`, color:activeTab===t.idx ? C : T.muted, fontSize:11, fontWeight:activeTab===t.idx?700:400, padding:'8px 14px', cursor:'pointer', whiteSpace:'nowrap', WebkitTapHighlightColor:'transparent' }}>
+              {t.label}
+            </button>
+          ))}
         </div>
-        {activeFlags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingBottom: 4 }}>
+      </div>
+      <div style={{ padding:'16px 16px 80px', animation:'fadeIn 0.2s ease' }}>
+        {activeFlags.length > 0 && activeTab !== 1 && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
             {activeFlags.map(f => {
               const v = f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id];
-              const lbl = f.type === 'text' ? `${f.label}: ${v}` : f.type === 'select' ? `${f.label.split(' ')[0]} ${v}` : f.label;
-              return (
-                <span key={f.id} style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 6, color: '#f43f5e', fontSize: 11, padding: '2px 8px', fontWeight: 600 }}>
-                  {lbl}
-                </span>
-              );
+              const lbl = f.type==='text' ? `${f.label}: ${v}` : f.type==='select' ? `${f.label.split(' ')[0]} ${v}` : f.label;
+              return <span key={f.id} style={{ background:'#f43f5e22', border:'1px solid #f43f5e44', borderRadius:6, color:'#f43f5e', fontSize:11, padding:'2px 8px', fontWeight:600 }}>{lbl}</span>;
             })}
           </div>
         )}
-      </div>
 
-      {/* Corps */}
-      <div style={{ padding: '16px 16px 80px' }}>
-
-        <Section title="SÉJOUR" color={sp.color}>
-          <InfoBlock label="Motif d'hospitalisation" value={patient.admissionReason} />
-          <InfoBlock label="ATCD / Particularités"   value={patient.atcd} />
-          {infoFields.filter(f => f.persistent).map(f => (
-            <FieldRow key={f.id} field={f} accentColor={C}
-              value={patient.fieldValues[f.id]} onChange={v => savePersistentField(f.id, v)} />
-          ))}
-        </Section>
-
-        <Section title="ALERTES / RISQUES" color="#f43f5e">
-          {flagFields.map(f => (
-            <FieldRow key={f.id} field={f} accentColor="#f43f5e"
-              value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
-              onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
-          ))}
-        </Section>
-
-        {(obsFields.length > 0 || infoFields.some(f => !f.persistent)) && (
-          <Section title="JOURNALIER" color={C}>
-            {infoFields.filter(f => !f.persistent).map(f => (
+        {/* TAB 0 — SÉJOUR */}
+        {activeTab === 0 && (
+          <Section title="SÉJOUR" color={sp.color}>
+            <InfoBlock label="Motif d'hospitalisation" value={patient.admissionReason} />
+            <InfoBlock label="ATCD / Particularités"   value={patient.atcd} />
+            {infoFields.filter(f => f.persistent).map(f => (
               <FieldRow key={f.id} field={f} accentColor={C}
-                value={dailyEntry.fieldValues[f.id]} onChange={v => saveDailyField(f.id, v)} />
+                value={patient.fieldValues[f.id]} onChange={v => savePersistentField(f.id, v)} />
             ))}
-            {obsFields.map(f => (
-              <FieldRow key={f.id} field={f} accentColor={C}
-                value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
-                onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
-            ))}
-            <div>
-              <div style={{ color: T.muted, fontSize: 12, marginBottom: 5 }}>Notes libres du jour</div>
-              <textarea value={dailyEntry.observations} onChange={e => saveDailyEntry({ ...dailyEntry, observations: e.target.value })}
-                placeholder="Observations, transmissions…" rows={3}
-                style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 14 }} />
+            <div style={{ display:'flex', flexDirection:'column', gap:10, paddingTop:16, borderTop:`1px solid ${T.border}` }}>
+              <button onClick={() => setShowMove(true)}
+                style={{ width:'100%', background:'transparent', border:`1px solid #6366f144`, borderRadius:10, color:'#6366f1', padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                ↔ Changer de chambre
+              </button>
+              {!confirmExit ? (
+                <button onClick={() => setConfirmExit(true)}
+                  style={{ width:'100%', background:'transparent', border:`1px solid #f43f5e44`, borderRadius:10, color:'#f43f5e', padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                  🚪 Sortie du patient
+                </button>
+              ) : (
+                <div style={{ background:'#f43f5e11', border:'1px solid #f43f5e33', borderRadius:10, padding:14 }}>
+                  <div style={{ color:T.text, fontSize:14, marginBottom:12, textAlign:'center' }}>Confirmer la sortie de <strong>{patient.initials}</strong> ?</div>
+                  <div style={{ display:'flex', gap:10 }}>
+                    <button onClick={() => setConfirmExit(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, color:T.text, padding:'10px', fontSize:14, cursor:'pointer' }}>Annuler</button>
+                    <button onClick={handleDischarge} disabled={saving} style={{ flex:1, background:'#f43f5e', border:'none', borderRadius:8, color:'#fff', padding:'10px', fontSize:14, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>{saving?'…':'Confirmer'}</button>
+                  </div>
+                </div>
+              )}
             </div>
           </Section>
         )}
 
-        {constFields.length > 0 && (
-          <Section title="CONSTANTES" color="#06b6d4">
-            {constFields.map(f => (
-              <FieldRow key={f.id} field={f} accentColor="#06b6d4"
+        {/* TAB 1 — ALERTES */}
+        {activeTab === 1 && (
+          <Section title="ALERTES / RISQUES" color="#f43f5e">
+            {flagFields.map(f => (
+              <FieldRow key={f.id} field={f} accentColor="#f43f5e"
                 value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
                 onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
             ))}
           </Section>
         )}
 
-        <Section title="SOINS PROGRAMMÉS" color="#f97316">
-          <CareSchedule
-            careEntries={dailyEntry.careEntries || []}
-            onEntriesChange={entries => saveDailyEntry({ ...dailyEntry, careEntries: entries })}
-          />
-        </Section>
+        {/* TAB 2 — JOURNALIER */}
+        {activeTab === 2 && (
+          <>
+            {(obsFields.length > 0 || infoFields.some(f => !f.persistent)) && (
+              <Section title="JOURNALIER" color={C}>
+                {infoFields.filter(f => !f.persistent).map(f => (
+                  <FieldRow key={f.id} field={f} accentColor={C}
+                    value={dailyEntry.fieldValues[f.id]} onChange={v => saveDailyField(f.id, v)} />
+                ))}
+                {obsFields.map(f => (
+                  <FieldRow key={f.id} field={f} accentColor={C}
+                    value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
+                    onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
+                ))}
+                <div>
+                  <div style={{ color:T.muted, fontSize:12, marginBottom:5 }}>Notes libres du jour</div>
+                  <textarea value={dailyEntry.observations} onChange={e => saveDailyEntry({ ...dailyEntry, observations: e.target.value })}
+                    placeholder="Observations, transmissions…" rows={3}
+                    style={{ ...s.input, width:'100%', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', fontSize:14 }} />
+                </div>
+              </Section>
+            )}
+            {constFields.length > 0 && (
+              <Section title="CONSTANTES" color="#06b6d4">
+                {constFields.map(f => (
+                  <FieldRow key={f.id} field={f} accentColor="#06b6d4"
+                    value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
+                    onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
+                ))}
+              </Section>
+            )}
+          </>
+        )}
 
-        {/* Centres d'intérêt */}
-        <Section title="CENTRES D'INTÉRÊT PATIENT" color="#a78bfa">
-          {(patient.customFields || []).length === 0 && (
-            <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>
-              Aucun centre d'intérêt additionnel
-            </div>
-          )}
-          {(patient.customFields || []).map(f => (
-            <div key={f.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-                <span style={{ color: T.muted, fontSize: 12 }}>{f.label}</span>
-                <button onClick={() => savePatientData({ ...patient, customFields: patient.customFields.filter(cf => cf.id !== f.id) })}
-                  style={{ background: 'none', border: 'none', color: T.muted, fontSize: 14, cursor: 'pointer', padding: 0 }}>×</button>
+        {/* TAB 3 — SOINS */}
+        {activeTab === 3 && (
+          <Section title="SOINS PROGRAMMÉS" color="#f97316">
+            <CareSchedule
+              careEntries={dailyEntry.careEntries || []}
+              onEntriesChange={entries => saveDailyEntry({ ...dailyEntry, careEntries: entries })}
+            />
+          </Section>
+        )}
+
+        {/* TAB 4 — CENTRES */}
+        {activeTab === 4 && (
+          <Section title="CENTRES D'INTÉRÊT PATIENT" color="#a78bfa">
+            {(patient.customFields || []).length === 0 && (
+              <div style={{ color:T.muted, fontSize:13, fontStyle:'italic', marginBottom:10 }}>Aucun centre d'intérêt additionnel</div>
+            )}
+            {(patient.customFields || []).map(f => (
+              <div key={f.id} style={{ marginBottom:12 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                  <span style={{ color:T.muted, fontSize:12 }}>{f.label}</span>
+                  <button onClick={() => savePatientData({ ...patient, customFields: patient.customFields.filter(cf => cf.id !== f.id) })}
+                    style={{ background:'none', border:'none', color:T.muted, fontSize:14, cursor:'pointer', padding:0 }}>×</button>
+                </div>
+                <FieldInput field={f} accentColor="#a78bfa"
+                  value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
+                  onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
               </div>
-              <FieldInput field={f} accentColor="#a78bfa"
-                value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
-                onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
-            </div>
-          ))}
-          <button onClick={() => setShowAddField(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: T.surface, border: '1px dashed #a78bfa55',
-              borderRadius: 9, color: '#a78bfa', fontSize: 14,
-              padding: '9px 14px', cursor: 'pointer', width: '100%',
-              WebkitTapHighlightColor: 'transparent',
-            }}>
-            <span style={{ fontSize: 18 }}>+</span>
-            <span>Ajouter un centre d'intérêt</span>
-          </button>
-        </Section>
+            ))}
+            <button onClick={() => setShowAddField(true)}
+              style={{ display:'flex', alignItems:'center', gap:8, background:T.surface, border:'1px dashed #a78bfa55', borderRadius:9, color:'#a78bfa', fontSize:14, padding:'9px 14px', cursor:'pointer', width:'100%', WebkitTapHighlightColor:'transparent' }}>
+              <span style={{ fontSize:18 }}>+</span>
+              <span>Ajouter un centre d'intérêt</span>
+            </button>
+          </Section>
+        )}
 
-        {/* Événements du jour */}
-        <Section title="ÉVÉNEMENTS DU JOUR" color="#22c55e">
-          {(dailyEntry.events || []).length === 0 && (
-            <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun événement</div>
-          )}
-          {(dailyEntry.events || []).map(ev => (
-            <div key={ev.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 10px', marginBottom: 6 }}>
-              <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700, minWidth: 38, marginTop: 1 }}>{ev.time}</span>
-              <span style={{ color: T.text, fontSize: 13, flex: 1 }}>{ev.text}</span>
-              <button onClick={() => removeEvent(ev.id)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 16, cursor: 'pointer', padding: 0 }}>×</button>
+        {/* TAB 5 — ÉVÉNEMENTS */}
+        {activeTab === 5 && (
+          <Section title="ÉVÉNEMENTS DU JOUR" color="#22c55e">
+            {(dailyEntry.events || []).length === 0 && (
+              <div style={{ color:T.muted, fontSize:13, fontStyle:'italic', marginBottom:10 }}>Aucun événement</div>
+            )}
+            {(dailyEntry.events || []).map(ev => (
+              <div key={ev.id} style={{ display:'flex', alignItems:'flex-start', gap:8, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, padding:'8px 10px', marginBottom:6 }}>
+                <span style={{ color:'#22c55e', fontSize:11, fontWeight:700, minWidth:38, marginTop:1 }}>{ev.time}</span>
+                <span style={{ color:T.text, fontSize:13, flex:1 }}>{ev.text}</span>
+                <button onClick={() => removeEvent(ev.id)} style={{ background:'none', border:'none', color:T.muted, fontSize:16, cursor:'pointer', padding:0 }}>×</button>
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:8, marginTop:8 }}>
+              <input value={newEvent} onChange={e => setNewEvent(e.target.value)}
+                onKeyDown={e => { if(e.key==='Enter') addEvent(); }}
+                placeholder="Nouvel événement…"
+                style={{ ...s.input, flex:1, boxSizing:'border-box', fontSize:14 }} />
+              <button onClick={addEvent} disabled={!newEvent.trim()}
+                style={{ ...s.btn('#22c55e'), padding:'0 14px', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center', opacity:newEvent.trim()?1:0.4 }}>+</button>
             </div>
-          ))}
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input value={newEvent} onChange={e => setNewEvent(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addEvent(); }}
-              placeholder="Nouvel événement…"
-              style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 14 }} />
-            <button onClick={addEvent} disabled={!newEvent.trim()}
-              style={{ ...s.btn('#22c55e'), padding: '0 14px', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: newEvent.trim() ? 1 : 0.4 }}>+</button>
-          </div>
-        </Section>
-
+          </Section>
+        )}
+      </div>
         {/* Actions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
           <button onClick={() => setShowMove(true)}
@@ -554,7 +592,6 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
             </div>
           )}
         </div>
-      </div>
 
       {showEdit     && <EditPatientModal patient={patient} onSave={u => savePatientData({ ...patient, ...u })} onClose={() => setShowEdit(false)} />}
       {showMove     && <MoveBedModal patient={patient} service={service} occupiedBeds={occupiedBeds} onMove={n => savePatientData({ ...patient, bedNumber: n })} onClose={() => setShowMove(false)} />}
