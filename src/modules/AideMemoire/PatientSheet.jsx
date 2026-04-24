@@ -3,7 +3,7 @@
  * Tab bar bas · nav chambre · sans redondance
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, genId, isFlagActive, FieldInput } from './utils.jsx';
@@ -270,6 +270,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   const [activeTab,    setActiveTab]    = useState(0);
   const [allPatients,  setAllPatients]  = useState([]);
 
+  const swipeRef = useRef({});
   const today = todayStr();
 
   const loadData = useCallback(async () => {
@@ -359,7 +360,20 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   ];
 
   return (
-    <div style={{ background: P.grad, minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div
+      style={{ background: P.grad, minHeight: '100vh', boxSizing: 'border-box' }}
+      onTouchStart={e => { swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+      onTouchEnd={e => {
+        if (!onNavigate) return;
+        const dx = e.changedTouches[0].clientX - (swipeRef.current.x || 0);
+        const dy = e.changedTouches[0].clientY - (swipeRef.current.y || 0);
+        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        const present = allPatients.filter(p => p.present).sort((a,b) => a.bedNumber - b.bedNumber);
+        const idx = present.findIndex(p => p.id === patientId);
+        if (dx < 0 && present[idx + 1]) onNavigate(present[idx + 1].id);
+        if (dx > 0 && present[idx - 1]) onNavigate(present[idx - 1].id);
+      }}
+    >
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* ── Header ── */}
