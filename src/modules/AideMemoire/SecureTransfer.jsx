@@ -14,7 +14,7 @@ import { todayStr } from './utils.jsx';
 const ACCENT = '#6366f1';
 
 export default function SecureTransfer({ service, cryptoKey, onBack }) {
-  const [tab,      setTab]      = useState('export');
+  const [tab,      setTab]      = useState(service ? 'export' : 'import');
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState('');
   const [success,  setSuccess]  = useState('');

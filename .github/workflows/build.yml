@@ -44,7 +44,8 @@ jobs:
         env:
           DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
         run: |
-          echo "$DEBUG_KEYSTORE_B64" | base64 -d > android/app/debug.keystore
+          mkdir -p ~/.android
+          echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
 
       - name: Build APK
         env:
