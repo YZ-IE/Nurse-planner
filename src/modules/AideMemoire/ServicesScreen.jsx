@@ -46,7 +46,7 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
   }
 
   if (loading) return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <span style={{ color: T.muted, fontSize: 14 }}>Chargement…</span>
     </div>
   );
@@ -57,7 +57,7 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
     const sp            = getSpecialty(form.specialty);
     const previewFields = getTemplateFields(form.specialty);
     return (
-      <div style={{ background: T.bg, minHeight: '100vh', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
+      <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
           <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <span style={{ color: T.text, fontSize: 18, fontWeight: 700 }}>Nouveau service</span>
@@ -111,7 +111,7 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
   // ── Liste ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>

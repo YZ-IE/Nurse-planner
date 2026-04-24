@@ -184,7 +184,7 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
   }
 
   if (loading) return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <span style={{ color: T.muted, fontSize: 14 }}>Chargement…</span>
     </div>
   );
@@ -240,7 +240,7 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
   ];
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* Header */}
       <div style={{ padding: '14px 16px 0', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>

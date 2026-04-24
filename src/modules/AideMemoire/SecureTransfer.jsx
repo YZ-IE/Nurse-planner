@@ -159,7 +159,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
   const card = { background: '#111827', border: '1px solid #1e293b', borderRadius: 12, padding: '14px' };
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* Header */}
       <div style={{ padding: '12px 16px', background: T.bg, borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, zIndex: 10 }}>

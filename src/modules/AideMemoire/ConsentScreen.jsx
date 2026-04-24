@@ -98,7 +98,7 @@ export default function ConsentScreen({ onAccepted }) {
   }
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* Header */}
       <div style={{ background: '#0c1a2e', padding: '20px 16px 16px', borderBottom: '1px solid #1e3a5f' }}>
