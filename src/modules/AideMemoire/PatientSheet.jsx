@@ -447,7 +447,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       </div>
 
       {/* ── Contenu ── */}
-      <div style={{ padding: '16px 16px 90px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
+      <div style={{ padding: '16px 16px 140px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
 
         {/* TAB 0 — SÉJOUR */}
         {activeTab === 0 && (
