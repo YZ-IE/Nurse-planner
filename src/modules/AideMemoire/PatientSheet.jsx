@@ -365,7 +365,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
 
   return (
     <div
-      style={{ background: P.grad, minHeight: '100vh', boxSizing: 'border-box' }}
+      style={{ position: 'fixed', inset: 0, background: P.grad, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
       onTouchStart={e => { swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
       onTouchEnd={e => {
         if (!onNavigate) return;
@@ -391,7 +391,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: loadDarkPref() ? 'rgba(10,15,26,0.92)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ flexShrink: 0, zIndex: 20, background: loadDarkPref() ? 'rgba(10,15,26,0.92)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderBottom: `1px solid ${T.border}` }}>
 
         {/* Ligne 1 : retour + infos + edit */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 8px', overflow: 'hidden' }}>
@@ -447,7 +447,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       </div>
 
       {/* ── Contenu ── */}
-      <div style={{ padding: '16px 16px 140px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 16px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
 
         {/* TAB 0 — SÉJOUR */}
         {activeTab === 0 && (
@@ -608,7 +608,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       </div>
 
       {/* ── Tab bar bas ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: loadDarkPref() ? 'rgba(10,15,26,0.95)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderTop: `1px solid ${T.border}`, display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
+      <div style={{ flexShrink: 0, background: loadDarkPref() ? 'rgba(10,15,26,0.95)' : T.surface, backdropFilter: loadDarkPref() ? 'blur(16px)' : 'none', borderTop: `1px solid ${T.border}`, display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
         {TABS.map(t => (
           <button key={t.idx} onClick={() => setActiveTab(t.idx)}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '12px 2px 10px', background: 'none', border: 'none', cursor: 'pointer', color: activeTab === t.idx ? '#818cf8' : T.muted, fontFamily: 'inherit', fontSize: 11, fontWeight: activeTab === t.idx ? 700 : 400, position: 'relative', WebkitTapHighlightColor: 'transparent', transition: 'color 0.15s' }}>
