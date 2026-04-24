@@ -1,6 +1,6 @@
 /**
- * PatientSheet.jsx — Aide-Mémoire v3
- * Centres d'intérêt : liste plate alphabétique (toutes spécialités confondues)
+ * PatientSheet.jsx — Aide-Mémoire v4
+ * Tab bar bas · nav chambre · sans redondance
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,12 +11,21 @@ import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
 import { computeSlots } from './ServiceView.jsx';
 
+// ─── Palette étendue ──────────────────────────────────────────────────────────
+const P = {
+  glass:    'rgba(255,255,255,0.04)',
+  glassBdr: 'rgba(255,255,255,0.08)',
+  blue:     '#3b82f6',
+  purple:   '#8b5cf6',
+  grad:     'linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #0c1a2e 100%)',
+};
+
 // ─── Sous-composants ──────────────────────────────────────────────────────────
 
 function Section({ title, color, children }) {
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ ...s.label, color: color || T.muted, marginBottom: 10, paddingLeft: 8, borderLeft: `3px solid ${color || T.border}` }}>
+      <div style={{ color: color || T.muted, fontSize: 10, fontFamily: 'monospace', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, paddingLeft: 10, borderLeft: `2px solid ${color || T.border}` }}>
         {title}
       </div>
       {children}
@@ -27,7 +36,7 @@ function Section({ title, color, children }) {
 function FieldRow({ field, value, onChange, accentColor }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ color: T.muted, fontSize: 12, marginBottom: 5 }}>{field.label}</div>
+      <div style={{ color: T.muted, fontSize: 11, marginBottom: 5 }}>{field.label}</div>
       <FieldInput field={field} value={value} onChange={onChange} accentColor={accentColor} />
     </div>
   );
@@ -36,15 +45,15 @@ function FieldRow({ field, value, onChange, accentColor }) {
 function InfoBlock({ label, value }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ color: T.muted, fontSize: 12, marginBottom: 5 }}>{label}</div>
-      <div style={{ color: T.text, fontSize: 14, background: T.surface, borderRadius: 8, padding: '8px 12px', border: `1px solid ${T.border}` }}>
+      <div style={{ color: T.muted, fontSize: 11, marginBottom: 5 }}>{label}</div>
+      <div style={{ color: T.text, fontSize: 14, background: P.glass, backdropFilter: 'blur(8px)', borderRadius: 10, padding: '10px 14px', border: `1px solid ${P.glassBdr}` }}>
         {value || <span style={{ color: T.muted }}>—</span>}
       </div>
     </div>
   );
 }
 
-// ─── Modal édition infos patient ─────────────────────────────────────────────
+// ─── Modal édition patient ────────────────────────────────────────────────────
 
 function EditPatientModal({ patient, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -68,8 +77,8 @@ function EditPatientModal({ patient, onSave, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '22px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div style={{ background: 'linear-gradient(180deg, #1e1b4b 0%, #111827 100%)', borderRadius: '20px 20px 0 0', border: '1px solid rgba(139,92,246,0.3)', padding: '24px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <span style={{ color: T.text, fontSize: 17, fontWeight: 700 }}>✏️ Modifier le patient</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -86,9 +95,9 @@ function EditPatientModal({ patient, onSave, onClose }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 {['M', 'F'].map(g => (
                   <button key={g} onClick={() => setForm(f => ({ ...f, gender: g }))} style={{
-                    background: form.gender === g ? '#6366f133' : T.bg,
-                    border: `1px solid ${form.gender === g ? '#6366f1' : T.border}`,
-                    borderRadius: 8, color: form.gender === g ? '#6366f1' : T.muted,
+                    background: form.gender === g ? '#8b5cf633' : T.bg,
+                    border: `1px solid ${form.gender === g ? '#8b5cf6' : T.border}`,
+                    borderRadius: 8, color: form.gender === g ? '#8b5cf6' : T.muted,
                     fontWeight: 700, fontSize: 15, width: 44, height: 44, cursor: 'pointer',
                   }}>{g}</button>
                 ))}
@@ -111,7 +120,7 @@ function EditPatientModal({ patient, onSave, onClose }) {
               style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
           </div>
           <button onClick={handleSave} disabled={!form.initials.trim() || !form.age}
-            style={{ ...s.btn('#6366f1'), width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, opacity: form.initials.trim() && form.age ? 1 : 0.4 }}>
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: 12, color: '#fff', padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: form.initials.trim() && form.age ? 1 : 0.4 }}>
             Enregistrer
           </button>
         </div>
@@ -120,12 +129,10 @@ function EditPatientModal({ patient, onSave, onClose }) {
   );
 }
 
-// ─── Modal changement de chambre ─────────────────────────────────────────────
+// ─── Modal changement de chambre ──────────────────────────────────────────────
 
 function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
   const [selected, setSelected] = useState(null);
-
-  // Utilise computeSlots() — source unique de vérité, identique à ServiceView
   const slots = computeSlots(service);
 
   function slotIcon(icon) {
@@ -134,7 +141,6 @@ function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
     return '🛏';
   }
 
-  // Retrouver le label du slot actuel du patient
   const currentSlot = slots.find(sl => sl.slotIndex === patient.bedNumber);
   const currentLabel = currentSlot
     ? (currentSlot.icon ? `${currentSlot.roomLabel} ${slotIcon(currentSlot.icon)}` : currentSlot.roomLabel)
@@ -146,14 +152,14 @@ function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
     : '—';
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '22px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '80vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div style={{ background: 'linear-gradient(180deg, #1e1b4b 0%, #111827 100%)', borderRadius: '20px 20px 0 0', border: '1px solid rgba(99,102,241,0.3)', padding: '24px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '80vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <span style={{ color: T.text, fontSize: 17, fontWeight: 700 }}>↔ Changer de chambre</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         <div style={{ color: T.muted, fontSize: 13, marginBottom: 14 }}>
-          {patient.initials} — actuellement Ch.{currentLabel}
+          {patient.initials} — actuellement {currentLabel}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 20 }}>
           {slots.map(slot => {
@@ -166,9 +172,9 @@ function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
               <button key={slot.slotIndex} disabled={isOccupied || isCurrent}
                 onClick={() => setSelected(isSel ? null : slot.slotIndex)}
                 style={{
-                  background:   isSel ? '#6366f133' : T.bg,
-                  border:       `1px solid ${isSel ? '#6366f1' : isCurrent ? '#6366f144' : T.border}`,
-                  borderRadius: 8, padding: '10px 4px',
+                  background:   isSel ? '#6366f133' : P.glass,
+                  border:       `1px solid ${isSel ? '#6366f1' : isCurrent ? '#6366f144' : P.glassBdr}`,
+                  borderRadius: 10, padding: '10px 4px',
                   color:        isOccupied ? T.muted : isCurrent ? '#6366f1' : T.text,
                   fontSize: 11, cursor: isOccupied || isCurrent ? 'default' : 'pointer',
                   opacity: isOccupied ? 0.4 : 1, textAlign: 'center',
@@ -183,15 +189,15 @@ function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
           })}
         </div>
         <button onClick={() => { if (selected) { onMove(selected); onClose(); } }} disabled={!selected}
-          style={{ ...s.btn('#6366f1'), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: selected ? 1 : 0.4 }}>
-          Déplacer vers Ch.{selectedLabel}
+          style={{ background: selected ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : P.glass, border: 'none', borderRadius: 12, color: '#fff', padding: '13px', fontSize: 15, fontWeight: 700, cursor: 'pointer', width: '100%', opacity: selected ? 1 : 0.4 }}>
+          Déplacer vers {selectedLabel}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Modal centres d'intérêt — liste plate alphabétique ──────────────────────
+// ─── Modal centres d'intérêt ──────────────────────────────────────────────────
 
 function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
   const [search, setSearch] = useState('');
@@ -202,12 +208,10 @@ function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
   ]);
 
   const allFields = getAllFieldsAlpha().filter(f => !existingIds.has(f.id));
-
   const filtered = search.trim()
     ? allFields.filter(f => f.label.toLowerCase().includes(search.toLowerCase()))
     : allFields;
 
-  // Couleur par catégorie
   function catColor(f) {
     if (f.category === 'flag')        return '#f43f5e';
     if (f.category === 'info')        return '#6366f1';
@@ -217,38 +221,25 @@ function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '22px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
-
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div style={{ background: 'linear-gradient(180deg, #1e1b4b 0%, #111827 100%)', borderRadius: '20px 20px 0 0', border: '1px solid rgba(167,139,250,0.3)', padding: '24px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <span style={{ color: T.text, fontSize: 17, fontWeight: 700 }}>➕ Centre d'intérêt</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
-
-        {/* Recherche */}
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher…"
-          style={{ ...s.input, width: '100%', boxSizing: 'border-box', marginBottom: 12 }}
-        />
-
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+          style={{ ...s.input, width: '100%', boxSizing: 'border-box', marginBottom: 12 }} />
         {filtered.length === 0 && (
-          <div style={{ color: T.muted, fontSize: 13, textAlign: 'center', marginTop: 20 }}>
-            Aucun champ disponible
-          </div>
+          <div style={{ color: T.muted, fontSize: 13, textAlign: 'center', marginTop: 20 }}>Aucun champ disponible</div>
         )}
-
         {filtered.map(f => (
           <button key={f.id} onClick={() => { onAdd(f); onClose(); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              width: '100%', marginBottom: 7,
-              background: T.bg, border: `1px solid ${T.border}`,
-              borderLeft: `3px solid ${catColor(f)}`,
-              borderRadius: 9, color: T.text,
-              padding: '11px 14px', textAlign: 'left', fontSize: 14,
-              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              width: '100%', marginBottom: 7, background: P.glass,
+              border: `1px solid ${P.glassBdr}`, borderLeft: `3px solid ${catColor(f)}`,
+              borderRadius: 10, color: T.text, padding: '11px 14px', textAlign: 'left',
+              fontSize: 14, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
             }}>
             <span>{f.label}</span>
             <span style={{ color: T.muted, fontSize: 11, flexShrink: 0, marginLeft: 8 }}>
@@ -276,7 +267,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   const [showEdit,     setShowEdit]     = useState(false);
   const [showMove,     setShowMove]     = useState(false);
   const [showAddField, setShowAddField] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab,    setActiveTab]    = useState(0);
   const [allPatients,  setAllPatients]  = useState([]);
 
   const today = todayStr();
@@ -291,9 +282,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       setAllPatients(pts);
       const daily = await secureGet(`daily_${service.id}_${today}`, cryptoKey) || {};
       setDailyEntry(daily[patientId] || { fieldValues: {}, events: [], observations: '', careEntries: [] });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [patientId, service.id, cryptoKey, today]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -307,7 +296,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   }
 
   async function saveDailyEntry(nextEntry) {
-    const daily     = await secureGet(`daily_${service.id}_${today}`, cryptoKey) || {};
+    const daily = await secureGet(`daily_${service.id}_${today}`, cryptoKey) || {};
     setDailyEntry(nextEntry);
     await secureSet(`daily_${service.id}_${today}`, { ...daily, [patientId]: nextEntry }, cryptoKey);
   }
@@ -360,107 +349,128 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
 
   const occupiedBeds = allPatients.filter(p => p.present && p.id !== patientId).map(p => p.bedNumber);
 
-  return (
-    <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box' }}>
+  const TABS = [
+    { label: '🏥', name: 'Séjour',      idx: 0 },
+    { label: '⚠️', name: 'Alertes',     idx: 1 },
+    { label: '📋', name: 'Journalier',  idx: 2 },
+    { label: '💊', name: 'Soins',       idx: 3 },
+    { label: '🎯', name: 'Centres',     idx: 4 },
+    { label: '📝', name: 'Événements',  idx: 5 },
+  ];
 
-      {/* Header */}
-      <div style={{ background: T.bg, position: 'sticky', top: 0, zIndex: 20, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px 8px', overflow:'hidden' }}>
-          <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4, flexShrink:0 }}>←</button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:T.text, fontSize:17, fontWeight:800, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{patient.initials}</div>
-            <div style={{ color:T.muted, fontSize:11, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+  return (
+    <div style={{ background: P.grad, minHeight: '100vh', boxSizing: 'border-box' }}>
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* ── Header ── */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10,15,26,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+
+        {/* Ligne 1 : retour + infos + edit */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 8px', overflow: 'hidden' }}>
+          <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4, flexShrink: 0 }}>←</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: T.text, fontSize: 17, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {patient.initials}
+            </div>
+            <div style={{ color: T.muted, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {patient.gender} · {patient.age}a · {(computeSlots(service).find(sl => sl.slotIndex === patient.bedNumber) || {}).roomLabel || `Ch.${patient.bedNumber}`}
             </div>
           </div>
-          <span style={{ background:sp.color+'22', border:`1px solid ${sp.color}44`, borderRadius:6, color:sp.color, fontSize:10, padding:'3px 8px', fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>
+          <button onClick={() => setShowEdit(true)}
+            style={{ background: P.glass, border: `1px solid ${P.glassBdr}`, borderRadius: 8, color: T.muted, fontSize: 15, padding: '6px 10px', cursor: 'pointer', flexShrink: 0 }}>✏️</button>
+          <span style={{ background: sp.color + '22', border: `1px solid ${sp.color}44`, borderRadius: 6, color: sp.color, fontSize: 10, padding: '3px 8px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
             {sp.label.split(' ')[0]}
           </span>
         </div>
+
+        {/* Ligne 2 : nav chambre */}
         {onNavigate && (() => {
-          const present = allPatients.filter(p => p.present).sort((a,b) => a.bedNumber - b.bedNumber);
+          const present = allPatients.filter(p => p.present).sort((a, b) => a.bedNumber - b.bedNumber);
           const idx = present.findIndex(p => p.id === patientId);
           const prev = present[idx - 1];
           const next = present[idx + 1];
           return (
-            <div style={{ display:'flex', alignItems:'center', padding:'0 12px 8px', gap:0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px 8px', gap: 0 }}>
               <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
-                style={{ background:prev?T.surface:'transparent', border:`1px solid ${prev?T.border:'transparent'}`, borderRadius:'8px 0 0 8px', color:prev?T.text:T.border, fontSize:18, padding:'7px 14px', cursor:prev?'pointer':'default', flexShrink:0 }}>‹</button>
+                style={{ background: prev ? P.glass : 'transparent', border: `1px solid ${prev ? P.glassBdr : 'transparent'}`, borderRadius: '10px 0 0 10px', color: prev ? T.text : T.border, fontSize: 18, padding: '7px 14px', cursor: prev ? 'pointer' : 'default', flexShrink: 0 }}>‹</button>
               <select onChange={e => onNavigate(e.target.value)} value={patientId}
-                style={{ flex:1, background:'#0f172a', border:`1px solid ${T.border}`, borderLeft:'none', borderRight:'none', color:T.text, fontSize:13, padding:'7px 10px', cursor:'pointer', minWidth:0 }}>
+                style={{ flex: 1, background: 'rgba(15,23,42,0.8)', border: `1px solid ${P.glassBdr}`, borderLeft: 'none', borderRight: 'none', color: T.text, fontSize: 13, fontWeight: 600, padding: '7px 10px', cursor: 'pointer', minWidth: 0 }}>
                 {present.map(pt => {
                   const slot = computeSlots(service).find(sl => sl.slotIndex === pt.bedNumber);
                   return <option key={pt.id} value={pt.id}>{pt.initials} — {slot ? slot.roomLabel : `Ch.${pt.bedNumber}`}</option>;
                 })}
               </select>
               <button onClick={() => next && onNavigate(next.id)} disabled={!next}
-                style={{ background:next?T.surface:'transparent', border:`1px solid ${next?T.border:'transparent'}`, borderRadius:'0 8px 8px 0', color:next?T.text:T.border, fontSize:18, padding:'7px 14px', cursor:next?'pointer':'default', flexShrink:0 }}>›</button>
+                style={{ background: next ? P.glass : 'transparent', border: `1px solid ${next ? P.glassBdr : 'transparent'}`, borderRadius: '0 10px 10px 0', color: next ? T.text : T.border, fontSize: 18, padding: '7px 14px', cursor: next ? 'pointer' : 'default', flexShrink: 0 }}>›</button>
             </div>
           );
         })()}
-        {/* Tab bar */}
-        <div style={{ display:'flex', borderTop:`1px solid ${T.border}`, overflowX:'auto' }}>
-          {[
-            { label:'🏥 Séjour',      idx:0 },
-            { label:'⚠️ Alertes',     idx:1 },
-            { label:'📋 Journalier',  idx:2 },
-            { label:'💊 Soins',       idx:3 },
-            { label:'🎯 Centres',     idx:4 },
-            { label:'📝 Événements',  idx:5 },
-          ].map(t => (
-            <button key={t.idx} onClick={() => setActiveTab(t.idx)}
-              style={{ flex:'0 0 auto', background:'transparent', border:'none', borderBottom:`2px solid ${activeTab===t.idx ? C : 'transparent'}`, color:activeTab===t.idx ? C : T.muted, fontSize:11, fontWeight:activeTab===t.idx?700:400, padding:'8px 14px', cursor:'pointer', whiteSpace:'nowrap', WebkitTapHighlightColor:'transparent' }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div style={{ padding:'16px 16px 80px', animation:'fadeIn 0.2s ease' }}>
+
+        {/* Alertes actives */}
         {activeFlags.length > 0 && activeTab !== 1 && (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, padding: '0 16px 8px', overflowX: 'auto' }}>
             {activeFlags.map(f => {
               const v = f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id];
-              const lbl = f.type==='text' ? `${f.label}: ${v}` : f.type==='select' ? `${f.label.split(' ')[0]} ${v}` : f.label;
-              return <span key={f.id} style={{ background:'#f43f5e22', border:'1px solid #f43f5e44', borderRadius:6, color:'#f43f5e', fontSize:11, padding:'2px 8px', fontWeight:600 }}>{lbl}</span>;
+              const lbl = f.type === 'text' ? `${f.label}: ${v}` : f.type === 'select' ? `${f.label.split(' ')[0]} ${v}` : f.label;
+              return <span key={f.id} style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 6, color: '#f43f5e', fontSize: 11, padding: '2px 8px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{lbl}</span>;
             })}
           </div>
         )}
+      </div>
+
+      {/* ── Contenu ── */}
+      <div style={{ padding: '16px 16px 90px', animation: 'fadeUp 0.2s ease' }}>
 
         {/* TAB 0 — SÉJOUR */}
         {activeTab === 0 && (
-          <Section title="SÉJOUR" color={sp.color}>
-            <InfoBlock label="Motif d'hospitalisation" value={patient.admissionReason} />
-            <InfoBlock label="ATCD / Particularités"   value={patient.atcd} />
-            {infoFields.filter(f => f.persistent).map(f => (
-              <FieldRow key={f.id} field={f} accentColor={C}
-                value={patient.fieldValues[f.id]} onChange={v => savePersistentField(f.id, v)} />
-            ))}
-            <div style={{ display:'flex', flexDirection:'column', gap:10, paddingTop:16, borderTop:`1px solid ${T.border}` }}>
+          <>
+            <Section title="SÉJOUR" color={sp.color}>
+              <InfoBlock label="Motif d'hospitalisation" value={patient.admissionReason} />
+              <InfoBlock label="ATCD / Particularités"   value={patient.atcd} />
+              {infoFields.filter(f => f.persistent).map(f => (
+                <FieldRow key={f.id} field={f} accentColor={C}
+                  value={patient.fieldValues[f.id]} onChange={v => savePersistentField(f.id, v)} />
+              ))}
+            </Section>
+
+            {/* Actions séjour */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
               <button onClick={() => setShowMove(true)}
-                style={{ width:'100%', background:'transparent', border:`1px solid #6366f144`, borderRadius:10, color:'#6366f1', padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                style={{ width: '100%', background: P.glass, border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12, color: '#818cf8', padding: '13px', fontSize: 14, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
                 ↔ Changer de chambre
               </button>
               {!confirmExit ? (
                 <button onClick={() => setConfirmExit(true)}
-                  style={{ width:'100%', background:'transparent', border:`1px solid #f43f5e44`, borderRadius:10, color:'#f43f5e', padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                  style={{ width: '100%', background: P.glass, border: '1px solid rgba(244,63,94,0.3)', borderRadius: 12, color: '#f43f5e', padding: '13px', fontSize: 14, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
                   🚪 Sortie du patient
                 </button>
               ) : (
-                <div style={{ background:'#f43f5e11', border:'1px solid #f43f5e33', borderRadius:10, padding:14 }}>
-                  <div style={{ color:T.text, fontSize:14, marginBottom:12, textAlign:'center' }}>Confirmer la sortie de <strong>{patient.initials}</strong> ?</div>
-                  <div style={{ display:'flex', gap:10 }}>
-                    <button onClick={() => setConfirmExit(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, color:T.text, padding:'10px', fontSize:14, cursor:'pointer' }}>Annuler</button>
-                    <button onClick={handleDischarge} disabled={saving} style={{ flex:1, background:'#f43f5e', border:'none', borderRadius:8, color:'#fff', padding:'10px', fontSize:14, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>{saving?'…':'Confirmer'}</button>
+                <div style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 14, padding: 16 }}>
+                  <div style={{ color: T.text, fontSize: 14, marginBottom: 12, textAlign: 'center' }}>
+                    Confirmer la sortie de <strong>{patient.initials}</strong> ?
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => setConfirmExit(false)}
+                      style={{ flex: 1, background: P.glass, border: `1px solid ${P.glassBdr}`, borderRadius: 10, color: T.text, padding: '11px', fontSize: 14, cursor: 'pointer' }}>
+                      Annuler
+                    </button>
+                    <button onClick={handleDischarge} disabled={saving}
+                      style={{ flex: 1, background: 'linear-gradient(135deg, #f43f5e, #e11d48)', border: 'none', borderRadius: 10, color: '#fff', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                      {saving ? '…' : 'Confirmer'}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          </Section>
+          </>
         )}
 
         {/* TAB 1 — ALERTES */}
         {activeTab === 1 && (
           <Section title="ALERTES / RISQUES" color="#f43f5e">
+            {flagFields.length === 0 && (
+              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic' }}>Aucun champ d'alerte configuré</div>
+            )}
             {flagFields.map(f => (
               <FieldRow key={f.id} field={f} accentColor="#f43f5e"
                 value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
@@ -484,10 +494,10 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
                     onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
                 ))}
                 <div>
-                  <div style={{ color:T.muted, fontSize:12, marginBottom:5 }}>Notes libres du jour</div>
+                  <div style={{ color: T.muted, fontSize: 11, marginBottom: 5 }}>Notes libres du jour</div>
                   <textarea value={dailyEntry.observations} onChange={e => saveDailyEntry({ ...dailyEntry, observations: e.target.value })}
                     placeholder="Observations, transmissions…" rows={3}
-                    style={{ ...s.input, width:'100%', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', fontSize:14 }} />
+                    style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 14 }} />
                 </div>
               </Section>
             )}
@@ -499,6 +509,11 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
                     onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
                 ))}
               </Section>
+            )}
+            {obsFields.length === 0 && !infoFields.some(f => !f.persistent) && constFields.length === 0 && (
+              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', textAlign: 'center', marginTop: 40 }}>
+                Aucun champ journalier configuré
+              </div>
             )}
           </>
         )}
@@ -517,14 +532,14 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
         {activeTab === 4 && (
           <Section title="CENTRES D'INTÉRÊT PATIENT" color="#a78bfa">
             {(patient.customFields || []).length === 0 && (
-              <div style={{ color:T.muted, fontSize:13, fontStyle:'italic', marginBottom:10 }}>Aucun centre d'intérêt additionnel</div>
+              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun centre d'intérêt additionnel</div>
             )}
             {(patient.customFields || []).map(f => (
-              <div key={f.id} style={{ marginBottom:12 }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-                  <span style={{ color:T.muted, fontSize:12 }}>{f.label}</span>
+              <div key={f.id} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ color: T.muted, fontSize: 11 }}>{f.label}</span>
                   <button onClick={() => savePatientData({ ...patient, customFields: patient.customFields.filter(cf => cf.id !== f.id) })}
-                    style={{ background:'none', border:'none', color:T.muted, fontSize:14, cursor:'pointer', padding:0 }}>×</button>
+                    style={{ background: 'none', border: 'none', color: T.muted, fontSize: 14, cursor: 'pointer', padding: 0 }}>×</button>
                 </div>
                 <FieldInput field={f} accentColor="#a78bfa"
                   value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
@@ -532,8 +547,8 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
               </div>
             ))}
             <button onClick={() => setShowAddField(true)}
-              style={{ display:'flex', alignItems:'center', gap:8, background:T.surface, border:'1px dashed #a78bfa55', borderRadius:9, color:'#a78bfa', fontSize:14, padding:'9px 14px', cursor:'pointer', width:'100%', WebkitTapHighlightColor:'transparent' }}>
-              <span style={{ fontSize:18 }}>+</span>
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: P.glass, border: '1px dashed rgba(167,139,250,0.4)', borderRadius: 12, color: '#a78bfa', fontSize: 14, padding: '11px 14px', cursor: 'pointer', width: '100%', WebkitTapHighlightColor: 'transparent', backdropFilter: 'blur(8px)' }}>
+              <span style={{ fontSize: 18 }}>+</span>
               <span>Ajouter un centre d'intérêt</span>
             </button>
           </Section>
@@ -543,56 +558,42 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
         {activeTab === 5 && (
           <Section title="ÉVÉNEMENTS DU JOUR" color="#22c55e">
             {(dailyEntry.events || []).length === 0 && (
-              <div style={{ color:T.muted, fontSize:13, fontStyle:'italic', marginBottom:10 }}>Aucun événement</div>
+              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun événement</div>
             )}
             {(dailyEntry.events || []).map(ev => (
-              <div key={ev.id} style={{ display:'flex', alignItems:'flex-start', gap:8, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, padding:'8px 10px', marginBottom:6 }}>
-                <span style={{ color:'#22c55e', fontSize:11, fontWeight:700, minWidth:38, marginTop:1 }}>{ev.time}</span>
-                <span style={{ color:T.text, fontSize:13, flex:1 }}>{ev.text}</span>
-                <button onClick={() => removeEvent(ev.id)} style={{ background:'none', border:'none', color:T.muted, fontSize:16, cursor:'pointer', padding:0 }}>×</button>
+              <div key={ev.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: P.glass, border: `1px solid ${P.glassBdr}`, borderRadius: 10, padding: '10px 12px', marginBottom: 8 }}>
+                <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700, minWidth: 38, marginTop: 1 }}>{ev.time}</span>
+                <span style={{ color: T.text, fontSize: 13, flex: 1 }}>{ev.text}</span>
+                <button onClick={() => removeEvent(ev.id)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 16, cursor: 'pointer', padding: 0 }}>×</button>
               </div>
             ))}
-            <div style={{ display:'flex', gap:8, marginTop:8 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <input value={newEvent} onChange={e => setNewEvent(e.target.value)}
-                onKeyDown={e => { if(e.key==='Enter') addEvent(); }}
+                onKeyDown={e => { if (e.key === 'Enter') addEvent(); }}
                 placeholder="Nouvel événement…"
-                style={{ ...s.input, flex:1, boxSizing:'border-box', fontSize:14 }} />
+                style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 14 }} />
               <button onClick={addEvent} disabled={!newEvent.trim()}
-                style={{ ...s.btn('#22c55e'), padding:'0 14px', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center', opacity:newEvent.trim()?1:0.4 }}>+</button>
+                style={{ background: newEvent.trim() ? 'linear-gradient(135deg, #22c55e, #16a34a)' : P.glass, border: 'none', borderRadius: 10, color: '#fff', padding: '0 16px', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: newEvent.trim() ? 'pointer' : 'default', opacity: newEvent.trim() ? 1 : 0.4 }}>+</button>
             </div>
           </Section>
         )}
       </div>
-        {/* Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
-          <button onClick={() => setShowMove(true)}
-            style={{ width: '100%', background: 'transparent', border: `1px solid #6366f144`, borderRadius: 10, color: '#6366f1', padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            ↔ Changer de chambre
-          </button>
-          {!confirmExit ? (
-            <button onClick={() => setConfirmExit(true)}
-              style={{ width: '100%', background: 'transparent', border: `1px solid #f43f5e44`, borderRadius: 10, color: '#f43f5e', padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              🚪 Sortie du patient
-            </button>
-          ) : (
-            <div style={{ background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 10, padding: 14 }}>
-              <div style={{ color: T.text, fontSize: 14, marginBottom: 12, textAlign: 'center' }}>
-                Confirmer la sortie de <strong>{patient.initials}</strong> ?
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setConfirmExit(false)}
-                  style={{ flex: 1, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: '10px', fontSize: 14, cursor: 'pointer' }}>
-                  Annuler
-                </button>
-                <button onClick={handleDischarge} disabled={saving}
-                  style={{ flex: 1, background: '#f43f5e', border: 'none', borderRadius: 8, color: '#fff', padding: '10px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-                  {saving ? '…' : 'Confirmer'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
+      {/* ── Tab bar bas ── */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,15,26,0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
+        {TABS.map(t => (
+          <button key={t.idx} onClick={() => setActiveTab(t.idx)}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '10px 2px 6px', background: 'none', border: 'none', cursor: 'pointer', color: activeTab === t.idx ? '#818cf8' : T.muted, fontFamily: 'inherit', fontSize: 9, fontWeight: activeTab === t.idx ? 700 : 400, position: 'relative', WebkitTapHighlightColor: 'transparent', transition: 'color 0.15s' }}>
+            {activeTab === t.idx && (
+              <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%', height: 2, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: '0 0 2px 2px' }} />
+            )}
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{t.label}</span>
+            {t.name}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Modals ── */}
       {showEdit     && <EditPatientModal patient={patient} onSave={u => savePatientData({ ...patient, ...u })} onClose={() => setShowEdit(false)} />}
       {showMove     && <MoveBedModal patient={patient} service={service} occupiedBeds={occupiedBeds} onMove={n => savePatientData({ ...patient, bedNumber: n })} onClose={() => setShowMove(false)} />}
       {showAddField && <AddCustomFieldModal service={service} patient={patient} onAdd={f => savePatientData({ ...patient, customFields: [...(patient.customFields || []), { ...f, persistent: true }] })} onClose={() => setShowAddField(false)} />}
