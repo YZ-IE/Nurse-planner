@@ -212,20 +212,18 @@ export default function App() {
   }, [isDark, TH.bg]);
 
   // Listener backButton enregistré UNE SEULE FOIS
-  // backOverride.current est TOUJOURS défini quand un module est actif
-  // (ModuleShell/Medicaments enregistrent onBack comme fallback)
+  // Bouton retour Android — délégué à window.__backHandler (enregistré dans main.jsx)
+  // Mis à jour à chaque render pour avoir les dernières valeurs de tab/backOverride
   useEffect(() => {
-    (async () => {
+    window.__backHandler = async () => {
+      if (backOverride.current) { backOverride.current(); return; }
+      if (tab !== 'home')       { setTab('home'); return; }
       try {
         const { App: CapApp } = await import('@capacitor/app');
-        await CapApp.addListener('backButton', () => {
-          if (backOverride.current) { backOverride.current(); return; }
-          if (tab !== 'home')       { setTab('home'); return; }
-          CapApp.exitApp();
-        });
+        CapApp.exitApp();
       } catch {}
-    })();
-  }, []); // deps vides — jamais détruit/recréé
+    };
+  }); // sans deps → toujours à jour
 
   function openModule(mod, toolId=null) {
     if (phase!=='idle') return;
