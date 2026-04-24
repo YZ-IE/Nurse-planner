@@ -74,7 +74,13 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
       await navigator.clipboard.writeText(blob);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
-    } catch { setError('Impossible de copier — sélectionnez et copiez manuellement'); }
+    } catch {
+      try {
+        const ta = document.querySelector('textarea[readonly]');
+        if (ta) { ta.focus(); ta.select(); document.execCommand('copy'); setCopied(true); setTimeout(() => setCopied(false), 3000); }
+        else { setError('Appuyez sur le texte, sélectionnez tout et copiez'); }
+      } catch { setError('Appuyez sur le texte, sélectionnez tout et copiez'); }
+    }
   }
 
   // ── IMPORT ──────────────────────────────────────────────────────────────────
@@ -82,6 +88,9 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
     if (!pastedBlob.trim() || inputCode.replace(/\s/g, '').length !== 8) {
       setError('Collez le blob et entrez le code 8 chiffres'); return;
     }
+    try {
+      const parsed = JSON.parse(atob(pastedBlob.trim()));
+    } catch { setError('Format invalide — copiez le texte en entier.'); return; }
     setBusy(true); setError(''); setPreview(null);
     try {
       const payload = await decryptFromTransfer(pastedBlob.trim(), inputCode);
@@ -223,9 +232,8 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
 
                 <div style={{ ...card, marginBottom: 16 }}>
                   <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Étape 2 — Copier le paquet chiffré</div>
-                  <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, fontFamily: 'monospace', fontSize: 10, color: T.muted, wordBreak: 'break-all', maxHeight: 80, overflowY: 'auto' }}>
-                    {blob.slice(0, 120)}…
-                  </div>
+                  <textarea value={blob} readOnly rows={5} onFocus={e => e.target.select()} style={{ ...s.input, width: "100%", boxSizing: "border-box", fontFamily: "monospace", fontSize: 10, lineHeight: 1.4, resize: "none", wordBreak: "break-all", color: T.muted, marginBottom: 4, cursor: "text" }} />
+                  <div style={{ color: T.muted, fontSize: 10, marginBottom: 12, textAlign: "right" }}>{blob.length} caractères — {copied ? "✅ Copié" : "à copier"}</div>
                   <button onClick={copyBlob}
                     style={{ ...s.btn(copied ? '#22c55e' : ACCENT), width: '100%', padding: '12px', fontSize: 14, fontWeight: 700 }}>
                     {copied ? '✅ Copié !' : '📋 Copier le paquet chiffré'}
@@ -268,6 +276,11 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
                 placeholder="Collez ici le texte copié depuis l'autre appareil…"
                 rows={4}
                 style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'none', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.4 }} />
+              {pastedBlob.trim().length > 0 && (
+                <div style={{ color: pastedBlob.trim().length < 200 ? '#f97316' : T.muted, fontSize: 10, marginTop: 4, textAlign: 'right' }}>
+                  {pastedBlob.trim().length} car.{pastedBlob.trim().length < 200 ? ' ⚠️ Trop court' : ' ✓'}
+                </div>
+              )}
             </div>
 
             <div style={{ ...card, marginBottom: 16 }}>
