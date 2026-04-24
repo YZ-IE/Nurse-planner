@@ -211,24 +211,23 @@ export default function App() {
     if (meta) meta.setAttribute('content', isDark?'#0D1117':'#F0F3F8');
   }, [isDark, TH.bg]);
 
-  // Listener backButton enregistré UNE SEULE FOIS
-  // Bouton retour Android — recréé à chaque changement de active/tab
-  // comme dans l'original (garantit hasListeners()=true + closure fraîche)
+  // Bouton retour Android — recréé sur [active, tab] comme l'original
+  // setActive/setInitialTool appelés DIRECTEMENT (pas handleBack) → pas de stale closure
   useEffect(() => {
     let h = null;
     (async () => {
       try {
         const { App: CapApp } = await import('@capacitor/app');
         h = await CapApp.addListener('backButton', () => {
-          if (backOverride.current) { backOverride.current(); return; }
-          if (active)               { handleBack(); return; }
-          if (tab !== 'home')       { setTab('home'); return; }
+          if (backOverride.current)   { backOverride.current(); return; }
+          if (active !== null)        { setActive(null); setInitialTool(null); setPhase('idle'); return; }
+          if (tab !== 'home')         { setTab('home'); return; }
           CapApp.exitApp();
         });
       } catch {}
     })();
     return () => { if (h) h.remove(); };
-  }, [active, tab]); // recréé à chaque nav — comme l'original
+  }, [active, tab]);
 
   function openModule(mod, toolId=null) {
     if (phase!=='idle') return;
