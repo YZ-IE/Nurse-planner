@@ -228,7 +228,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
   const sortedPatients = [...patients].sort((a, b) => a.bedNumber - b.bedNumber);
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* ── Header ── */}
       <div style={{ padding: '14px 16px 12px', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
