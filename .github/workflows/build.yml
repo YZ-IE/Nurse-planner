@@ -46,6 +46,7 @@ jobs:
         run: |
           mkdir -p ~/.android
           echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          echo "KEYSTORE_PATH=$HOME/.android/debug.keystore" >> $GITHUB_ENV
 
       - name: Build APK
         env:
