@@ -377,13 +377,13 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
           const prev = present[idx - 1];
           const next = present[idx + 1];
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto', minWidth:0, overflow:'hidden' }}>
               <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
                 style={{ background:'none', border:`1px solid ${prev ? '#334155' : 'transparent'}`, borderRadius:7, color: prev ? '#f1f5f9' : '#334155', fontSize:16, padding:'4px 10px', cursor: prev ? 'pointer' : 'default' }}>‹</button>
               <select onChange={e => onNavigate(e.target.value)} value={patientId}
                 style={{ background:'#111827', border:'1px solid #334155', borderRadius:7, color:'#f1f5f9', fontSize:12, padding:'4px 8px', cursor:'pointer' }}>
                 {present.map(pt => (
-                  <option key={pt.id} value={pt.id}>{pt.initials} — {pt.bedNumber}</option>
+                    <option key={pt.id} value={pt.id}>{pt.initials} — {(computeSlots(service).find(sl => sl.slotIndex === pt.bedNumber) || {}).roomLabel || pt.bedNumber}</option>
                 ))}
               </select>
               <button onClick={() => next && onNavigate(next.id)} disabled={!next}
