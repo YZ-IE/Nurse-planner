@@ -271,6 +271,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   const [allPatients,  setAllPatients]  = useState([]);
 
   const swipeRef = useRef({});
+  const [slideDir, setSlideDir] = useState(null);
   const today = todayStr();
 
   const loadData = useCallback(async () => {
@@ -370,11 +371,21 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
         if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
         const present = allPatients.filter(p => p.present).sort((a,b) => a.bedNumber - b.bedNumber);
         const idx = present.findIndex(p => p.id === patientId);
-        if (dx < 0 && present[idx + 1]) onNavigate(present[idx + 1].id);
-        if (dx > 0 && present[idx - 1]) onNavigate(present[idx - 1].id);
+        if (dx < 0 && present[idx + 1]) {
+          setSlideDir('left');
+          setTimeout(() => { onNavigate(present[idx + 1].id); setSlideDir(null); }, 220);
+        }
+        if (dx > 0 && present[idx - 1]) {
+          setSlideDir('right');
+          setTimeout(() => { onNavigate(present[idx - 1].id); setSlideDir(null); }, 220);
+        }
       }}
     >
-      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideLeft{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-40px)}}
+        @keyframes slideRight{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+      `}</style>
 
       {/* ── Header ── */}
       <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10,15,26,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -433,7 +444,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       </div>
 
       {/* ── Contenu ── */}
-      <div style={{ padding: '16px 16px 90px', animation: 'fadeUp 0.2s ease' }}>
+      <div style={{ padding: '16px 16px 90px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
 
         {/* TAB 0 — SÉJOUR */}
         {activeTab === 0 && (
@@ -597,11 +608,11 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,15,26,0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom, 6px)' }}>
         {TABS.map(t => (
           <button key={t.idx} onClick={() => setActiveTab(t.idx)}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '10px 2px 6px', background: 'none', border: 'none', cursor: 'pointer', color: activeTab === t.idx ? '#818cf8' : T.muted, fontFamily: 'inherit', fontSize: 9, fontWeight: activeTab === t.idx ? 700 : 400, position: 'relative', WebkitTapHighlightColor: 'transparent', transition: 'color 0.15s' }}>
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '12px 2px 10px', background: 'none', border: 'none', cursor: 'pointer', color: activeTab === t.idx ? '#818cf8' : T.muted, fontFamily: 'inherit', fontSize: 11, fontWeight: activeTab === t.idx ? 700 : 400, position: 'relative', WebkitTapHighlightColor: 'transparent', transition: 'color 0.15s' }}>
             {activeTab === t.idx && (
               <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%', height: 2, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: '0 0 2px 2px' }} />
             )}
-            <span style={{ fontSize: 18, lineHeight: 1 }}>{t.label}</span>
+            <span style={{ fontSize: 22, lineHeight: 1 }}>{t.label}</span>
             {t.name}
           </button>
         ))}
