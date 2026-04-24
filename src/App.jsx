@@ -202,13 +202,6 @@ export default function App() {
   const backOverride  = useRef(null);
   const timerRef      = useRef(null);
   const searchRef     = useRef(null);
-  // Refs pour le listener back (évite les stale closures)
-  const activeRef     = useRef(active);
-  const tabRef        = useRef(tab);
-  const handleBackRef = useRef(null);
-
-  useEffect(() => { activeRef.current = active; }, [active]);
-  useEffect(() => { tabRef.current   = tab;    }, [tab]);
 
   const TH = getTheme(isDark);
 
@@ -218,20 +211,21 @@ export default function App() {
     if (meta) meta.setAttribute('content', isDark?'#0D1117':'#F0F3F8');
   }, [isDark, TH.bg]);
 
-  // Listener backButton enregistré UNE SEULE FOIS — lit via refs (jamais stale)
+  // Listener backButton enregistré UNE SEULE FOIS
+  // backOverride.current est TOUJOURS défini quand un module est actif
+  // (ModuleShell/Medicaments enregistrent onBack comme fallback)
   useEffect(() => {
     (async () => {
       try {
         const { App: CapApp } = await import('@capacitor/app');
         await CapApp.addListener('backButton', () => {
-          if (backOverride.current)         { backOverride.current(); return; }
-          if (activeRef.current)            { handleBackRef.current?.(); return; }
-          if (tabRef.current !== 'home')    { setTab('home'); return; }
+          if (backOverride.current) { backOverride.current(); return; }
+          if (tab !== 'home')       { setTab('home'); return; }
           CapApp.exitApp();
         });
       } catch {}
     })();
-  }, []); // deps vides — enregistrement unique
+  }, []); // deps vides — jamais détruit/recréé
 
   function openModule(mod, toolId=null) {
     if (phase!=='idle') return;

@@ -264,11 +264,7 @@ export default function Medicaments({ onBack, onBackOverride }) {
   // Bouton retour Android — ferme la fiche si ouverte
   useEffect(() => {
     if (!onBackOverride) return;
-    if (selected) {
-      onBackOverride(closeMed);
-    } else {
-      onBackOverride(null);
-    }
+    onBackOverride(selected ? closeMed : onBack);
   }, [selected]);
   const [search,   setSearch]   = useState('');
   const [cat,      setCat]      = useState('Tous');

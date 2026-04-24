@@ -77,11 +77,8 @@ export default function ModuleShell({
   // Bouton retour Android — ferme le détail si ouvert, sinon onBack
   useEffect(() => {
     if (!onBackOverride) return;
-    if (tool) {
-      onBackOverride(closeTool);
-    } else {
-      onBackOverride(null);
-    }
+    // tool ouvert → fermer le tool ; sinon → retour home via onBack
+    onBackOverride(tool ? closeTool : onBack);
   }, [tool]);
 
   function openTool(id) {
