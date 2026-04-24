@@ -1,12 +1,9 @@
 import { MedicalDisclaimer } from '../../components/MedicalDisclaimer.jsx';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { T, s } from '../../theme.js';
 
 const C = '#e879f9';
-const DIM = '#1a0a1e';
-
 const CATEGORIES = ['Tous', 'Antalgie', 'Cardio-Vasculaire', 'Sédation', 'Anti-infectieux', 'Diurétique', 'Anticoagulant', 'Endocrinologie'];
-
 const MEDS = [
   {
     id: 'paracetamol',
@@ -258,10 +255,52 @@ const MEDS = [
   },
 ];
 
+const DUR = 280;
+const SLIDE_CSS = `
+  @keyframes meds-in  { from { transform:translateX(100%); opacity:.6; } to { transform:translateX(0); opacity:1; } }
+  @keyframes meds-out { from { transform:translateX(0); opacity:1; } to { transform:translateX(100%); opacity:.6; } }
+  @keyframes meds-lin { from { transform:translateX(-18px) scale(.98); opacity:0; } to { transform:translateX(0) scale(1); opacity:1; } }
+  @keyframes meds-lout{ from { transform:translateX(0) scale(1); opacity:1; } to { transform:translateX(-18px) scale(.98); opacity:0; } }
+  .meds-in   { animation: meds-in  ${DUR}ms cubic-bezier(0.32,.72,0,1) both; }
+  .meds-out  { animation: meds-out ${DUR}ms cubic-bezier(0.32,.72,0,1) both; pointer-events:none; }
+  .meds-lin  { animation: meds-lin ${DUR}ms cubic-bezier(0.32,.72,0,1) both; }
+  .meds-lout { animation: meds-lout ${DUR}ms cubic-bezier(0.32,.72,0,1) both; pointer-events:none; }
+`;
+
 export default function Medicaments({ onBack }) {
   const [selected, setSelected] = useState(null);
   const [search,   setSearch]   = useState('');
   const [cat,      setCat]      = useState('Tous');
+  const [phase,    setPhase]    = useState('idle');
+  const [pending,  setPending]  = useState(null);
+  const timer = useRef(null);
+
+  function openMed(id) {
+    if (phase !== 'idle') return;
+    setPending(id);
+    setPhase('list-exit');
+    timer.current = setTimeout(() => {
+      setSelected(id);
+      setPhase('det-enter');
+      timer.current = setTimeout(() => setPhase('idle'), DUR);
+    }, DUR);
+  }
+
+  function closeMed() {
+    if (phase !== 'idle') return;
+    setPhase('det-exit');
+    timer.current = setTimeout(() => {
+      setSelected(null);
+      setPending(null);
+      setPhase('list-enter');
+      timer.current = setTimeout(() => setPhase('idle'), DUR);
+    }, DUR);
+  }
+
+  const listClass = phase==='list-exit' ? 'meds-lout' : phase==='list-enter' ? 'meds-lin' : '';
+  const detClass  = phase==='det-enter' ? 'meds-in'   : phase==='det-exit'   ? 'meds-out' : '';
+
+  const headerBg = () => T.iaDim;
 
   const filtered = MEDS.filter(m => {
     const matchCat  = cat === 'Tous' || m.categorie === cat;
@@ -273,172 +312,146 @@ export default function Medicaments({ onBack }) {
     return matchCat && matchSearch;
   });
 
-  if (selected) {
-    const med = MEDS.find(m => m.id === selected);
-    return <MedFiche med={med} color={C} onBack={() => setSelected(null)} />;
-  }
+  const med = selected ? MEDS.find(m => m.id === selected) : null;
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg }}>
-      <MedicalDisclaimer level="standard" />
-      {/* Header */}
-      <div style={{ background: DIM, borderBottom: `1px solid ${C}44`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: C, fontSize: 20, cursor: 'pointer' }}>←</button>
-          <div>
-            <div style={{ color: C, fontFamily: 'monospace', fontSize: 10, letterSpacing: 3 }}>MODULE</div>
-            <div style={{ color: T.text, fontWeight: 700, fontSize: 18 }}>💊 Médicaments</div>
-          </div>
-        </div>
-        {/* Recherche */}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted, fontSize: 14 }}>🔍</span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Nom, DCI, spécialité, indication…"
-            style={{ ...s.input, paddingLeft: 32, fontSize: 13 }}
-          />
-        </div>
-        {/* Catégories */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          {CATEGORIES.map(c => (
-            <button key={c} onClick={() => setCat(c)} style={{
-              background: cat === c ? C + '33' : T.surface,
-              border: `1px solid ${cat === c ? C : T.border}`,
-              color: cat === c ? C : T.muted,
-              borderRadius: 20, padding: '4px 12px', fontSize: 11,
-              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'system-ui',
-            }}>{c}</button>
-          ))}
-        </div>
-      </div>
+    <div style={{ position:'fixed', inset:0, overflow:'hidden', background:T.bg, fontFamily:"'DM Sans',system-ui,sans-serif" }}>
+      <style>{SLIDE_CSS}</style>
 
-      {/* Liste */}
-      <div style={{ padding: '12px 14px', paddingBottom: 40 }}>
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', color: T.muted, fontSize: 13, marginTop: 40 }}>Aucun médicament trouvé</div>
-        )}
-        {filtered.map(med => (
-          <div key={med.id} onClick={() => setSelected(med.id)} style={{
-            ...s.card,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 14,
-            borderLeft: `4px solid ${med.color}`,
-          }}>
-            <span style={{ fontSize: 26 }}>{med.icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: med.color, fontWeight: 700, fontSize: 15 }}>{med.name}</span>
-                <span style={{ background: med.color + '22', color: med.color, fontSize: 9, fontFamily: 'monospace', padding: '1px 6px', borderRadius: 8 }}>{med.categorie}</span>
+      {/* ── LISTE ─────────────────────────────────────────────────── */}
+      {(!selected || phase==='list-exit' || phase==='list-enter') && (
+        <div className={listClass} style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
+          <MedicalDisclaimer level="standard" />
+          {/* Header */}
+          <div style={{ background:headerBg(), borderBottom:`1px solid ${C}33`, padding:'14px 16px', flexShrink:0, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+              <button onClick={onBack} style={{ background:'none', border:`1px solid ${C}44`, borderRadius:100, width:38, height:38, color:C, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+              <div>
+                <div style={{ color:C, fontFamily:'monospace', fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:1 }}>MODULE</div>
+                <div style={{ color:T.text, fontWeight:800, fontSize:18, letterSpacing:'-0.3px' }}>💊 Médicaments</div>
               </div>
-              <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>{med.dci}</div>
-              <div style={{ color: T.muted, fontSize: 11 }}>{med.indications.split('·')[0].trim()}</div>
             </div>
-            <span style={{ color: T.muted }}>›</span>
-          </div>
-        ))}
-        <div style={{ marginTop: 16, background: '#1e293b', border: '1px solid #334155', borderRadius: 8, padding: '10px 14px' }}>
-          <div style={{ color: T.muted, fontSize: 11, fontFamily: 'monospace', textAlign: 'center' }}>
-            ⚕️ Ces fiches sont indicatives · Toujours vérifier avec le prescripteur et le référentiel de l'établissement
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MedFiche({ med, color, onBack }) {
-  const C2 = med.color;
-
-  return (
-    <div style={{ minHeight: '100vh', background: T.bg, paddingBottom: 40 }}>
-      {/* Header */}
-      <div style={{ background: DIM, borderBottom: `1px solid ${C2}44`, padding: '12px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: C2, fontSize: 20, cursor: 'pointer' }}>←</button>
-          <div>
-            <div style={{ color: C2, fontWeight: 700, fontSize: 17 }}>{med.icon} {med.name}</div>
-            <div style={{ color: T.muted, fontSize: 11 }}>{med.dci}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: '14px' }}>
-        {/* Spécialités */}
-        <div style={{ ...s.card, background: C2 + '11', borderColor: C2 + '44', marginBottom: 10 }}>
-          <div style={{ color: T.muted, fontSize: 10, fontFamily: 'monospace', letterSpacing: 2, marginBottom: 4 }}>SPÉCIALITÉS</div>
-          <div style={{ color: C2, fontSize: 13, fontWeight: 600 }}>{med.specialites}</div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            <span style={{ ...s.tag(C2), fontSize: 10 }}>{med.classe}</span>
-            <span style={{ ...s.tag('#64748b'), fontSize: 10 }}>{med.categorie}</span>
-          </div>
-        </div>
-
-        {/* Alerte */}
-        {med.alerte && (
-          <div style={{ background: '#450a0a', border: '1px solid #ef444466', borderRadius: 8, padding: '10px 14px', marginBottom: 10 }}>
-            <div style={{ color: '#f87171', fontSize: 12, lineHeight: 1.5 }}>{med.alerte}</div>
-          </div>
-        )}
-
-        {/* Posologies */}
-        <div style={s.card}>
-          <div style={{ color: C2, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 10 }}>POSOLOGIE</div>
-          {med.posologie.map((p, i) => (
-            <div key={i} style={{ paddingBottom: 10, marginBottom: 10, borderBottom: i < med.posologie.length - 1 ? '1px solid #1e293b' : 'none' }}>
-              <div style={{ color: C2, fontWeight: 700, fontSize: 12, marginBottom: 3 }}>{p.pop}</div>
-              <div style={{ color: T.text, fontSize: 13 }}>{p.dose}</div>
-              <div style={{ color: T.muted, fontSize: 11, fontFamily: 'monospace', marginTop: 2 }}>{p.max}</div>
+            <div style={{ position:'relative', marginBottom:10 }}>
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:T.muted, fontSize:14 }}>🔍</span>
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Nom, DCI, spécialité, indication…"
+                style={{ ...s.input, paddingLeft:36, fontSize:13 }} />
             </div>
-          ))}
-        </div>
-
-        {/* Voies */}
-        <div style={{ ...s.card }}>
-          <div style={{ color: C2, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>VOIES D'ADMINISTRATION</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {med.voies.map((v, i) => (
-              <span key={i} style={{ ...s.tag(C2), fontSize: 11 }}>{v}</span>
+            <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
+              {CATEGORIES.map(c => (
+                <button key={c} onClick={() => setCat(c)} style={{
+                  background: cat===c ? C+'33' : T.surface,
+                  border: `1px solid ${cat===c ? C : T.border}`,
+                  color: cat===c ? C : T.muted,
+                  borderRadius:20, padding:'4px 12px', fontSize:11,
+                  cursor:'pointer', whiteSpace:'nowrap', fontFamily:'inherit',
+                  transition:'all 0.15s',
+                }}>{c}</button>
+              ))}
+            </div>
+          </div>
+          {/* Liste */}
+          <div style={{ flex:1, overflowY:'auto', padding:'12px 14px 40px' }}>
+            {filtered.length === 0 && (
+              <div style={{ textAlign:'center', color:T.muted, fontSize:13, marginTop:40 }}>Aucun médicament trouvé</div>
+            )}
+            {filtered.map(m => (
+              <div key={m.id} onClick={() => openMed(m.id)} style={{
+                ...s.card, cursor:'pointer',
+                display:'flex', alignItems:'center', gap:14,
+                borderLeft:`4px solid ${m.color}`,
+                transition:'transform 0.12s', WebkitTapHighlightColor:'transparent',
+              }}>
+                <span style={{ fontSize:26 }}>{m.icon}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <span style={{ color:m.color, fontWeight:700, fontSize:15 }}>{m.name}</span>
+                    <span style={{ background:m.color+'22', color:m.color, fontSize:9, fontFamily:'monospace', padding:'1px 6px', borderRadius:8 }}>{m.categorie}</span>
+                  </div>
+                  <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>{m.dci}</div>
+                  <div style={{ color:T.muted, fontSize:11 }}>{m.indications.split('·')[0].trim()}</div>
+                </div>
+                <span style={{ color:T.muted }}>›</span>
+              </div>
             ))}
-          </div>
-        </div>
-
-        {/* Indications */}
-        <div style={s.card}>
-          <div style={{ color: C2, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>INDICATIONS</div>
-          <div style={{ color: T.text, fontSize: 13, lineHeight: 1.6 }}>{med.indications}</div>
-        </div>
-
-        {/* CI */}
-        <div style={{ ...s.card, borderLeft: '3px solid #ef4444' }}>
-          <div style={{ color: '#ef4444', fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>CONTRE-INDICATIONS</div>
-          <div style={{ color: T.text, fontSize: 13, lineHeight: 1.6 }}>{med.ci}</div>
-        </div>
-
-        {/* Surveillance IDE */}
-        <div style={{ ...s.card, borderLeft: '3px solid #fbbf24' }}>
-          <div style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 10 }}>SURVEILLANCE IDE</div>
-          {med.surveillance.map((item, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 7 }}>
-              <span style={{ color: '#fbbf24', marginTop: 2, flexShrink: 0 }}>→</span>
-              <span style={{ color: T.text, fontSize: 12, lineHeight: 1.5 }}>{item}</span>
+            <div style={{ marginTop:16, background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:'10px 14px' }}>
+              <div style={{ color:T.muted, fontSize:11, fontFamily:'monospace', textAlign:'center' }}>
+                ⚕️ Fiches indicatives · Toujours vérifier avec le prescripteur
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Interactions */}
-        <div style={{ ...s.card, borderLeft: '3px solid #f97316' }}>
-          <div style={{ color: '#f97316', fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>INTERACTIONS PRINCIPALES</div>
-          <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>{med.interactions}</div>
-        </div>
-
-        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, padding: '10px 14px', marginTop: 4 }}>
-          <div style={{ color: T.muted, fontSize: 10, fontFamily: 'monospace', textAlign: 'center' }}>
-            ⚕️ Fiche indicative · Vérifier avec le prescripteur et la fiche technique officielle
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── FICHE DETAIL ──────────────────────────────────────────── */}
+      {selected && med && (
+        <div className={detClass} style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
+          <div style={{ background:headerBg(), borderBottom:`1px solid ${med.color}33`, padding:'12px 16px', flexShrink:0, display:'flex', alignItems:'center', gap:10, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
+            <button onClick={closeMed} style={{ background:'none', border:`1px solid ${med.color}44`, borderRadius:100, width:36, height:36, color:med.color, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+            <div>
+              <div style={{ color:med.color, fontWeight:700, fontSize:17 }}>{med.icon} {med.name}</div>
+              <div style={{ color:T.muted, fontSize:11 }}>{med.dci}</div>
+            </div>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'14px', paddingBottom:40 }}>
+            <div style={{ ...s.card, background:med.color+'11', borderColor:med.color+'44', marginBottom:10 }}>
+              <div style={{ color:T.muted, fontSize:10, fontFamily:'monospace', letterSpacing:2, marginBottom:4 }}>SPÉCIALITÉS</div>
+              <div style={{ color:med.color, fontSize:13, fontWeight:600 }}>{med.specialites}</div>
+              <div style={{ display:'flex', gap:6, marginTop:8, flexWrap:'wrap' }}>
+                <span style={{ ...s.tag(med.color), fontSize:10 }}>{med.classe}</span>
+                <span style={{ ...s.tag('#64748b'), fontSize:10 }}>{med.categorie}</span>
+              </div>
+            </div>
+            {med.alerte && (
+              <div style={{ background:'#450a0a', border:'1px solid #ef444466', borderRadius:8, padding:'10px 14px', marginBottom:10 }}>
+                <div style={{ color:'#f87171', fontSize:12, lineHeight:1.5 }}>{med.alerte}</div>
+              </div>
+            )}
+            <div style={s.card}>
+              <div style={{ color:med.color, fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:10 }}>POSOLOGIE</div>
+              {med.posologie.map((p, i) => (
+                <div key={i} style={{ paddingBottom:10, marginBottom:10, borderBottom: i<med.posologie.length-1 ? `1px solid ${T.border}` : 'none' }}>
+                  <div style={{ color:med.color, fontWeight:700, fontSize:12, marginBottom:3 }}>{p.pop}</div>
+                  <div style={{ color:T.text, fontSize:13 }}>{p.dose}</div>
+                  <div style={{ color:T.muted, fontSize:11, fontFamily:'monospace', marginTop:2 }}>{p.max}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...s.card }}>
+              <div style={{ color:med.color, fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:8 }}>VOIES D'ADMINISTRATION</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {med.voies.map((v,i) => <span key={i} style={{ ...s.tag(med.color), fontSize:11 }}>{v}</span>)}
+              </div>
+            </div>
+            <div style={s.card}>
+              <div style={{ color:med.color, fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:8 }}>INDICATIONS</div>
+              <div style={{ color:T.text, fontSize:13, lineHeight:1.6 }}>{med.indications}</div>
+            </div>
+            <div style={{ ...s.card, borderLeft:'3px solid #ef4444' }}>
+              <div style={{ color:'#ef4444', fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:8 }}>CONTRE-INDICATIONS</div>
+              <div style={{ color:T.text, fontSize:13, lineHeight:1.6 }}>{med.ci}</div>
+            </div>
+            <div style={{ ...s.card, borderLeft:'3px solid #fbbf24' }}>
+              <div style={{ color:'#fbbf24', fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:10 }}>SURVEILLANCE IDE</div>
+              {med.surveillance.map((item,i) => (
+                <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:7 }}>
+                  <span style={{ color:'#fbbf24', marginTop:2, flexShrink:0 }}>→</span>
+                  <span style={{ color:T.text, fontSize:12, lineHeight:1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...s.card, borderLeft:'3px solid #f97316' }}>
+              <div style={{ color:'#f97316', fontFamily:'monospace', fontSize:11, letterSpacing:2, marginBottom:8 }}>INTERACTIONS PRINCIPALES</div>
+              <div style={{ color:T.muted, fontSize:12, lineHeight:1.6 }}>{med.interactions}</div>
+            </div>
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:'10px 14px', marginTop:4 }}>
+              <div style={{ color:T.muted, fontSize:10, fontFamily:'monospace', textAlign:'center' }}>
+                ⚕️ Fiche indicative · Vérifier avec le prescripteur et la fiche technique officielle
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

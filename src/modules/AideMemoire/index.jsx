@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { loadDarkPref, getTheme } from '../../theme.js';
 import { T } from '../../theme.js';
 import { isPinSet, secureGet, secureSet, SEC } from './crypto.js';
 import ConsentScreen, { isConsentGiven } from './ConsentScreen.jsx';
@@ -94,30 +95,44 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   }, [cryptoKey, resetSessionTimer]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  function goTo(screen, extras = {}) { setNav(prev => ({ ...prev, screen, ...extras })); }
+  // ── Navigation avec slide animation ─────────────────────────────────────
+  const [slideClass, setSlideClass] = useState('');
+  const slideTimer = useRef(null);
+  const DUR_SLIDE = 260;
+
+  const SLIDE_CSS = `
+    @keyframes am-in  { from{transform:translateX(100%);opacity:.6} to{transform:translateX(0);opacity:1} }
+    @keyframes am-out { from{transform:translateX(0);opacity:1} to{transform:translateX(-18px) scale(.98);opacity:0} }
+    @keyframes am-bin { from{transform:translateX(-18px) scale(.98);opacity:0} to{transform:translateX(0) scale(1);opacity:1} }
+    @keyframes am-bout{ from{transform:translateX(0) scale(1);opacity:1} to{transform:translateX(100%);opacity:.6} }
+    .am-in  { animation: am-in  ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
+    .am-out { animation: am-out ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
+    .am-bin { animation: am-bin ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
+    .am-bout{ animation: am-bout ${DUR_SLIDE}ms cubic-bezier(0.32,.72,0,1) both; }
+  `;
+
+  function goTo(screen, extras = {}, direction = 'forward') {
+    clearTimeout(slideTimer.current);
+    setSlideClass(direction === 'forward' ? 'am-out' : 'am-bout');
+    slideTimer.current = setTimeout(() => {
+      setNav(prev => ({ ...prev, screen, ...extras }));
+      setSlideClass(direction === 'forward' ? 'am-in' : 'am-bin');
+      slideTimer.current = setTimeout(() => setSlideClass(''), DUR_SLIDE);
+    }, DUR_SLIDE);
+  }
 
   function goBack() {
-    setNav(prev => {
-      switch (prev.screen) {
-        case 'patient':
-        case 'quick':
-        case 'dayoverview':
-        case 'transfer':
-        case 'log':
-          return { ...prev, screen: 'service', refreshKey: prev.refreshKey + 1 };
-        case 'service':
-          return { ...prev, screen: 'services', service: null };
-        case 'services':
-          appendLog('LOGOUT', 'Déconnexion manuelle');
-          setCryptoKey(null);
-          onBack();
-          return INITIAL_NAV;
-        default:
-          setCryptoKey(null);
-          onBack();
-          return INITIAL_NAV;
-      }
-    });
+    const screen = nav.screen;
+    if (screen === 'patient' || screen === 'quick' || screen === 'dayoverview' || screen === 'transfer' || screen === 'log') {
+      goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
+    } else if (screen === 'service') {
+      goTo('services', { service: null }, 'back');
+    } else {
+      appendLog('LOGOUT', 'Déconnexion manuelle');
+      setCryptoKey(null);
+      onBack();
+      setNav(INITIAL_NAV);
+    }
   }
 
   useEffect(() => {
@@ -134,9 +149,17 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   }
 
   // ── Chargement ────────────────────────────────────────────────────────────
-  if (pinExists === null) return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ color: T.muted, fontSize: 14 }}>Chargement…</span>
+  const th = getTheme(loadDarkPref());
+  const screenWrap = (content) => (
+    <div className={slideClass} style={{ position:'fixed', inset:0, overflowY:'auto', background:th.bg }}>
+      <style>{SLIDE_CSS}</style>
+      {content}
+    </div>
+  );
+
+  if (pinExists === null) return screenWrap(
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh' }}>
+      <span style={{ color:th.muted, fontSize:14 }}>Chargement…</span>
     </div>
   );
 
@@ -149,7 +172,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   // ── Consentement (premier lancement uniquement) ───────────────────────────
   if (nav.screen === 'consent') {
-    return (
+    return screenWrap(
       <ConsentScreen onAccepted={() => {
         appendLog('CONSENT', 'Consentement donné');
         goTo('pin');
@@ -159,7 +182,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   // ── PIN / Mot de passe ────────────────────────────────────────────────────
   if (!cryptoKey || nav.screen === 'pin') {
-    return (
+    return screenWrap(
       <PinScreen
         pinExists={pinExists}
         accentColor={ACCENT}
@@ -175,7 +198,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   }
 
   // ── Services ──────────────────────────────────────────────────────────────
-  if (nav.screen === 'services') return (
+  if (nav.screen === 'services') return screenWrap(
     <>{TimeoutBanner}
       <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
         onSelectService={service => goTo('service', { service, patientId: null })}
@@ -184,7 +207,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   );
 
   // ── Vue service ───────────────────────────────────────────────────────────
-  if (nav.screen === 'service' && nav.service) return (
+  if (nav.screen === 'service' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <ServiceView
         service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT}
@@ -200,7 +223,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   );
 
   // ── Fiche patient ─────────────────────────────────────────────────────────
-  if (nav.screen === 'patient' && nav.service && nav.patientId) return (
+  if (nav.screen === 'patient' && nav.service && nav.patientId) return screenWrap(
     <>{TimeoutBanner}
       <PatientSheet patientId={nav.patientId} service={nav.service}
         cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
@@ -209,7 +232,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   );
 
   // ── Saisie rapide ─────────────────────────────────────────────────────────
-  if (nav.screen === 'quick' && nav.service) return (
+  if (nav.screen === 'quick' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
         onNavigate={(pid) => goTo('patient', { patientId: pid })} />
@@ -217,21 +240,21 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   );
 
   // ── Vue du jour ───────────────────────────────────────────────────────────
-  if (nav.screen === 'dayoverview' && nav.service) return (
+  if (nav.screen === 'dayoverview' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} />
     </>
   );
 
   // ── Transfert sécurisé ────────────────────────────────────────────────────
-  if (nav.screen === 'transfer') return (
+  if (nav.screen === 'transfer') return screenWrap(
     <>{TimeoutBanner}
       <SecureTransfer service={nav.service !== '__import__' ? nav.service : null} cryptoKey={cryptoKey} onBack={goBack} />
     </>
   );
 
   // ── Journal d'accès ───────────────────────────────────────────────────────
-  if (nav.screen === 'log') return (
+  if (nav.screen === 'log') return screenWrap(
     <>{TimeoutBanner}
       <AccessLog onBack={goBack} />
     </>

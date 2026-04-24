@@ -521,7 +521,7 @@ export default function ECG({ onBack }) {
       {/* Header */}
       <div style={{background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <button onClick={onBack} style={{background:'none',border:'none',color:ECG_GREEN,fontSize:20,cursor:'pointer'}}>←</button>
+          <button onClick={onBack} style={{background:'none',border:`1px solid ${ECG_GREEN}44`,borderRadius:100,width:36,height:36,color:ECG_GREEN,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
           <div>
             <div style={{fontFamily:'monospace',fontSize:9,color:ECG_GREEN,letterSpacing:3}}>MODULE</div>
             <h1 style={{fontFamily:'monospace',fontSize:17,margin:0,color:'#fff',letterSpacing:1}}>ECG <span style={{color:ECG_GREEN}}>Interactif</span></h1>
