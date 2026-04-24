@@ -103,7 +103,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
     const min = Math.floor(countdown / 60);
     const sec = String(countdown % 60).padStart(2, '0');
     return (
-      <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+      <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
         <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
         <div style={{ color: '#f43f5e', fontSize: 18, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Application verrouillée</div>
@@ -121,7 +121,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
 
   // ── Création ──────────────────────────────────────────────────────────────────
   if (step === 'create') return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
       <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
       <div style={{ color: T.text, fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>Créer votre mot de passe</div>
@@ -180,7 +180,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
 
   // ── Confirmation ──────────────────────────────────────────────────────────────
   if (step === 'confirm') return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
       <button onClick={() => { setStep('create'); setPassword(''); setConfirm(''); setFirstPassword(''); setError(''); }}
         style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
@@ -217,7 +217,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
 
   // ── Vérification ──────────────────────────────────────────────────────────────
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
       <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
       <div style={{ color: T.text, fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>Déverrouiller</div>
