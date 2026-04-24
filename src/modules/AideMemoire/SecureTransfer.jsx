@@ -158,7 +158,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>🔐 Transfert sécurisé</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{service.name} · Strictement local</div>
+            <div style={{ color: T.muted, fontSize: 12 }}>{service ? service.name + " · Strictement local" : "Import uniquement"}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
