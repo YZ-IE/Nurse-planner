@@ -203,14 +203,16 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'patient' && nav.service && nav.patientId) return (
     <>{TimeoutBanner}
       <PatientSheet patientId={nav.patientId} service={nav.service}
-        cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack} />
+        cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+        onNavigate={(pid) => goTo('patient', { patientId: pid })} />
     </>
   );
 
   // ── Saisie rapide ─────────────────────────────────────────────────────────
   if (nav.screen === 'quick' && nav.service) return (
     <>{TimeoutBanner}
-      <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack} />
+      <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+        onNavigate={(pid) => goTo('patient', { patientId: pid })} />
     </>
   );
 

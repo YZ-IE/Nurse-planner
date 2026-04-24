@@ -263,7 +263,7 @@ function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-export default function PatientSheet({ patientId, service, cryptoKey, accentColor, onBack }) {
+export default function PatientSheet({ patientId, service, cryptoKey, accentColor, onBack, onNavigate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -370,6 +370,27 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ color: T.text, fontSize: 20, fontWeight: 800 }}>{patient.initials}</span>
               <span style={{ color: T.muted, fontSize: 14 }}>{patient.gender} · {patient.age}a · Ch.{patient.bedNumber}</span>
+        {/* Navigation patient */}
+        {onNavigate && (() => {
+          const present = allPatients.filter(p => p.present).sort((a,b) => a.bedNumber - b.bedNumber);
+          const idx = present.findIndex(p => p.id === patientId);
+          const prev = present[idx - 1];
+          const next = present[idx + 1];
+          return (
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto' }}>
+              <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
+                style={{ background:'none', border:`1px solid ${prev ? '#334155' : 'transparent'}`, borderRadius:7, color: prev ? '#f1f5f9' : '#334155', fontSize:16, padding:'4px 10px', cursor: prev ? 'pointer' : 'default' }}>‹</button>
+              <select onChange={e => onNavigate(e.target.value)} value={patientId}
+                style={{ background:'#111827', border:'1px solid #334155', borderRadius:7, color:'#f1f5f9', fontSize:12, padding:'4px 8px', cursor:'pointer' }}>
+                {present.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.initials} — {pt.bedNumber}</option>
+                ))}
+              </select>
+              <button onClick={() => next && onNavigate(next.id)} disabled={!next}
+                style={{ background:'none', border:`1px solid ${next ? '#334155' : 'transparent'}`, borderRadius:7, color: next ? '#f1f5f9' : '#334155', fontSize:16, padding:'4px 10px', cursor: next ? 'pointer' : 'default' }}>›</button>
+            </div>
+          );
+        })()}
             </div>
           </div>
           <button onClick={() => setShowEdit(true)}

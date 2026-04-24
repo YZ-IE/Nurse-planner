@@ -218,6 +218,20 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
   allEvents.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   allCare.sort((a, b) => (a.plannedTime || '').localeCompare(b.plannedTime || ''));
 
+  // Groupement par patient
+  function groupByPatient(items) {
+    const map = {};
+    for (const item of items) {
+      const pid = item.patient.id;
+      if (!map[pid]) map[pid] = { patient: item.patient, items: [] };
+      map[pid].items.push(item);
+    }
+    return Object.values(map).sort((a,b) => a.patient.bedNumber - b.patient.bedNumber);
+  }
+  const careByPatient   = groupByPatient(allCare);
+  const eventsByPatient = groupByPatient(allEvents);
+  const rdvByPatient    = groupByPatient(allRdv);
+
   const tabs = [
     { id: 'soins',  label: 'Soins',       emoji: '💊', count: allCare.length   },
     { id: 'events', label: 'Événements',  emoji: '📝', count: allEvents.length  },
@@ -268,46 +282,49 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
         {tab === 'soins' && (
           allCare.length === 0 ? <Empty text="Aucun soin programmé aujourd'hui" /> : (
             <div>
-              {allCare.map((entry, i) => {
-                const { emoji, color } = careMeta(entry.type);
-                return (
-                  <div key={entry.id || i} style={{
-                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                    background: T.surface, border: `1px solid ${entry.done ? T.border : color + '44'}`,
-                    borderLeft: `3px solid ${entry.done ? '#22c55e' : color}`,
-                    borderRadius: 9, padding: '10px 12px', marginBottom: 8,
-                    opacity: entry.done ? 0.7 : 1,
-                  }}>
-                    {/* Bouton cocher/décocher */}
-                    <button
-                      onClick={() => entry.done ? handleUndo(entry.patient.id, entry.id) : setValidating(entry)}
-                      style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, marginTop: 1, border: `2px solid ${entry.done ? '#22c55e' : color}`, background: entry.done ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, WebkitTapHighlightColor: 'transparent' }}>
-                      {entry.done ? '✓' : ''}
-                    </button>
-                    <div style={{ textAlign: 'center', minWidth: 36, flexShrink: 0 }}>
-                      <div style={{ color: color, fontSize: 12, fontWeight: 700 }}>{entry.plannedTime}</div>
-                      <div style={{ fontSize: 18 }}>{emoji}</div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ color: T.text, fontSize: 13, fontWeight: 600, textDecoration: entry.done ? 'line-through' : 'none' }}>
-                          {entry.label}
-                        </span>
-                        {entry.done && <span style={{ color: '#22c55e', fontSize: 11 }}>✓ {entry.doneTime}</span>}
-                      </div>
-                      {entry.doneValue && (
-                        <span style={{ background: '#22c55e22', color: '#22c55e', fontSize: 11, borderRadius: 4, padding: '1px 7px', fontWeight: 700 }}>
-                          {entry.doneValue}
-                        </span>
-                      )}
-                      <div style={{ marginTop: 4, display: 'flex', gap: 5, alignItems: 'center' }}>
-                        <span style={{ color: sp.color, fontSize: 11, fontWeight: 700 }}>{slotDisplay(service, entry.patient.bedNumber)}</span>
-                        <span style={{ color: T.muted, fontSize: 11 }}>· {entry.patient.initials} {entry.patient.gender} {entry.patient.age}a</span>
-                      </div>
-                    </div>
+              {careByPatient.map(({ patient: pt, items }) => (
+                <div key={pt.id} style={{ marginBottom: 16 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, padding:'6px 10px', background:'#6366f111', borderRadius:8 }}>
+                    <span style={{ color:'#6366f1', fontWeight:700, fontSize:13 }}>{pt.initials}</span>
+                    <span style={{ color:T.muted, fontSize:12 }}>{slotDisplay(service, pt.bedNumber)}</span>
                   </div>
-                );
-              })}
+                  {items.map((entry, i) => {
+                    const { emoji, color } = careMeta(entry.type);
+                    return (
+                      <div key={entry.id || i} style={{
+                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                        background: T.surface, border: `1px solid ${entry.done ? T.border : color + '44'}`,
+                        borderLeft: `3px solid ${entry.done ? '#22c55e' : color}`,
+                        borderRadius: 9, padding: '10px 12px', marginBottom: 8,
+                        opacity: entry.done ? 0.7 : 1,
+                      }}>
+                        <button
+                          onClick={() => entry.done ? handleUndo(entry.patient.id, entry.id) : setValidating(entry)}
+                          style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, marginTop: 1, border: `2px solid ${entry.done ? '#22c55e' : color}`, background: entry.done ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, WebkitTapHighlightColor: 'transparent' }}>
+                          {entry.done ? '✓' : ''}
+                        </button>
+                        <div style={{ textAlign: 'center', minWidth: 36, flexShrink: 0 }}>
+                          <div style={{ color: color, fontSize: 12, fontWeight: 700 }}>{entry.plannedTime}</div>
+                          <div style={{ fontSize: 18 }}>{emoji}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ color: T.text, fontSize: 13, fontWeight: 600, textDecoration: entry.done ? 'line-through' : 'none' }}>
+                              {entry.label}
+                            </span>
+                            {entry.done && <span style={{ color: '#22c55e', fontSize: 11 }}>✓ {entry.doneTime}</span>}
+                          </div>
+                          {entry.doneValue && (
+                            <span style={{ background: '#22c55e22', color: '#22c55e', fontSize: 11, borderRadius: 4, padding: '1px 7px', fontWeight: 700 }}>
+                              {entry.doneValue}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )
         )}
