@@ -138,6 +138,7 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
   const [dailyData, setDailyData] = useState({});
   const [loading,   setLoading]   = useState(true);
   const [tab,       setTab]       = useState('soins');
+  const [groupMode,  setGroupMode]  = useState('patient'); // 'patient' | 'chrono'
   const [validating,setValidating]= useState(null); // entry en cours de validation
 
   const loadData = useCallback(async () => {
@@ -273,6 +274,14 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
             </button>
           ))}
         </div>
+        {tab === 'soins' && (
+          <div style={{ display:'flex', justifyContent:'flex-end', padding:'4px 16px 8px' }}>
+            <button onClick={() => setGroupMode(m => m === 'patient' ? 'chrono' : 'patient')}
+              style={{ background:'#6366f122', border:'1px solid #6366f144', borderRadius:20, color:'#818cf8', fontSize:11, fontWeight:700, padding:'4px 12px', cursor:'pointer' }}>
+              {groupMode === 'patient' ? '🕐 Chrono' : '👤 Patients'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Contenu */}
@@ -282,7 +291,16 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
         {tab === 'soins' && (
           allCare.length === 0 ? <Empty text="Aucun soin programmé aujourd'hui" /> : (
             <div>
-              {careByPatient.map(({ patient: pt, items }) => (
+              {groupMode === 'chrono' ? allCare.map((entry, i) => {
+                  const { emoji, color } = careMeta(entry.type);
+                  return (
+                    <div key={entry.id || i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:T.surface, border:`1px solid ${entry.done ? T.border : color+'44'}`, borderLeft:`3px solid ${entry.done ? '#22c55e' : color}`, borderRadius:9, padding:'10px 12px', marginBottom:8, opacity:entry.done?0.7:1 }}>
+                      <button onClick={() => entry.done ? handleUndo(entry.patient.id, entry.id) : setValidating(entry)} style={{ width:26, height:26, borderRadius:7, flexShrink:0, marginTop:1, border:`2px solid ${entry.done?'#22c55e':color}`, background:entry.done?'#22c55e':'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:13 }}>{entry.done?'✓':''}</button>
+                      <div style={{ textAlign:'center', minWidth:36, flexShrink:0 }}><div style={{ color:color, fontSize:12, fontWeight:700 }}>{entry.plannedTime}</div><div style={{ fontSize:18 }}>{emoji}</div></div>
+                      <div style={{ flex:1, minWidth:0 }}><div style={{ color:T.text, fontSize:13, fontWeight:600, textDecoration:entry.done?'line-through':'none' }}>{entry.label}</div>{entry.doneValue&&<span style={{ background:'#22c55e22', color:'#22c55e', fontSize:11, borderRadius:4, padding:'1px 7px' }}>{entry.doneValue}</span>}<div style={{ marginTop:4, display:'flex', gap:5 }}><span style={{ color:'#6366f1', fontSize:11, fontWeight:700 }}>{slotDisplay(service, entry.patient.bedNumber)}</span><span style={{ color:T.muted, fontSize:11 }}>· {entry.patient.initials}</span></div></div>
+                    </div>
+                  );
+                }) : careByPatient.map(({ patient: pt, items }) => (
                 <div key={pt.id} style={{ marginBottom: 16 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, padding:'6px 10px', background:'#6366f111', borderRadius:8 }}>
                     <span style={{ color:'#6366f1', fontWeight:700, fontSize:13 }}>{pt.initials}</span>
