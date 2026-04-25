@@ -80,10 +80,13 @@ export default function ModuleShell({
   // Nettoyage de tous les timers au démontage
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  // Bouton retour Android — ferme le détail si ouvert, sinon onBack
+  // Bouton retour Android — lambda inline (pas de stale closure sur phase)
   useEffect(() => {
     if (!onBackOverride) return;
-    onBackOverride(tool ? closeTool : onBack);
+    onBackOverride(tool
+      ? () => { setTool(null); setPhase('idle'); }  // ferme le détail directement
+      : onBack
+    );
   }, [tool]);
 
   function openTool(id) {
