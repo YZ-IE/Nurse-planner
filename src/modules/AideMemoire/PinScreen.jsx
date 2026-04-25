@@ -52,8 +52,9 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   const [locked,    setLocked]    = useState(() => isLockedOut());
   const [countdown, setCountdown] = useState(() => getLockoutRemaining());
   const [failures,  setFailures]  = useState(() => getFailures());
-  const [pendingKey, setPendingKey] = useState(null);
-  const [bioBusy,    setBioBusy]    = useState(false);
+  const [pendingKey,   setPendingKey]   = useState(null);
+  const [bioBusy,      setBioBusy]      = useState(false);
+  const [showBioSetup, setShowBioSetup] = useState(false);
 
   const inputRef = useRef(null);
 
@@ -126,6 +127,16 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
       }
     } catch (e) { setError('Erreur inattendue'); setPassword(''); console.error(e); }
     finally { setLoading(false); }
+  }
+
+  // ── Setup biométrie — activation depuis écran verify ─────────────────────────
+  if (showBioSetup) {
+    return (
+      <BiometricSetup
+        pin=""
+        onDone={() => { setShowBioSetup(false); }}
+      />
+    );
   }
 
   // ── Setup biométrie après création PIN ───────────────────────────────────────
