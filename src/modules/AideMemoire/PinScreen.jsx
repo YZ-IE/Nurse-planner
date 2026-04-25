@@ -133,8 +133,8 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   if (showBioSetup) {
     return (
       <BiometricSetup
-        pin=""
-        onDone={() => { setShowBioSetup(false); }}
+        pin={password}
+        onDone={() => { setShowBioSetup(false); setPassword(''); }}
       />
     );
   }
@@ -308,6 +308,23 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
         <div style={{ color: T.muted, fontSize: 11, marginTop: 20, textAlign: 'center' }}>
           Mot de passe oublié ? Désinstallez et réinstallez l'application.
         </div>
+
+        {!isBiometricEnabled() && (
+          <button
+            onClick={() => setShowBioSetup(true)}
+            style={{ marginTop: 12, background: 'none', border: `1px solid ${C}44`, borderRadius: 10, color: C, fontSize: 13, cursor: 'pointer', padding: '10px 20px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            👆 Activer la biométrie
+          </button>
+        )}
+
+        {isBiometricEnabled() && (
+          <button
+            onClick={tryBiometric}
+            disabled={bioBusy}
+            style={{ marginTop: 12, background: 'none', border: `1px solid ${C}44`, borderRadius: 10, color: C, fontSize: 13, cursor: 'pointer', padding: '10px 20px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            👆 {bioBusy ? 'Vérification…' : 'Utiliser la biométrie'}
+          </button>
+        )}
       </div>
 
       <div style={{ color: T.muted, fontSize: 11, marginTop: 32, textAlign: 'center' }}>
