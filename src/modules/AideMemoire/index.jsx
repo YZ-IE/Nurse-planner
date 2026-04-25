@@ -143,7 +143,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <div
       key={nav.screen}
       className={slideDir === 'forward' ? 'am-forward' : 'am-back'}
-      style={{ position:'fixed', inset:0, overflow:'hidden', background:th.bg }}
+      style={{ position:'fixed', inset:0, background:th.bg }}
     >
       <style>{SLIDE_CSS}</style>
       {content}

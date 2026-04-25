@@ -11,7 +11,7 @@ const CATEGORIES = [
   { id: 'soin',   label: 'Soins techniques',           color: '#3b82f6', icon: '🩺' },
   { id: 'nursing',label: 'Nursing & Confort',          color: '#22c55e', icon: '🛁' },
   { id: 'admin',  label: 'Administratif & Liaison',   color: '#a78bfa', icon: '📋' },
-  { id: 'autre',  label: 'Autre',                     color: '#64748b', icon: '📌' },
+  { id: 'autre',  label: 'Autre',                     color: T.muted, icon: '📌' },
 ];
 
 const HEURES = ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00'];
@@ -87,7 +87,7 @@ export default function PlanningJournee() {
   return (
     <div style={{ padding: '14px' }}>
       {/* En-tête */}
-      <div style={{ ...s.card, background: '#052e16' }}>
+      <div style={{ ...s.card, background: T.orgaDim }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ color: C, fontWeight: 700, marginBottom: 2 }}>Planning de la journée</div>
@@ -102,7 +102,7 @@ export default function PlanningJournee() {
           </div>
         </div>
         {taches.length > 0 && (
-          <div style={{ marginTop: 10, background: '#0f172a', borderRadius: 6, height: 6, overflow: 'hidden' }}>
+          <div style={{ marginTop: 10, background: T.bg, borderRadius: 6, height: 6, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, background: C, borderRadius: 6, transition: 'width 0.4s' }} />
           </div>
         )}
@@ -164,7 +164,7 @@ export default function PlanningJournee() {
             ...CATEGORIES.map(c => ({ id: c.id, label: c.icon + ' ' + c.label.split(' ')[0] }))
           ].map(f => (
             <button key={f.id} onClick={() => setFiltre(f.id)}
-              style={{ ...s.btn(filtre === f.id ? C : '#334155'), padding: '5px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+              style={{ ...s.btn(filtre === f.id ? C : T.border), padding: '5px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
               {f.label}
             </button>
           ))}
@@ -184,7 +184,7 @@ export default function PlanningJournee() {
         return (
           <div key={t.id} style={{
             ...s.card,
-            borderLeft: `3px solid ${t.done ? '#334155' : t.priorite ? '#ef4444' : cat.color}`,
+            borderLeft: `3px solid ${t.done ? T.border : t.priorite ? '#ef4444' : cat.color}`,
             opacity: t.done ? 0.55 : 1,
             transition: 'opacity 0.2s',
           }}>
@@ -205,7 +205,7 @@ export default function PlanningJournee() {
                     {t.heure}{passee && ' ⚠️'}
                   </span>
                   {t.patient && (
-                    <span style={{ color: T.muted, fontSize: 11, background: '#1e293b', padding: '1px 6px', borderRadius: 4 }}>
+                    <span style={{ color: T.muted, fontSize: 11, background: T.surface, padding: '1px 6px', borderRadius: 4 }}>
                       {t.patient}
                     </span>
                   )}
@@ -218,7 +218,7 @@ export default function PlanningJournee() {
                 <div style={{ color: T.muted, fontSize: 10, marginTop: 3 }}>{cat.label}</div>
               </div>
               <button onClick={() => suppr(t.id)} style={{
-                background: 'none', border: '1px solid #334155', color: '#64748b',
+                background: 'none', border: '1px solid #334155', color: T.muted,
                 borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', flexShrink: 0,
               }}>✕</button>
             </div>
@@ -226,7 +226,7 @@ export default function PlanningJournee() {
         );
       })}
 
-      <div style={{ color: '#334155', fontSize: 10, textAlign: 'center', marginTop: 16 }}>
+      <div style={{ color: T.border, fontSize: 10, textAlign: 'center', marginTop: 16 }}>
         Planning réinitialisé automatiquement chaque jour · Stockage local
       </div>
     </div>

@@ -89,7 +89,7 @@ export default function KTA() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: '#0c1a2e', borderLeft: `4px solid ${RED}` }}>
+      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${RED}` }}>
         <div style={{ color: RED, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
           🔴 KTA — Cathéter Artériel (PAI)
         </div>
@@ -99,7 +99,7 @@ export default function KTA() {
       </div>
 
       {/* Test d'Allen */}
-      <div style={{ ...s.card, background: '#0c1a2e', borderLeft: `3px solid ${C}`, marginBottom: 12 }}>
+      <div style={{ ...s.card, background: T.surface2, borderLeft: `3px solid ${C}`, marginBottom: 12 }}>
         <div style={{ color: C, fontWeight: 700, marginBottom: 8 }}>🖐️ Test d'Allen — Pré-ponction radiale</div>
         {TEST_ALLEN.map((t, i) => (
           <div key={i} style={{ display: 'flex', gap: 10, padding: '3px 0', color: T.text, fontSize: 12 }}>
@@ -122,7 +122,7 @@ export default function KTA() {
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {Object.entries(CONTENU).map(([id, val]) => (
           <button key={id} onClick={() => setOpen(id)}
-            style={{ ...s.btn(open === id ? val.color : '#334155'), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            style={{ ...s.btn(open === id ? val.color : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {val.label}
           </button>
         ))}

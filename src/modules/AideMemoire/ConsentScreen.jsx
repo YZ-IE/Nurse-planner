@@ -101,12 +101,12 @@ export default function ConsentScreen({ onAccepted }) {
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* Header */}
-      <div style={{ background: '#0c1a2e', padding: '20px 16px 16px', borderBottom: '1px solid #1e3a5f' }}>
+      <div style={{ background: T.surface2, padding: '20px 16px 16px', borderBottom: '1px solid #1e3a5f' }}>
         <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 10 }}>📋</div>
-        <div style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, textAlign: 'center', marginBottom: 4 }}>
+        <div style={{ color: T.text, fontSize: 18, fontWeight: 700, textAlign: 'center', marginBottom: 4 }}>
           Informations légales
         </div>
-        <div style={{ color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ color: T.muted, fontSize: 12, textAlign: 'center', lineHeight: 1.5 }}>
           À lire avant d'utiliser InfirmierPro · RGPD art. 13
         </div>
       </div>
@@ -114,11 +114,11 @@ export default function ConsentScreen({ onAccepted }) {
       <div style={{ padding: '16px 16px 120px' }}>
 
         {/* Bandeau intro */}
-        <div style={{ background: '#1e3a5f', border: '1px solid #2563eb44', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+        <div style={{ background: T.border, border: '1px solid #2563eb44', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
           <div style={{ color: '#60a5fa', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
             Notice d'information — Traitement de données de santé
           </div>
-          <div style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
             InfirmierPro traite des données de santé à caractère personnel. Conformément au RGPD (art. 13), vous devez être informé des conditions de ce traitement avant toute utilisation.
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function ConsentScreen({ onAccepted }) {
               <span style={{ color: T.muted, fontSize: 16, flexShrink: 0 }}>{expanded === i ? '▲' : '▼'}</span>
             </button>
             {expanded === i && (
-              <div style={{ padding: '0 14px 14px 42px', color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ padding: '0 14px 14px 42px', color: T.muted, fontSize: 13, lineHeight: 1.6 }}>
                 {sec.content}
               </div>
             )}
@@ -143,8 +143,8 @@ export default function ConsentScreen({ onAccepted }) {
         ))}
 
         {/* Références légales */}
-        <div style={{ background: '#0a0f1a', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
-          <div style={{ color: '#64748b', fontSize: 11, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 6 }}>RÉFÉRENCES LÉGALES</div>
+        <div style={{ background: T.bg, border: '1px solid #1e293b', borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
+          <div style={{ color: T.muted, fontSize: 11, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 6 }}>RÉFÉRENCES LÉGALES</div>
           {[
             'RGPD (UE) 2016/679 — art. 6, 9, 13, 15-17, 20, 25, 32, 33-34, 77',
             'Loi Informatique et Libertés n°78-17',
@@ -183,14 +183,14 @@ export default function ConsentScreen({ onAccepted }) {
                 style={{
                   width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
                   background: checked ? ACCENT : 'transparent',
-                  border: `2px solid ${checked ? ACCENT : '#334155'}`,
+                  border: `2px solid ${checked ? ACCENT : T.border}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
                 {checked && <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✓</span>}
               </div>
-              <span style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.5 }}>{text}</span>
+              <span style={{ color: T.muted, fontSize: 13, lineHeight: 1.5 }}>{text}</span>
             </label>
           ))}
         </div>
@@ -200,7 +200,7 @@ export default function ConsentScreen({ onAccepted }) {
           onClick={handleAccept}
           disabled={!canProceed}
           style={{
-            ...s.btn(canProceed ? ACCENT : '#334155'),
+            ...s.btn(canProceed ? ACCENT : T.border),
             width: '100%', padding: '14px',
             fontSize: 15, fontWeight: 700,
             opacity: canProceed ? 1 : 0.45,
@@ -210,7 +210,7 @@ export default function ConsentScreen({ onAccepted }) {
           {canProceed ? '✅ Accepter et continuer' : 'Cochez les 3 cases pour continuer'}
         </button>
 
-        <div style={{ color: '#334155', fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+        <div style={{ color: T.border, fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
           Ce consentement est enregistré localement sur votre appareil.{'\n'}
           Version 2 · {new Date().toLocaleDateString('fr-FR')}
         </div>

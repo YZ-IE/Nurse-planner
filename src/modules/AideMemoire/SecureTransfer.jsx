@@ -156,7 +156,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
     } finally { setBusy(false); }
   }
 
-  const card = { background: '#111827', border: '1px solid #1e293b', borderRadius: 12, padding: '14px' };
+  const card = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px' };
 
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
@@ -183,7 +183,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
       <div style={{ padding: '16px 16px 60px' }}>
 
         {/* Info sécurité */}
-        <div style={{ background: '#0c1a2e', border: '1px solid #1e3a5f', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+        <div style={{ background: T.surface2, border: '1px solid #1e3a5f', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
           <div style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>🔒 Protocole de sécurité</div>
           <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.5 }}>
             AES-256-GCM · PBKDF2 100k · Code vocal séparé · Zéro réseau
@@ -218,7 +218,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
 
             {blob && (
               <>
-                <div style={{ background: '#052e16', border: '1px solid #22c55e44', borderRadius: 12, padding: '16px', marginBottom: 16, textAlign: 'center' }}>
+                <div style={{ background: T.orgaDim, border: '1px solid #22c55e44', borderRadius: 12, padding: '16px', marginBottom: 16, textAlign: 'center' }}>
                   <div style={{ color: '#22c55e', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
                     🔑 Code secret — à dire verbalement à votre collègue
                   </div>
@@ -304,7 +304,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
         {/* ── Prévisualisation ── */}
         {tab === 'import' && preview && (
           <>
-            <div style={{ background: '#052e16', border: '1px solid #22c55e44', borderRadius: 12, padding: '14px', marginBottom: 16 }}>
+            <div style={{ background: T.orgaDim, border: '1px solid #22c55e44', borderRadius: 12, padding: '14px', marginBottom: 16 }}>
               <div style={{ color: '#22c55e', fontSize: 13, fontWeight: 700, marginBottom: 10 }}>✅ Déchiffrement réussi — Aperçu</div>
 
               <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>

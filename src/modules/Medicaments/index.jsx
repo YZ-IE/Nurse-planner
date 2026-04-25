@@ -261,13 +261,15 @@ const MEDS = [
 export default function Medicaments({ onBack, onBackOverride }) {
   const [selected, setSelected] = useState(null);
 
-  // Bouton retour Android — ferme la fiche si ouverte
-  useEffect(() => {
-    if (!onBackOverride) return;
-    onBackOverride(selected ? closeMed : onBack);
-  }, [selected]);
+
   const [search,   setSearch]   = useState('');
   const [cat,      setCat]      = useState('Tous');
+
+  // Bouton retour Android — inline pour éviter ref avant définition
+  useEffect(() => {
+    if (!onBackOverride) return;
+    onBackOverride(selected ? () => setSelected(null) : onBack);
+  }, [selected]);
 
   const filtered = MEDS.filter(m => {
     const matchCat  = cat === 'Tous' || m.categorie === cat;
@@ -285,10 +287,10 @@ export default function Medicaments({ onBack, onBackOverride }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg }}>
+    <div style={{ position: 'fixed', inset: 0, background: T.bg, display: 'flex', flexDirection: 'column' }}>
       <MedicalDisclaimer level="standard" />
       {/* Header */}
-      <div style={{ background: DIM, borderBottom: `1px solid ${C}44`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ background: DIM, borderBottom: `1px solid ${C}44`, padding: '14px 16px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: C, fontSize: 20, cursor: 'pointer' }}>←</button>
           <div>
@@ -358,9 +360,9 @@ function MedFiche({ med, color, onBack }) {
   const C2 = med.color;
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, paddingBottom: 40 }}>
+    <div style={{ position: 'fixed', inset: 0, background: T.bg, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ background: DIM, borderBottom: `1px solid ${C2}44`, padding: '12px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ background: DIM, borderBottom: `1px solid ${C2}44`, padding: '12px 16px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: C2, fontSize: 20, cursor: 'pointer' }}>←</button>
           <div>

@@ -19,7 +19,7 @@ const SECTIONS_PAC = [
             { label: 'Accès', val: 'Aiguille Huber UNIQUEMENT' },
             { label: 'Rinçage min.', val: '1×/mois si non utilisé' },
           ].map((i, idx) => (
-            <div key={idx} style={{ background: '#0f172a', borderRadius: 8, padding: '8px 10px' }}>
+            <div key={idx} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
               <div style={{ color: T?.muted, fontSize: 10, fontFamily: 'monospace' }}>{i.label}</div>
               <div style={{ color: C, fontWeight: 600, fontSize: 12, marginTop: 2 }}>{i.val}</div>
             </div>
@@ -97,7 +97,7 @@ export default function PAC() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: '#0c1a2e', borderLeft: `4px solid ${C}` }}>
+      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${C}` }}>
         <div style={{ color: C, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
           🔵 Port-à-Cathéter (PAC) — Chambre implantable
         </div>
@@ -123,7 +123,7 @@ export default function PAC() {
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setOpen(t.id)}
-            style={{ ...s.btn(open === t.id ? C : '#334155'), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            style={{ ...s.btn(open === t.id ? C : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {t.label}
           </button>
         ))}

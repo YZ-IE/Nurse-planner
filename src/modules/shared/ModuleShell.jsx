@@ -70,34 +70,39 @@ export default function ModuleShell({
 }) {
   const [tool,  setTool]  = useState(initialTool);
   const [phase, setPhase] = useState('idle');
-  const timer = useRef(null);
+  const timers = useRef([]);
+  const addTimer = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timers.current.push(id);
+    return id;
+  };
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  // Nettoyage de tous les timers au démontage
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   // Bouton retour Android — ferme le détail si ouvert, sinon onBack
   useEffect(() => {
     if (!onBackOverride) return;
-    // tool ouvert → fermer le tool ; sinon → retour home via onBack
     onBackOverride(tool ? closeTool : onBack);
   }, [tool]);
 
   function openTool(id) {
     if (phase !== 'idle') return;
     setPhase('list-exit');
-    timer.current = setTimeout(() => {
+    addTimer(() => {
       setTool(id);
       setPhase('det-enter');
-      timer.current = setTimeout(() => setPhase('idle'), DUR);
+      addTimer(() => setPhase('idle'), DUR);
     }, DUR);
   }
 
   function closeTool() {
     if (phase !== 'idle') return;
     setPhase('det-exit');
-    timer.current = setTimeout(() => {
+    addTimer(() => {
       setTool(null);
       setPhase('list-enter');
-      timer.current = setTimeout(() => setPhase('idle'), DUR);
+      addTimer(() => setPhase('idle'), DUR);
     }, DUR);
   }
 

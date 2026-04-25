@@ -24,7 +24,7 @@ const TYPES = [
       'Signes hémorragiques (anticoagulation)',
       'Malaise, crampes, nausées (syndrome de déséquilibre)',
     ],
-    bgColor: '#0c1829',
+    bgColor: T.soinsDim,
   },
   {
     id: 'dp',
@@ -46,7 +46,7 @@ const TYPES = [
       'Signes de péritonite : douleur abdo, fièvre, dialysat trouble',
       'Glycémie (glucose absorbé par le péritoine)',
     ],
-    bgColor: '#052e16',
+    bgColor: T.orgaDim,
   },
   {
     id: 'epure',
@@ -70,7 +70,7 @@ const TYPES = [
       'Kaliémie, calcémie fréquentes (correction électrolytes)',
       'T° patient (hypothermie possible)',
     ],
-    bgColor: '#1c1507',
+    bgColor: T.surface2,
   },
 ];
 
@@ -99,7 +99,7 @@ export default function Dialyse() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: '#0c1a2e', borderLeft: `4px solid ${C}` }}>
+      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${C}` }}>
         <div style={{ color: C, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
           🫀 Dialyse — Principes généraux
         </div>
@@ -112,7 +112,7 @@ export default function Dialyse() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
         {TYPES.map(t => (
           <button key={t.id} onClick={() => { setTypeOpen(t.id); setSection('principes'); }}
-            style={{ ...s.btn(typeOpen === t.id ? t.color : '#334155'), flex: 1, padding: '10px 6px', fontSize: 12, minWidth: 90 }}>
+            style={{ ...s.btn(typeOpen === t.id ? t.color : T.border), flex: 1, padding: '10px 6px', fontSize: 12, minWidth: 90 }}>
             {t.icon} {t.abrev}
           </button>
         ))}
@@ -135,7 +135,7 @@ export default function Dialyse() {
           { id: 'surveillance', label: '👁️ Surveillance' },
         ].map(t => (
           <button key={t.id} onClick={() => setSection(t.id)}
-            style={{ ...s.btn(section === t.id ? data.color : '#334155'), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            style={{ ...s.btn(section === t.id ? data.color : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {t.label}
           </button>
         ))}

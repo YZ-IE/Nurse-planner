@@ -6,8 +6,19 @@
 const KEY = 'fav_tools';
 
 export function loadFavs() {
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
-  catch { return []; }
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) || '[]');
+    // Valider la structure — évite les crashes si le format a changé
+    if (!Array.isArray(data)) return [];
+    return data.filter(f =>
+      f && typeof f === 'object' &&
+      typeof f.mod    === 'string' &&
+      typeof f.toolId === 'string' &&
+      typeof f.label  === 'string' &&
+      typeof f.icon   === 'string' &&
+      typeof f.color  === 'string'
+    );
+  } catch { return []; }
 }
 
 export function saveFavs(favs) {

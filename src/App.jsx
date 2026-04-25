@@ -262,7 +262,7 @@ export default function App() {
     const p = { onBack:()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }, initialTool, onFavChange:handleFavChange, onBackOverride:fn=>{backOverride.current=fn;} };
     switch(active) {
       case 'urg':     return <Urgences     {...p}/>;
-      case 'ecg':     return <ECG          onBack={()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }}/>;
+      case 'ecg':     return <ECG          onBack={()=>{ setActive(null); setInitialTool(null); setPhase('idle'); }} onBackOverride={p.onBackOverride}/>;
       case 'soins':   return <Soins        {...p}/>;
       case 'orga':    return <Organisation {...p}/>;
       case 'form':    return <Formation    {...p}/>;

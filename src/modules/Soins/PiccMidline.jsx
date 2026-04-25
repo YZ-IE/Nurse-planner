@@ -45,7 +45,7 @@ const SECTIONS = [
       'Clampages selon protocole',
       'Changement bouchon Luer-lock stérile à chaque déconnexion',
     ],
-    bgColor: '#052e16',
+    bgColor: T.orgaDim,
   },
   {
     id: 'piccline',
@@ -94,7 +94,7 @@ const SECTIONS = [
       'Ne jamais forcer si résistance — risque d\'embolie cathéter',
       'Clamp fermé lors des déconnexions',
     ],
-    bgColor: '#0c1a2e',
+    bgColor: T.surface2,
   },
 ];
 
@@ -129,7 +129,7 @@ export default function PiccMidline() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         {SECTIONS.map(sec => (
           <button key={sec.id} onClick={() => { setActive(sec.id); setSectionOpen('def'); }}
-            style={{ ...s.btn(active === sec.id ? sec.color : '#334155'), flex: 1, padding: '12px 8px', fontSize: 13 }}>
+            style={{ ...s.btn(active === sec.id ? sec.color : T.border), flex: 1, padding: '12px 8px', fontSize: 13 }}>
             {sec.icon} {sec.label}
           </button>
         ))}
@@ -148,7 +148,7 @@ export default function PiccMidline() {
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 10 }}>
         {sections.map(sec => (
           <button key={sec.id} onClick={() => setSectionOpen(sectionOpen === sec.id ? null : sec.id)}
-            style={{ ...s.btn(sectionOpen === sec.id ? data.color : '#334155'), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            style={{ ...s.btn(sectionOpen === sec.id ? data.color : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {sec.label}
           </button>
         ))}
@@ -167,7 +167,7 @@ export default function PiccMidline() {
       )}
 
       {sectionOpen === 'ci' && (
-        <div style={{ ...s.card, background: '#1c0a07', borderLeft: '3px solid #ef4444' }}>
+        <div style={{ ...s.card, background: T.urgDim, borderLeft: '3px solid #ef4444' }}>
           <div style={{ color: '#ef4444', fontWeight: 700, marginBottom: 8 }}>❌ Contre-indications</div>
           {data.ci.map((c, idx) => (
             <div key={idx} style={{ color: T.text, fontSize: 13, padding: '4px 0', borderBottom: idx < data.ci.length-1 ? `1px solid #2d1a1a` : 'none' }}>

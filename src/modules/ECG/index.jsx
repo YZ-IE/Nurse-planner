@@ -209,8 +209,7 @@ function EcgModal({ rhythm, onClose }) {
 
   useEffect(() => {
     // Bloquer le scroll du body
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    // position:fixed gère le scroll — pas besoin de bloquer body
   }, []);
 
   const p = PRIORITY_CFG[rhythm.nursing?.priority] || PRIORITY_CFG.routine;
@@ -510,16 +509,22 @@ const TABS = [
   {id:'quiz',    label:'Quiz',    icon:'🎯'},
 ];
 
-export default function ECG({ onBack }) {
+export default function ECG({ onBack, onBackOverride }) {
   const [tab, setTab] = useState('bases');
+
+  // Bouton retour Android → onBack (pas de drill-down dans ECG)
+  useEffect(() => {
+    if (onBackOverride) onBackOverride(onBack);
+    return () => { if (onBackOverride) onBackOverride(null); };
+  }, []);
   const normalPath = generateStrip('normal');
 
   return (
-    <div style={{minHeight:'100vh',background:ECG_BG,color:ECG_TEXT,fontFamily:'system-ui,sans-serif'}}>
+    <div style={{position:'fixed',inset:0,background:ECG_BG,color:ECG_TEXT,fontFamily:'system-ui,sans-serif',display:'flex',flexDirection:'column'}}>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
 
       {/* Header */}
-      <div style={{background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:10}}>
+      <div style={{background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <button onClick={onBack} style={{background:'none',border:`1px solid ${ECG_GREEN}44`,borderRadius:100,width:36,height:36,color:ECG_GREEN,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
           <div>
@@ -535,7 +540,7 @@ export default function ECG({ onBack }) {
       </div>
 
       {/* Tabs */}
-      <div style={{display:'flex',background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,position:'sticky',top:56,zIndex:9}}>
+      <div style={{display:'flex',background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,flexShrink:0,zIndex:9}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:'none',border:'none',borderBottom:tab===t.id?`2px solid ${ECG_GREEN}`:'2px solid transparent',color:tab===t.id?ECG_GREEN:ECG_MUTED,fontFamily:'monospace',fontSize:10,padding:'10px 2px',cursor:'pointer',transition:'all 0.2s'}}>
             {t.icon} {t.label}
@@ -544,7 +549,7 @@ export default function ECG({ onBack }) {
       </div>
 
       {/* Contenu */}
-      <div style={{padding:'14px 14px 80px'}}>
+      <div style={{flex:1, overflowY:'auto', padding:'14px 14px 40px'}}>
         {tab==='bases'   && <BasesTab/>}
         {tab==='rythmes' && <RythmesTab/>}
         {tab==='quiz'    && <QuizTab/>}

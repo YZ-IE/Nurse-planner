@@ -120,7 +120,7 @@ function WoundImage({ phaseId, color, label }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         <WoundSVG id={phaseId} color={color} />
-        <div style={{ color: '#334155', fontSize: 9, fontFamily: 'monospace' }}>illustration schématique</div>
+        <div style={{ color: T.border, fontSize: 9, fontFamily: 'monospace' }}>illustration schématique</div>
       </div>
     );
   }
@@ -158,7 +158,7 @@ const PHASES = [
   {
     id: 'necrose_sec', label: 'NÉCROSE — Sèche', color: '#78716c', icon: '🪨',
     desc: 'Escarre noire/marron · Surface dure · Exsudat absent · Tissu mort déshydraté',
-    action: 'Hydrater pour ramollir (autolyse)', freq: 'TLJ', bgColor: '#1c1917',
+    action: 'Hydrater pour ramollir (autolyse)', freq: 'TLJ', bgColor: T.surface2,
     pansements: [
       { nom: 'Hydrogel', ex: 'Purilon, Intrasite, Askina Gel', detail: '>80% eau. Ramollit la nécrose par réhydratation. Appliquer généreusement. Couvrir d\'un film.' },
       { nom: 'Film semi-perméable (couverture)', ex: 'Tegaderm, Opsite', detail: 'En 2ème couche pour maintenir l\'humidité du gel.' },
@@ -168,7 +168,7 @@ const PHASES = [
   {
     id: 'necrose_hum', label: 'NÉCROSE — Humide', color: '#a16207', icon: '💧',
     desc: 'Tissu noir/marron mou · Exsudat modéré à abondant · Risque infectieux élevé',
-    action: 'Détersion + absorption', freq: 'TLJ', bgColor: '#1c1507',
+    action: 'Détersion + absorption', freq: 'TLJ', bgColor: T.surface2,
     pansements: [
       { nom: 'Alginate de calcium', ex: 'Algostéril, Seasorb, Melgisorb', detail: 'Très haute absorption. Forme un gel au contact → favorise la détersion. Hémostase. Humidifier avant retrait si sec.' },
       { nom: 'Hydrofibre (CMC)', ex: 'Aquacel, Versiva XC', detail: 'Gélification verticale (anti-macération des berges). Haute absorption. Forme un gel cohésif.' },
@@ -177,7 +177,7 @@ const PHASES = [
   {
     id: 'fibrine_sec', label: 'FIBRINE — Sèche', color: '#ca8a04', icon: '🟡',
     desc: 'Dépôt jaune-blanc adhérent · Exsudat peu ou absent · Nécrose partielle possible',
-    action: 'Détersion / Ramollissement', freq: 'TLJ', bgColor: '#1c1507',
+    action: 'Détersion / Ramollissement', freq: 'TLJ', bgColor: T.surface2,
     pansements: [
       { nom: 'Hydrogel', ex: 'Purilon, Intrasite Gel', detail: 'Réhydrate la fibrine et favorise l\'autolyse. Couvrir d\'un film ou compresse.' },
       { nom: 'Film semi-perméable', ex: 'Tegaderm, Opsite', detail: 'Couverture légère maintenant l\'humidité. Transparent → surveillance aisée.' },
@@ -204,7 +204,7 @@ const PHASES = [
   {
     id: 'bourgeon_peu', label: 'BOURGEONNEMENT — Faible', color: '#16a34a', icon: '🌱',
     desc: 'Tissu rouge vif granuleux · Exsudat faible · Fragile · Saigne au contact',
-    action: 'Protéger le tissu fragile', freq: '2 à 3 jours', bgColor: '#052e16',
+    action: 'Protéger le tissu fragile', freq: '2 à 3 jours', bgColor: T.orgaDim,
     pansements: [
       { nom: 'Interface silicone (atraumatique)', ex: 'Mepitel, Urgotul, Physiotulle', detail: 'Contact doux non adhérent → retrait sans traumatisme ni douleur.' },
       { nom: 'Tulle gras', ex: 'Jelonet, Adaptic', detail: 'Classique. Non adhérent. Peu absorbant → associer compresse si exsudat.' },
@@ -214,7 +214,7 @@ const PHASES = [
   {
     id: 'bourgeon_abon', label: 'BOURGEONNEMENT — Abondant', color: '#15803d', icon: '🌿',
     desc: 'Tissu de granulation exubérant · Exsudat ++ à +++ · Risque hyperbourgeonnement',
-    action: 'Absorber + protéger', freq: '2 à 3 jours', bgColor: '#052e16',
+    action: 'Absorber + protéger', freq: '2 à 3 jours', bgColor: T.orgaDim,
     pansements: [
       { nom: 'Hydrocellulaire / Mousse', ex: 'Mepilex, Biatain, Allevyn', detail: 'Absorption verticale importante. Anti-macération. Nombreuses formes (sacrum, talon, border...).' },
       { nom: 'Super-absorbant', ex: 'Zetuvit Plus, Eclypse Border', detail: 'Pour exsudats très importants. Évite les changements trop fréquents.' },
@@ -223,7 +223,7 @@ const PHASES = [
   {
     id: 'epith', label: 'ÉPITHÉLIALISATION', color: '#0ea5e9', icon: '✨',
     desc: 'Bords roses nacrés refermant la plaie · Exsudat minime · Tissu très fragile',
-    action: 'Protéger la cicatrice naissante', freq: '3 à 4 jours', bgColor: '#0c1a2e',
+    action: 'Protéger la cicatrice naissante', freq: '3 à 4 jours', bgColor: T.surface2,
     pansements: [
       { nom: 'Hydrocolloïde mince', ex: 'Duoderm Thin, Comfeel Plus Transparent', detail: 'Milieu humide optimal. Transparent pour surveillance. Change tous 3-4j.' },
       { nom: 'Interface silicone', ex: 'Mepitel One, Urgotul Duo', detail: 'Contact doux. Atraumatique. Protège l\'épithélium néoformé fragile.' },
@@ -319,10 +319,10 @@ const CLASSIFICATION = [
 ];
 
 const NIVEAU_STYLE = {
-  'INFO':     { bg: '#0c1a2e', badge: '#06b6d4' },
+  'INFO':     { bg: T.surface2, badge: '#06b6d4' },
   'ALERTE':   { bg: '#1c1007', badge: '#f97316' },
   'PRIORITÉ': { bg: '#1c0a07', badge: '#ef4444' },
-  'TECHNIQUE':{ bg: '#052e16', badge: '#22c55e' },
+  'TECHNIQUE':{ bg: T.orgaDim, badge: '#22c55e' },
 };
 
 export default function Pansements() {
@@ -341,7 +341,7 @@ export default function Pansements() {
     <div style={{ padding: '14px' }}>
 
       {/* Rappel anatomique */}
-      <div style={{ ...s.card, background: '#0c1a2e', marginBottom: 10 }}>
+      <div style={{ ...s.card, background: T.surface2, marginBottom: 10 }}>
         <div style={{ color: C, fontWeight: 700, marginBottom: 4 }}>🩻 Rappel — Structure de la peau</div>
         <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
           <b style={{ color: T.text }}>3 couches :</b> Épiderme (5 ss-couches) · Derme (collagène + nerfs) · Hypoderme (tissu gras){'\n'}
@@ -350,7 +350,7 @@ export default function Pansements() {
       </div>
 
       {/* Phases de cicatrisation */}
-      <div style={{ ...s.card, background: '#0c1a2e', marginBottom: 12 }}>
+      <div style={{ ...s.card, background: T.surface2, marginBottom: 12 }}>
         <div style={{ color: C, fontWeight: 700, marginBottom: 8 }}>🔄 Phases de cicatrisation</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {[
@@ -359,7 +359,7 @@ export default function Pansements() {
             { phase: 'J3–21',  label: 'Bourgeonnement',   detail: 'Angiogenèse / fibroblastes',  color: '#22c55e' },
             { phase: 'Final',  label: 'Épithélialisation', detail: 'Fermeture cutanée',           color: '#0ea5e9' },
           ].map(p => (
-            <div key={p.phase} style={{ background: '#0f172a', borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${p.color}` }}>
+            <div key={p.phase} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${p.color}` }}>
               <div style={{ color: p.color, fontFamily: 'monospace', fontSize: 10, marginBottom: 2 }}>{p.phase}</div>
               <div style={{ color: T.text, fontWeight: 600, fontSize: 12 }}>{p.label}</div>
               <div style={{ color: T.muted, fontSize: 11 }}>{p.detail}</div>
@@ -372,7 +372,7 @@ export default function Pansements() {
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setVue(t.id)}
-            style={{ ...s.btn(vue === t.id ? C : '#334155'), padding: '7px 11px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            style={{ ...s.btn(vue === t.id ? C : T.border), padding: '7px 11px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {t.icon} {t.label}
           </button>
         ))}
@@ -383,7 +383,7 @@ export default function Pansements() {
         <div>
           {/* Disclaimer images médicales */}
           {!disclaimerOk ? (
-            <div style={{ background: '#1c0a07', border: '1px solid #ef444466', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
+            <div style={{ background: T.urgDim, border: '1px solid #ef444466', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
               <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
                 ⚕️ Contenu à usage professionnel
               </div>
@@ -398,7 +398,7 @@ export default function Pansements() {
               </button>
             </div>
           ) : (
-            <div style={{ background: '#052e16', border: '1px solid #16a34a44', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+            <div style={{ background: T.orgaDim, border: '1px solid #16a34a44', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
               <div style={{ color: '#16a34a', fontSize: 11, fontFamily: 'monospace' }}>
                 ⚕️ Contenu professionnel · Photos © Wikimedia Commons CC BY-SA
               </div>
@@ -432,10 +432,10 @@ export default function Pansements() {
               </div>
 
               {phaseOpen === p.id && (
-                <div style={{ background: '#0f172a', border: `1px solid ${p.color}44`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '12px', marginBottom: 10 }}>
+                <div style={{ background: T.bg, border: `1px solid ${p.color}44`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '12px', marginBottom: 10 }}>
 
                   {/* Zone image + description clinique */}
-                  <div style={{ display: 'flex', gap: 12, marginBottom: 12, padding: '10px', background: '#0a0f1a', borderRadius: 10, alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 12, padding: '10px', background: T.bg, borderRadius: 10, alignItems: 'flex-start' }}>
                     {disclaimerOk
                       ? <WoundImage phaseId={p.id} color={p.color} label={p.label} />
                       : <WoundSVG id={p.id} color={p.color} />
@@ -449,7 +449,7 @@ export default function Pansements() {
 
                   {/* Pansements */}
                   {p.pansements.map((pm, i) => (
-                    <div key={i} style={{ background: '#1e293b', borderRadius: 8, padding: '10px 12px', marginBottom: 8, borderLeft: `3px solid ${p.color}88` }}>
+                    <div key={i} style={{ background: T.surface, borderRadius: 8, padding: '10px 12px', marginBottom: 8, borderLeft: `3px solid ${p.color}88` }}>
                       <div style={{ color: T.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{pm.nom}</div>
                       <div style={{ color: p.color, fontSize: 11, marginBottom: 4, fontStyle: 'italic' }}>Ex : {pm.ex}</div>
                       <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>{pm.detail}</div>
@@ -547,7 +547,7 @@ export default function Pansements() {
                 {/* Point d'attention */}
                 {r.attention && (
                   <div style={{
-                    background: '#0a0f1a',
+                    background: T.bg,
                     borderRadius: 8,
                     padding: '8px 12px',
                     marginTop: 4,
@@ -567,7 +567,7 @@ export default function Pansements() {
       {/* ── LPPR ── */}
       {vue === 'lppr' && (
         <div>
-          <div style={{ ...s.card, background: '#0c1a2e', borderLeft: '3px solid #a78bfa' }}>
+          <div style={{ ...s.card, background: T.surface2, borderLeft: '3px solid #a78bfa' }}>
             <div style={{ color: '#a78bfa', fontWeight: 700, marginBottom: 6 }}>⚖️ Classification LPPR des pansements</div>
             <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
               Liste des Produits et Prestations Remboursables — pansements remboursables sur prescription médicale.
@@ -580,7 +580,7 @@ export default function Pansements() {
               <div style={{ color: T.muted, fontSize: 12 }}>{c.remb}</div>
             </div>
           ))}
-          <div style={{ ...s.card, background: '#1c0a07', borderLeft: '3px solid #ef4444' }}>
+          <div style={{ ...s.card, background: T.urgDim, borderLeft: '3px solid #ef4444' }}>
             <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 12, marginBottom: 4 }}>⚠️ Rappel réglementaire</div>
             <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>
               Les pansements de classe II et III nécessitent une ordonnance médicale.

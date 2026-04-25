@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react';
+import { T } from '../../theme.js';
 import { timeStr, genId } from './utils.jsx';
 
 const CARE_TYPES = [
@@ -27,16 +28,16 @@ const CARE_TYPES = [
   { id: 'pansement', label: 'Pansement',       emoji: '🩹', color: '#06b6d4', surveillance: false },
   { id: 'perfusion', label: 'Perfusion',       emoji: '🫙', color: '#22c55e', surveillance: false },
   { id: 'poids',     label: 'Poids',           emoji: '⚖️', color: '#22c55e', surveillance: true,  valueLabel: 'Poids (kg)',     valuePlaceholder: 'Ex: 68' },
-  { id: 'autre',     label: 'Autre',           emoji: '📋', color: '#64748b', surveillance: false },
+  { id: 'autre',     label: 'Autre',           emoji: '📋', color: T.muted, surveillance: false },
 ];
 
 function getCT(id) { return CARE_TYPES.find(t => t.id === id) || CARE_TYPES[CARE_TYPES.length - 1]; }
 
-const BG  = '#0a0f1a';
-const SRF = '#111827';
-const BRD = '#1e293b';
-const TXT = '#f1f5f9';
-const MUT = '#64748b';
+const BG  = T.bg;
+const SRF = T.surface;
+const BRD = T.surface;
+const TXT = T.text;
+const MUT = T.muted;
 
 const INP = { background: BG, border: `1px solid ${BRD}`, borderRadius: 8, color: TXT, fontSize: 15, padding: '10px 12px', outline: 'none', width: '100%', boxSizing: 'border-box' };
 
