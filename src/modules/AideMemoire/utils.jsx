@@ -186,3 +186,23 @@ export function activeFlagsEmoji(fields, persistentValues, dailyValues) {
     .slice(0, 4)
     .map(f => f.label.split(' ')[0]); // emoji only
 }
+
+// ─── Helpers 72h ─────────────────────────────────────────────────────────────
+export function dateStrOffset(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+export function isReadOnly(dateStr) {
+  // J et J-1 : modifiables. J-2 : lecture seule.
+  return dateStr === dateStrOffset(-2);
+}
+export function formatDateLabel(dateStr) {
+  const today = dateStrOffset(0);
+  const yest  = dateStrOffset(-1);
+  const d2    = dateStrOffset(-2);
+  if (dateStr === today) return "Aujourd'hui";
+  if (dateStr === yest)  return 'Hier';
+  if (dateStr === d2)    return 'Avant-hier';
+  return dateStr;
+}

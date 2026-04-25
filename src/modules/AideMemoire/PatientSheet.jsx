@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { todayStr, timeStr, genId, isFlagActive, FieldInput } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
 import { computeSlots } from './ServiceView.jsx';
@@ -257,7 +257,7 @@ function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-export default function PatientSheet({ patientId, service, cryptoKey, accentColor, onBack, onNavigate }) {
+export default function PatientSheet({ selectedDate: selDate, patientId, service, cryptoKey, accentColor, onBack, onNavigate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -275,7 +275,9 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
 
   const swipeRef = useRef({});
   const [slideDir, setSlideDir] = useState(null);
-  const today = todayStr();
+  const today        = todayStr();
+  const selectedDate = selDate || today;
+  const readOnly     = isReadOnly(selectedDate);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -285,7 +287,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
       if (!found) { onBack(); return; }
       setPatient(found);
       setAllPatients(pts);
-      const daily = await secureGet(`daily_${service.id}_${today}`, cryptoKey) || {};
+      const daily = await secureGet(`daily_${service.id}_${selectedDate}`, cryptoKey) || {};
       setDailyEntry(daily[patientId] || { fieldValues: {}, events: [], observations: '', careEntries: [] });
     } finally { setLoading(false); }
   }, [patientId, service.id, cryptoKey, today]);
@@ -303,7 +305,7 @@ export default function PatientSheet({ patientId, service, cryptoKey, accentColo
   async function saveDailyEntry(nextEntry) {
     const daily = await secureGet(`daily_${service.id}_${today}`, cryptoKey) || {};
     setDailyEntry(nextEntry);
-    await secureSet(`daily_${service.id}_${today}`, { ...daily, [patientId]: nextEntry }, cryptoKey);
+    await secureSet(`daily_${service.id}_${selectedDate}`, { ...daily, [patientId]: nextEntry }, cryptoKey);
   }
 
   async function savePersistentField(fieldId, value) {

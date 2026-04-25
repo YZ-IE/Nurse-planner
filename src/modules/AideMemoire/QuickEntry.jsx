@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
-import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
 
 // ─── Types de soins ───────────────────────────────────────────────────────────
 
@@ -131,7 +131,7 @@ function AddRdvModal({ patient, infoFields, onAdd, onClose }) {
   );
 }
 
-export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) {
+export default function QuickEntry({ service, cryptoKey, accentColor, onBack, selectedDate: selDate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -142,7 +142,9 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
   const [addCareFor,  setAddCareFor]  = useState(null); // patient
   const [addRdvFor,   setAddRdvFor]   = useState(null); // patient
 
-  const today = todayStr();
+  const today        = todayStr();
+  const selectedDate = selDate || today;
+  const readOnly     = isReadOnly(selectedDate);
 
   // ─── Chargement ─────────────────────────────────────────────────────────
 
@@ -151,7 +153,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
     try {
       const [pts, daily] = await Promise.all([
         secureGet(`patients_${service.id}`, cryptoKey),
-        secureGet(`daily_${service.id}_${today}`, cryptoKey),
+        secureGet(`daily_${service.id}_${selectedDate}`, cryptoKey),
       ]);
       setPatients((pts || []).filter(p => p.present));
       setDailyData(daily || {});
@@ -170,7 +172,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
     const next    = { ...entry, fieldValues: { ...entry.fieldValues, [fieldId]: value } };
     const nextAll = { ...current, [patientId]: next };
     setDailyData(nextAll);
-    await secureSet(`daily_${service.id}_${today}`, nextAll, cryptoKey);
+    if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
   }
 
   // ─── Ajout événement rapide ──────────────────────────────────────────────
@@ -185,7 +187,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
     const nextAll = { ...current, [patientId]: next };
     setDailyData(nextAll);
     setEventInputs(prev => ({ ...prev, [patientId]: '' }));
-    await secureSet(`daily_${service.id}_${today}`, nextAll, cryptoKey);
+    if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
   }
 
   async function addCare(patient, careData) {
@@ -194,7 +196,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
     const next   = { ...entry, careEntries: [...(entry.careEntries || []), newCare] };
     const nextAll = { ...dailyData, [patient.id]: next };
     setDailyData(nextAll);
-    await secureSet(`daily_${service.id}_${today}`, nextAll, cryptoKey);
+    if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
   }
 
   async function addRdv(patient, fieldId, value) {
@@ -210,7 +212,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
       const next   = { ...entry, fieldValues: { ...(entry.fieldValues || {}), [fieldId]: value } };
       const nextAll = { ...dailyData, [patient.id]: next };
       setDailyData(nextAll);
-      await secureSet(`daily_${service.id}_${today}`, nextAll, cryptoKey);
+      if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
     }
   }
 
@@ -235,7 +237,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack }) 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>⚡ Saisie rapide</div>
+            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>⚡ Saisie rapide — {formatDateLabel(selectedDate)}{readOnly ? ' 👁' : ''}</div>
             <div style={{ color: T.muted, fontSize: 12 }}>
               {service.name} · {sortedPatients.length} patients · {new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}
             </div>

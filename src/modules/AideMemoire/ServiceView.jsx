@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
-import { todayStr, genId, isFlagActive, activeFlagsEmoji } from './utils.jsx';
+import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
 
 const SURVEILLANCE_TYPES = new Set(['constantes_vitales','hgt','bilan','diurese','ecg','poids']);
 
@@ -151,7 +151,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onServiceUpdate, onTransfer, onLog, refreshKey }) {
+export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onServiceUpdate, onTransfer, onLog, refreshKey, selectedDate: selDate, onDateChange }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -164,24 +164,30 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [confirmReset, setConfirmReset] = useState(false);
   const [showBedsCfg,  setShowBedsCfg] = useState(false);
 
-  const today = todayStr();
+  const today        = todayStr();
+  const selectedDate = selDate || today;
+  const readOnly     = isReadOnly(selectedDate);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [pts, daily] = await Promise.all([
         secureGet(`patients_${service.id}`, cryptoKey),
-        secureGet(`daily_${service.id}_${today}`, cryptoKey),
+        secureGet(`daily_${service.id}_${selectedDate}`, cryptoKey),
       ]);
       setPatients(pts || []);
       setDailyData(daily || {});
     } finally { setLoading(false); }
-  }, [service.id, cryptoKey, today]);
+  }, [service.id, cryptoKey, selectedDate]);
 
   useEffect(() => { loadData(); }, [loadData, refreshKey]);
 
   async function savePatients(next) { setPatients(next); await secureSet(`patients_${service.id}`, next, cryptoKey); }
-  async function saveDailyData(next) { setDailyData(next); await secureSet(`daily_${service.id}_${today}`, next, cryptoKey); }
+  async function saveDailyData(next) {
+    if (readOnly) return;
+    setDailyData(next);
+    await secureSet(`daily_${service.id}_${selectedDate}`, next, cryptoKey);
+  }
 
   async function handleDailyReset() {
     const next = {};
@@ -220,13 +226,16 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: T.text, fontSize: 17, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{service.name}</div>
+            <div style={{ color: T.text, fontSize: 17, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {service.name}
+              {readOnly && <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>👁 Lecture seule</span>}
+            </div>
             <div style={{ color: T.muted, fontSize: 12 }}>{sp.label} · {presentPts.length}/{slots.length} lits</div>
           </div>
           {[
             { icon: '⚙️', fn: () => setShowBedsCfg(true), col: T.muted,   bg: T.surface,   title: 'Config chambres'    },
             { icon: '📋', fn: onDayOverview,               col: T.muted,   bg: T.surface,   title: 'Vue du jour'        },
-            { icon: '⚡', fn: onQuickEntry,                col: C,         bg: C + '22',    title: 'Saisie rapide'      },
+            { icon: '⚡', fn: readOnly ? null : onQuickEntry, col: readOnly ? T.muted : C, bg: readOnly ? T.surface : C + '22', title: 'Saisie rapide' },
             { icon: '🔄', fn: onTransfer,                  col: '#6366f1', bg: '#6366f122', title: 'Transfert sécurisé' },
             { icon: '🗒️', fn: onLog,                       col: T.muted,   bg: T.surface,   title: 'Journal accès'      },
           ].map((b, i) => (
@@ -238,8 +247,21 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
-          <span style={{ color: T.muted, fontSize: 12 }}>📅 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' })}</span>
-          {!confirmReset ? (
+          {/* Sélecteur J / J-1 / J-2 */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[0, -1, -2].map(offset => {
+              const d = dateStrOffset(offset);
+              const active = d === selectedDate;
+              return (
+                <button key={offset} onClick={() => onDateChange?.(d)}
+                  style={{ background: active ? C + '22' : 'none', border: `1px solid ${active ? C : T.border}`, borderRadius: 8, color: active ? C : T.muted, fontSize: 11, fontWeight: active ? 700 : 400, padding: '4px 8px', cursor: 'pointer' }}>
+                  {formatDateLabel(d)}
+                  {isReadOnly(d) && ' 👁'}
+                </button>
+              );
+            })}
+          </div>
+          {!readOnly && !confirmReset ? (
             <button onClick={() => setConfirmReset(true)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 12, cursor: 'pointer' }}>🔄 Reset soins</button>
           ) : (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -273,7 +295,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           const keyFields   = (service.fields || []).filter(f => f.category === 'info' && f.persistent).slice(0, 2);
 
           return (
-            <div key={slot.slotIndex} onClick={() => onSelectPatient(patient.id)}
+            <div key={slot.slotIndex} onClick={() => !readOnly && onSelectPatient(patient.id)}
               style={{ padding: '11px 14px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderLeft: `3px solid ${sp.color}`, borderRadius: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ color: T.muted, fontSize: 12, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>

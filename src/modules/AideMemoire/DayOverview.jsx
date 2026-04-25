@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { todayStr, timeStr } from './utils.jsx';
+import { todayStr, timeStr, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty } from './templates.js';
 import { computeSlots } from './ServiceView.jsx';
 
@@ -130,9 +130,11 @@ function slotDisplay(service, bedNumber) {
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 
-export default function DayOverview({ service, cryptoKey, onBack }) {
+export default function DayOverview({ service, cryptoKey, onBack, selectedDate: selDate }) {
   const sp    = getSpecialty(service.specialty);
-  const today = todayStr();
+  const today        = todayStr();
+  const selectedDate = selDate || today;
+  const readOnly     = isReadOnly(selectedDate);
 
   const [patients,  setPatients]  = useState([]);
   const [dailyData, setDailyData] = useState({});
@@ -146,7 +148,7 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
     try {
       const [pts, daily] = await Promise.all([
         secureGet(`patients_${service.id}`, cryptoKey),
-        secureGet(`daily_${service.id}_${today}`, cryptoKey),
+        secureGet(`daily_${service.id}_${selectedDate}`, cryptoKey),
       ]);
       const present = (pts || []).filter(p => p.present);
       present.sort((a, b) => a.bedNumber - b.bedNumber);
@@ -163,7 +165,8 @@ export default function DayOverview({ service, cryptoKey, onBack }) {
 
   async function saveDailyData(next) {
     setDailyData(next);
-    await secureSet(`daily_${service.id}_${today}`, next, cryptoKey);
+    if (readOnly) return;
+    await secureSet(`daily_${service.id}_${selectedDate}`, next, cryptoKey);
   }
 
   async function handleValidate(careId, doneTime, doneValue) {

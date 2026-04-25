@@ -19,7 +19,7 @@ import DayOverview    from './DayOverview.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
 
 const ACCENT = '#6366f1';
-const INITIAL_NAV = { screen: 'consent', service: null, patientId: null, refreshKey: 0 };
+const INITIAL_NAV = { screen: 'consent', service: null, patientId: null, refreshKey: 0, selectedDate: null };
 
 // ─── Purge données daily > aujourd'hui ───────────────────────────────────────
 
@@ -30,18 +30,18 @@ function todayStr() {
 
 async function purgeOldDailyData() {
   try {
-    const today  = todayStr();
-    const keys   = Object.keys(localStorage).filter(k => k.startsWith('am_daily_'));
-    let purged   = 0;
+    const keep = new Set([dateStrOffset(0), dateStrOffset(-1), dateStrOffset(-2)]);
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('am_daily_'));
+    let purged = 0;
     for (const k of keys) {
       const parts   = k.replace('am_daily_', '').split('_');
       const dateStr = parts[parts.length - 1];
-      if (dateStr && dateStr !== today && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !keep.has(dateStr)) {
         localStorage.removeItem(k);
         purged++;
       }
     }
-    if (purged > 0) appendLog('PURGE', `${purged} fichier(s) daily supprimé(s)`);
+    if (purged > 0) appendLog('PURGE', `${purged} fichier(s) > 72h supprimé(s)`);
   } catch {}
 }
 
@@ -143,7 +143,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <div
       key={nav.screen}
       className={slideDir === 'forward' ? 'am-forward' : 'am-back'}
-      style={{ position:'fixed', inset:0, background:th.bg }}
+      style={{ position:'fixed', inset:0, overflow:'hidden', background:th.bg }}
     >
       <style>{SLIDE_CSS}</style>
       {content}
@@ -206,6 +206,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
         service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT}
         refreshKey={nav.refreshKey} onBack={goBack}
         onSelectPatient={patientId => goTo('patient', { patientId })}
+        selectedDate={nav.selectedDate || dateStrOffset(0)}
+        onDateChange={date => setNav(prev => ({ ...prev, selectedDate: date, refreshKey: prev.refreshKey + 1 }))}
         onQuickEntry={() => goTo('quick')}
         onDayOverview={() => goTo('dayoverview')}
         onServiceUpdate={handleServiceUpdate}
@@ -219,6 +221,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'patient' && nav.service && nav.patientId) return screenWrap(
     <>{TimeoutBanner}
       <PatientSheet patientId={nav.patientId} service={nav.service}
+        selectedDate={nav.selectedDate || dateStrOffset(0)}
         cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
         onNavigate={(pid) => goTo('patient', { patientId: pid })} />
     </>
@@ -228,6 +231,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'quick' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+        selectedDate={nav.selectedDate || dateStrOffset(0)}
         onNavigate={(pid) => goTo('patient', { patientId: pid })} />
     </>
   );
@@ -235,7 +239,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   // ── Vue du jour ───────────────────────────────────────────────────────────
   if (nav.screen === 'dayoverview' && nav.service) return screenWrap(
     <>{TimeoutBanner}
-      <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} />
+      <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} selectedDate={nav.selectedDate || dateStrOffset(0)} />
     </>
   );
 
