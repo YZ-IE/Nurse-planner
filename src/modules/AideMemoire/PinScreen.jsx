@@ -10,7 +10,9 @@ import {
   createPin, verifyPin,
   isLockedOut, getLockoutRemaining,
   recordFailure, clearLockout, getFailures,
+  loadPinForBiometric, isBiometricEnabled,
 } from './crypto.js';
+import BiometricSetup from './BiometricSetup.jsx';
 
 const ACCENT = '#6366f1';
 
@@ -50,10 +52,37 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   const [locked,    setLocked]    = useState(() => isLockedOut());
   const [countdown, setCountdown] = useState(() => getLockoutRemaining());
   const [failures,  setFailures]  = useState(() => getFailures());
+  const [pendingKey, setPendingKey] = useState(null);
+  const [bioBusy,    setBioBusy]    = useState(false);
 
   const inputRef = useRef(null);
 
   useEffect(() => { if (inputRef.current) inputRef.current.focus(); }, [step]);
+
+  // Tentative biométrique automatique au montage si activée
+  useEffect(() => {
+    if (pinExists && isBiometricEnabled()) tryBiometric();
+  }, []);
+
+  async function tryBiometric() {
+    if (bioBusy) return;
+    setBioBusy(true);
+    try {
+      const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+      const info = await BiometricAuth.checkBiometry();
+      if (!info.isAvailable) { setBioBusy(false); return; }
+      await BiometricAuth.authenticate({
+        reason: "Accéder à l'Aide-Mémoire",
+        cancelTitle: 'Utiliser le mot de passe',
+        allowDeviceCredential: false,
+      });
+      const pin = await loadPinForBiometric();
+      if (!pin) { setBioBusy(false); setError('Biométrie indisponible, utilisez le mot de passe.'); return; }
+      const key = await verifyPin(pin);
+      if (key) { onUnlocked(key); }
+      else { setBioBusy(false); setError('Erreur biométrie, utilisez le mot de passe.'); }
+    } catch { setBioBusy(false); }
+  }
 
   // Compte à rebours verrouillage
   useEffect(() => {
@@ -80,7 +109,8 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
       } else if (step === 'confirm') {
         if (password !== firstPassword) { setError('Les mots de passe ne correspondent pas.'); setPassword(''); setConfirm(''); setFirstPassword(''); setStep('create'); return; }
         const key = await createPin(firstPassword);
-        onUnlocked(key);
+        setPendingKey(key);
+        setStep('biometric-setup');
       } else {
         // verify
         const key = await verifyPin(password);
@@ -96,6 +126,16 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
       }
     } catch (e) { setError('Erreur inattendue'); setPassword(''); console.error(e); }
     finally { setLoading(false); }
+  }
+
+  // ── Setup biométrie après création PIN ───────────────────────────────────────
+  if (step === 'biometric-setup' && pendingKey) {
+    return (
+      <BiometricSetup
+        pin={firstPassword}
+        onDone={() => onUnlocked(pendingKey)}
+      />
+    );
   }
 
   // ── Verrouillé ──────────────────────────────────────────────────────────────

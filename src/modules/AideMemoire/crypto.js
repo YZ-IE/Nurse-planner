@@ -111,7 +111,7 @@ export function secureRemove(key) { localStorage.removeItem('am_' + key); }
 
 export async function resetAll() {
   Object.keys(localStorage).filter(k => k.startsWith('am_')).forEach(k => localStorage.removeItem(k));
-  [SALT_KEY, CHECK_KEY, LOCKOUT_KEY].forEach(k => localStorage.removeItem(k));
+  [SALT_KEY, CHECK_KEY, LOCKOUT_KEY, BIO_PIN_STORE, BIO_KEY_MATERIAL].forEach(k => localStorage.removeItem(k));
 }
 
 // ─── Transfert sécurisé local — protocole symétrique v2 ──────────────────────
@@ -142,6 +142,62 @@ async function deriveTransferKey(code, iv) {
     { name: 'PBKDF2', salt: iv, iterations: 100_000, hash: 'SHA-256' },
     km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
   );
+}
+
+// ─── Biométrie — stockage du PIN chiffré ─────────────────────────────────────
+// Le PIN est chiffré avec une clé AES dérivée d'un secret device fixe.
+// La biométrie ne stocke AUCUNE donnée biométrique — elle déverrouille
+// uniquement l'accès au PIN chiffré qui reste la source de vérité crypto.
+
+const BIO_KEY_MATERIAL = 'am_bio_km';   // clé device (hex)
+const BIO_PIN_STORE    = 'am_bio_pin';  // PIN chiffré
+
+async function getBioKey() {
+  let km = localStorage.getItem(BIO_KEY_MATERIAL);
+  if (!km) {
+    const raw = crypto.getRandomValues(new Uint8Array(32));
+    km = bytesToHex(raw);
+    localStorage.setItem(BIO_KEY_MATERIAL, km);
+  }
+  const raw = hexToBytes(km);
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+export async function savePinForBiometric(pin) {
+  try {
+    const key = await getBioKey();
+    const iv  = crypto.getRandomValues(new Uint8Array(12));
+    const ct  = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv }, key, new TextEncoder().encode(String(pin))
+    );
+    localStorage.setItem(BIO_PIN_STORE, JSON.stringify({
+      iv: bytesToBase64(iv),
+      ct: bytesToBase64(new Uint8Array(ct)),
+    }));
+    return true;
+  } catch { return false; }
+}
+
+export async function loadPinForBiometric() {
+  try {
+    const stored = localStorage.getItem(BIO_PIN_STORE);
+    if (!stored) return null;
+    const { iv, ct } = JSON.parse(stored);
+    const key = await getBioKey();
+    const pt  = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: base64ToBytes(iv) }, key, base64ToBytes(ct)
+    );
+    return new TextDecoder().decode(pt);
+  } catch { return null; }
+}
+
+export function isBiometricEnabled() {
+  return !!localStorage.getItem(BIO_PIN_STORE);
+}
+
+export function disableBiometric() {
+  localStorage.removeItem(BIO_PIN_STORE);
+  // Ne pas supprimer BIO_KEY_MATERIAL pour réactivation future
 }
 
 export async function encryptForTransfer(code, payload) {
