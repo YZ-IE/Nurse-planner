@@ -164,12 +164,17 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   // ── Sauvegarde ───────────────────────────────────────────────────────────────
   async function handleSave() {
     setShowLabel(false);
-    setPendingB64(null);
+    const photoB64 = pendingRef.current || '';
     pendingRef.current = null;
-    setError('TEST OK - pas de crash');
-    return; // STOP ICI - test minimal
-    const photoB64 = 'test';
-    setError('Étape 1: démarrage…');
+    setPendingB64(null);
+    setError('Étape 1: chiffrement…');
+    try {
+      const enc = await encryptB64(photoB64, cryptoKey);
+      setError('Étape 2: chiffrement OK — ' + enc.length + ' chars');
+      return; // STOP ici
+    } catch(e) {
+      setError('CRASH chiffrement: ' + String(e).slice(0,100));
+    }
     try {
       if (!cryptoKey) { setError('Erreur: clé crypto manquante'); return; }
       setError('Étape 2: chiffrement…');
