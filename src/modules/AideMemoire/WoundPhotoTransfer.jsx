@@ -6,7 +6,6 @@
 
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
 const C = '#f97316';
@@ -51,7 +50,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
     try {
 
       // Lire le fichier chiffré
-      const file = await Filesystem.readFile({ path: selPhoto.filename, directory: Directory.Data });
+      const file = { data: localStorage.getItem('am_wound_' + service.id + '_' + patient.id + '_' + selPhoto.ts) };
       const enc  = b64toU8(file.data);
 
       // Déchiffrer avec la clé patient
@@ -74,8 +73,9 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
 
       // Écrire en cache
       const tmpName = `nplanr_wound_${Date.now()}.enc`;
-      await Filesystem.writeFile({ path:tmpName, data:blobB64, directory:Directory.Cache, recursive:true });
-      const { uri } = await Filesystem.getUri({ path:tmpName, directory:Directory.Cache });
+      const { Filesystem: FS, Directory: Dir } = await import("@capacitor/filesystem");
+      await FS.writeFile({ path:tmpName, data:blobB64, directory:Dir.Cache, recursive:true });
+      const { uri } = await FS.getUri({ path:tmpName, directory:Dir.Cache });
 
       // Intent Android SEND
       await Share.share({
@@ -128,12 +128,12 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       // Sauvegarder
       const ts       = Date.now();
       const filename = `am_wound_${service.id}_${patient.id}_${ts}.enc`;
-      await Filesystem.writeFile({ path:filename, data:u8toB64(enc2), directory:Directory.Data, recursive:true });
+      await Promise.resolve(localStorage.setItem('am_wound_' + service.id + '_' + patient.id + '_' + ts, u8toB64(enc2)));
 
       // Index
       const idxKey = `am_wound_idx_${service.id}_${patient.id}`;
       const idx = (() => { try { return JSON.parse(localStorage.getItem(idxKey)||'[]'); } catch{return[];} })();
-      idx.push({ filename, ts, label:blob.label||'Photo importée', time:blob.time||'--:--' });
+      idx.push({ ts, label:blob.label||'Photo importée', time:blob.time||'--:--' });
       localStorage.setItem(idxKey, JSON.stringify(idx));
 
       setStep('done');
@@ -187,8 +187,8 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
             <div style={{color:T.muted,fontSize:13,marginBottom:12}}>Choisir la photo à envoyer :</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
               {photos.map(p=>(
-                <div key={p.filename} onClick={()=>setSelPhoto(p)}
-                  style={{borderRadius:10,overflow:'hidden',border:`2px solid ${selPhoto?.filename===p.filename?C:P.bdr}`,cursor:'pointer',position:'relative'}}>
+                <div key={p.ts} onClick={()=>setSelPhoto(p)}
+                  style={{borderRadius:10,overflow:'hidden',border:`2px solid ${selPhoto?.ts===p.ts?C:P.bdr}`,cursor:'pointer',position:'relative'}}>
                   <img src={p.dataUrl} alt={p.label} style={{width:'100%',aspectRatio:'1',objectFit:'cover',display:'block'}}/>
                   <div style={{position:'absolute',bottom:0,left:0,right:0,background:'rgba(0,0,0,0.6)',padding:'3px 6px'}}>
                     <div style={{color:'#fff',fontSize:10,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.label}</div>
