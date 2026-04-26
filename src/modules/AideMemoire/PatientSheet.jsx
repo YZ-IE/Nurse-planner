@@ -9,6 +9,7 @@ import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
+import WoundPhotos, { deleteAllWoundPhotos } from './WoundPhotos.jsx';
 import { computeSlots } from './ServiceView.jsx';
 
 // ─── Palette étendue ──────────────────────────────────────────────────────────
@@ -330,6 +331,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
   async function handleDischarge() {
     setSaving(true);
     try {
+      await deleteAllWoundPhotos(service.id, patient.id);
       await savePatientData({ ...patient, present: false, dischargedAt: Date.now() });
       onBack();
     } finally { setSaving(false); setConfirmExit(false); }
@@ -363,6 +365,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
     { label: '💊', name: 'Soins',       idx: 3 },
     { label: '🎯', name: 'Centres',     idx: 4 },
     { label: '📝', name: 'Événements',  idx: 5 },
+    { label: '🩹', name: 'Plaies',       idx: 6 },
   ];
 
   return (
@@ -606,6 +609,15 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
                 style={{ background: newEvent.trim() ? 'linear-gradient(135deg, #22c55e, #16a34a)' : P.glass, border: 'none', borderRadius: 10, color: '#fff', padding: '0 16px', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: newEvent.trim() ? 'pointer' : 'default', opacity: newEvent.trim() ? 1 : 0.4 }}>+</button>
             </div>
           </Section>
+        )}
+        {/* TAB 6 — PLAIES */}
+        {activeTab === 6 && (
+          <WoundPhotos
+            patient={patient}
+            service={service}
+            cryptoKey={cryptoKey}
+            readOnly={readOnly}
+          />
         )}
       </div>
 
