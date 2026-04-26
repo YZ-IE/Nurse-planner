@@ -72,16 +72,16 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       const blobB64 = btoa(JSON.stringify(blob));
 
       // Écrire en cache
-      const tmpName = `nplanr_wound_${Date.now()}.enc`;
-      const { Filesystem: FS, Directory: Dir } = await import("@capacitor/filesystem");
-      await FS.writeFile({ path:tmpName, data:blobB64, directory:Dir.Cache, recursive:true });
-      const { uri } = await FS.getUri({ path:tmpName, directory:Dir.Cache });
+      // Partage via texte (pas de fichier temporaire — évite crash Filesystem)
+      const uri = undefined;
 
       // Intent Android SEND
       await Share.share({
         title: `Photo plaie — ${patient.initials}`,
-        text: `Code (15 min) : ${newCode}`,
-        url: uri,
+        text: `Code (15 min) : ${newCode}
+
+Fichier joint (copier dans N-Planr):
+${blobB64}`,
         dialogTitle: 'Envoyer via…',
       });
 
