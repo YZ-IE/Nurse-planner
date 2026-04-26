@@ -17,6 +17,7 @@ import PatientSheet   from './PatientSheet.jsx';
 import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
+import { dateStrOffset } from './utils.jsx';
 
 const ACCENT = '#6366f1';
 const INITIAL_NAV = { screen: 'consent', service: null, patientId: null, refreshKey: 0, selectedDate: null };
