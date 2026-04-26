@@ -170,8 +170,18 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     setError('Étape 1: chiffrement…');
     try {
       const enc = await encryptB64(photoB64, cryptoKey);
-      setError('Étape 2: chiffrement OK — ' + enc.length + ' chars');
-      return; // STOP ici
+      setError('Étape 2: chiffrement OK — écriture…');
+      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Data, recursive: true }); } catch {}
+      const ts   = Date.now();
+      const fpath = filename(service.id, patient.id, ts);
+      await Filesystem.writeFile({ path: fpath, data: enc, directory: Directory.Data });
+      setError('Étape 3: writeFile OK — sauvegarde index…');
+      const idx = loadIdx(service.id, patient.id);
+      idx.push({ ts, path: fpath, label: label.trim() || 'Photo', time: timeStr() });
+      saveIdx(service.id, patient.id, idx);
+      setError('Étape 4: SUCCÈS');
+      await loadPhotos();
+      return;
     } catch(e) {
       setError('CRASH chiffrement: ' + String(e).slice(0,100));
     }
