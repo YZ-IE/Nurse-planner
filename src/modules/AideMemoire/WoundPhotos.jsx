@@ -162,32 +162,31 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   // ── Sauvegarde ───────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!pendingB64) return;
-    setSaving(true);
     setShowLabel(false);
     const photoB64 = pendingB64;
     setPendingB64(null);
-    setError('');
+    setError('Étape 1: démarrage…');
     try {
-      // Créer le répertoire si nécessaire
+      if (!cryptoKey) { setError('Erreur: clé crypto manquante'); return; }
+      setError('Étape 2: chiffrement…');
+      const ts  = Date.now();
+      const enc = await encryptB64(photoB64, cryptoKey);
+      setError('Étape 3: écriture fichier…');
       try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Data, recursive: true }); } catch {}
-
-      const ts   = Date.now();
       const path = filename(service.id, patient.id, ts);
-      const enc  = await encryptB64(photoB64, cryptoKey);
-
-      await Filesystem.writeFile({
-        path,
-        data: enc,
-        directory: Directory.Data,
-      });
-
+      await Filesystem.writeFile({ path, data: enc, directory: Directory.Data });
+      setError('Étape 4: index…');
       const idx = loadIdx(service.id, patient.id);
       idx.push({ ts, path, label: label.trim() || 'Photo sans libellé', time: timeStr() });
       saveIdx(service.id, patient.id, idx);
+      setError('');
+      setSaving(true);
       await loadPhotos();
+      setSaving(false);
     } catch (e) {
-      setError('Erreur : ' + (e?.message || String(e)).slice(0, 100));
-    } finally { setSaving(false); }
+      setError('CRASH: ' + (e?.message || String(e)).slice(0, 120));
+      setSaving(false);
+    }
   }
 
   // ── Suppression ──────────────────────────────────────────────────────────────
