@@ -95,7 +95,8 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
   async function handleImportBlob(blobB64, code) {
     setBusy(true); setError('');
     try {
-      const blob = JSON.parse(atob(blobB64.trim()));
+      const cleaned = blobB64.replace(/[^A-Za-z0-9+/=]/g, '');
+      const blob = JSON.parse(atob(cleaned));
       if (blob.expires < Date.now()) throw new Error('Code expiré (> 15 min)');
       const tKey  = await deriveTransferKey(code.trim());
       const plain = new Uint8Array(await crypto.subtle.decrypt(
@@ -131,7 +132,8 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
         r.readAsText(file);
       });
 
-      const blob = JSON.parse(atob(blobB64.trim()));
+      const cleaned = blobB64.replace(/[^A-Za-z0-9+/=]/g, '');
+      const blob = JSON.parse(atob(cleaned));
       if (blob.v!==1||!blob.iv||!blob.ct) throw new Error('Fichier invalide');
       if (blob.expires < Date.now())       throw new Error('Code expiré (> 15 min)');
       if (!importCode||importCode.length!==6) throw new Error('Code à 6 chiffres requis');
