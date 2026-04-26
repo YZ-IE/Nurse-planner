@@ -163,11 +163,12 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
 
   // ── Sauvegarde ───────────────────────────────────────────────────────────────
   async function handleSave() {
-    if (!pendingRef.current) return;
     setShowLabel(false);
-    const photoB64 = pendingRef.current;
-    pendingRef.current = null;
     setPendingB64(null);
+    pendingRef.current = null;
+    setError('TEST OK - pas de crash');
+    return; // STOP ICI - test minimal
+    const photoB64 = 'test';
     setError('Étape 1: démarrage…');
     try {
       if (!cryptoKey) { setError('Erreur: clé crypto manquante'); return; }
