@@ -14,19 +14,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, loadDarkPref } from '../../theme.js';
 import { timeStr } from './utils.jsx';
 import WoundPhotoTransfer from './WoundPhotoTransfer.jsx';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 
 const C = '#f97316'; // orange — couleur soins de plaies
 
 // ── Helpers Filesystem + Crypto ───────────────────────────────────────────────
 
-async function getFs() {
-  const { Filesystem, Directory } = await import('@capacitor/filesystem');
-  return { Filesystem, Directory };
-}
-async function getCamera() {
-  const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
-  return { Camera, CameraSource, CameraResultType };
-}
+// Filesystem et Camera importés statiquement en haut du fichier
 
 async function encryptBytes(plainBytes, cryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -81,7 +76,6 @@ function saveIndex(serviceId, patientId, idx) {
 
 export async function deleteAllWoundPhotos(serviceId, patientId) {
   try {
-    const { Filesystem, Directory } = await getFs();
     const idx = loadIndex(serviceId, patientId);
     for (const entry of idx) {
       try { await Filesystem.deleteFile({ path: entry.filename, directory: Directory.Data }); } catch {}
@@ -113,7 +107,6 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   const loadPhotos = useCallback(async () => {
     setLoading(true);
     try {
-      const { Filesystem, Directory } = await getFs();
       const idx = loadIndex(service.id, patient.id);
       const loaded = [];
       for (const entry of idx) {
@@ -135,7 +128,6 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   async function handleCapture(fromGallery = false) {
     setError('');
     try {
-      const { Camera, CameraSource, CameraResultType } = await getCamera();
       const photo = await Camera.getPhoto({
         quality: 80,
         width: 1280,
@@ -160,7 +152,6 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     setShowLabel(false);
     setError('');
     try {
-      const { Filesystem, Directory } = await getFs();
       const ts       = Date.now();
       const filename = photoFilename(service.id, patient.id, ts);
       const plainBytes = base64ToUint8(pendingB64);
@@ -185,7 +176,6 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   // ── Suppression ──────────────────────────────────────────────────────────────
   async function handleDelete(photo) {
     try {
-      const { Filesystem, Directory } = await getFs();
       await Filesystem.deleteFile({ path: photo.filename, directory: Directory.Data });
       const idx = loadIndex(service.id, patient.id).filter(e => e.filename !== photo.filename);
       saveIndex(service.id, patient.id, idx);

@@ -6,6 +6,8 @@
 
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const C = '#f97316';
 
@@ -47,12 +49,9 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
     if (!selPhoto) return;
     setBusy(true); setError('');
     try {
-      const fsModule = await import('@capacitor/filesystem');
-      const Fs = fsModule.Filesystem;
-      const Dir = fsModule.Directory;
 
       // Lire le fichier chiffré
-      const file = await Fs.readFile({ path: selPhoto.filename, directory: Dir.Data });
+      const file = await Filesystem.readFile({ path: selPhoto.filename, directory: Directory.Data });
       const enc  = b64toU8(file.data);
 
       // Déchiffrer avec la clé patient
@@ -75,11 +74,10 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
 
       // Écrire en cache
       const tmpName = `nplanr_wound_${Date.now()}.enc`;
-      await Fs.writeFile({ path:tmpName, data:blobB64, directory:Dir.Cache, recursive:true });
-      const { uri } = await Fs.getUri({ path:tmpName, directory:Dir.Cache });
+      await Filesystem.writeFile({ path:tmpName, data:blobB64, directory:Directory.Cache, recursive:true });
+      const { uri } = await Filesystem.getUri({ path:tmpName, directory:Directory.Cache });
 
       // Intent Android SEND
-      const { Share } = await import('@capacitor/share');
       await Share.share({
         title: `Photo plaie — ${patient.initials}`,
         text: `Code (15 min) : ${newCode}`,
@@ -128,12 +126,9 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       enc2.set(iv2,0); enc2.set(new Uint8Array(ct2),12);
 
       // Sauvegarder
-      const fsModule = await import('@capacitor/filesystem');
-      const Fs = fsModule.Filesystem;
-      const Dir = fsModule.Directory;
       const ts       = Date.now();
       const filename = `am_wound_${service.id}_${patient.id}_${ts}.enc`;
-      await Fs.writeFile({ path:filename, data:u8toB64(enc2), directory:Dir.Data, recursive:true });
+      await Filesystem.writeFile({ path:filename, data:u8toB64(enc2), directory:Directory.Data, recursive:true });
 
       // Index
       const idxKey = `am_wound_idx_${service.id}_${patient.id}`;
