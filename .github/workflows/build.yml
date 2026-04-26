@@ -38,7 +38,7 @@ jobs:
         run: npx cap sync android
 
       - name: Update Gradle wrapper
-        run: cd android && ./gradlew wrapper --gradle-version=8.9 --distribution-type=bin
+        run: cd android && ./gradlew wrapper --gradle-version=8.11.1 --distribution-type=all
 
       - name: Restore debug keystore
         env:
