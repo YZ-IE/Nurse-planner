@@ -87,7 +87,7 @@ export async function deleteAllWoundPhotos(serviceId, patientId) {
   try {
     const idx = loadIdx(serviceId, patientId);
     for (const e of idx) {
-      try { await Filesystem.deleteFile({ path: e.path, directory: Directory.Data }); } catch {}
+      try { await Filesystem.deleteFile({ path: e.path, directory: Directory.Cache }); } catch {}
     }
     localStorage.removeItem(idxKey(serviceId, patientId));
   } catch {}
@@ -120,7 +120,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const loaded = [];
       for (const entry of idx) {
         try {
-          const file = await Filesystem.readFile({ path: entry.path, directory: Directory.Data });
+          const file = await Filesystem.readFile({ path: entry.path, directory: Directory.Cache });
           const plain = await decryptB64(file.data, cryptoKey);
           loaded.push({ ...entry, dataUrl: `data:image/jpeg;base64,${plain}` });
         } catch {}
@@ -171,10 +171,10 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     try {
       const enc = await encryptB64(photoB64, cryptoKey);
       setError('Étape 2: chiffrement OK — écriture…');
-      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Data, recursive: true }); } catch {}
+      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Cache, recursive: true }); } catch {}
       const ts   = Date.now();
       const fpath = filename(service.id, patient.id, ts);
-      await Filesystem.writeFile({ path: fpath, data: enc, directory: Directory.Data });
+      await Filesystem.writeFile({ path: fpath, data: enc, directory: Directory.Cache });
       setError('Étape 3: writeFile OK — sauvegarde index…');
       const idx = loadIdx(service.id, patient.id);
       idx.push({ ts, path: fpath, label: label.trim() || 'Photo', time: timeStr() });
@@ -191,9 +191,9 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const ts  = Date.now();
       const enc = await encryptB64(photoB64, cryptoKey);
       setError('Étape 3: écriture fichier…');
-      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Data, recursive: true }); } catch {}
+      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Cache, recursive: true }); } catch {}
       const path = filename(service.id, patient.id, ts);
-      await Filesystem.writeFile({ path, data: enc, directory: Directory.Data });
+      await Filesystem.writeFile({ path, data: enc, directory: Directory.Cache });
       setError('Étape 4: index…');
       const idx = loadIdx(service.id, patient.id);
       idx.push({ ts, path, label: label.trim() || 'Photo sans libellé', time: timeStr() });
@@ -210,7 +210,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
 
   // ── Suppression ──────────────────────────────────────────────────────────────
   async function handleDelete(photo) {
-    try { await Filesystem.deleteFile({ path: photo.path, directory: Directory.Data }); } catch {}
+    try { await Filesystem.deleteFile({ path: photo.path, directory: Directory.Cache }); } catch {}
     const idx = loadIdx(service.id, patient.id).filter(e => e.ts !== photo.ts);
     saveIdx(service.id, patient.id, idx);
     setSelected(null);
