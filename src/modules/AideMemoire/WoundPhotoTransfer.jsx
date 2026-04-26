@@ -35,6 +35,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
   const [step,       setStep]       = useState('select');
   const [error,      setError]      = useState('');
   const [importCode, setImportCode] = useState('');
+  const [importBlob,  setImportBlob]  = useState('');
   const fileRef = useRef(null);
 
   const dark = loadDarkPref();
@@ -77,12 +78,8 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
 
       // Intent Android SEND
       await Share.share({
-        title: `Photo plaie — ${patient.initials}`,
-        text: `Code (15 min) : ${newCode}
-
-Fichier joint (copier dans N-Planr):
-${blobB64}`,
-        dialogTitle: 'Envoyer via…',
+        text: blobB64,
+        dialogTitle: 'Envoyer le fichier chiffré via…',
       });
 
       setCode(newCode);
@@ -95,6 +92,32 @@ ${blobB64}`,
   }
 
   // ── IMPORT — lecture via input[type=file] ─────────────────────────────────
+  async function handleImportBlob(blobB64, code) {
+    setBusy(true); setError('');
+    try {
+      const blob = JSON.parse(atob(blobB64.trim()));
+      if (blob.expires < Date.now()) throw new Error('Code expiré (> 15 min)');
+      const tKey  = await deriveTransferKey(code.trim());
+      const plain = new Uint8Array(await crypto.subtle.decrypt(
+        {name:'AES-GCM', iv:b64toU8(blob.iv)}, tKey, b64toU8(blob.ct)
+      ));
+      const iv2  = crypto.getRandomValues(new Uint8Array(12));
+      const ct2  = await crypto.subtle.encrypt({name:'AES-GCM',iv:iv2}, cryptoKey, plain);
+      const enc2 = new Uint8Array(12+ct2.byteLength);
+      enc2.set(iv2,0); enc2.set(new Uint8Array(ct2),12);
+      const ts  = Date.now();
+      localStorage.setItem('am_wound_'+service.id+'_'+patient.id+'_'+ts, u8toB64(enc2));
+      const idxKey = 'am_wound_idx_'+service.id+'_'+patient.id;
+      const idx = (()=>{ try{return JSON.parse(localStorage.getItem(idxKey)||'[]');}catch{return[];} })();
+      idx.push({ ts, label:blob.label||'Photo importée', time:blob.time||'--:--' });
+      localStorage.setItem(idxKey, JSON.stringify(idx));
+      setStep('done');
+      setTimeout(()=>{ onImported?.(); onClose(); }, 2000);
+    } catch(e) {
+      setError(e?.message==='Code expiré (> 15 min)'?'Code expiré.':'Code incorrect ou texte invalide.');
+    } finally { setBusy(false); }
+  }
+
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
