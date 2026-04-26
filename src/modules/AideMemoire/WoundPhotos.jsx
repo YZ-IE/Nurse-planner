@@ -120,8 +120,8 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const loaded = [];
       for (const entry of idx) {
         try {
-          const file = await Filesystem.readFile({ path: entry.path, directory: Directory.Cache });
-          const plain = await decryptB64(file.data, cryptoKey);
+          const enc = localStorage.getItem('am_wound_' + service.id + '_' + patient.id + '_' + entry.ts);
+          const plain = await decryptB64(enc, cryptoKey);
           loaded.push({ ...entry, dataUrl: `data:image/jpeg;base64,${plain}` });
         } catch {}
       }
