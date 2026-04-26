@@ -235,22 +235,23 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
           <>
             <div style={{color:T.muted,fontSize:13,marginBottom:12,lineHeight:1.6}}>
               1. Saisissez le code verbal (6 chiffres)<br/>
-              2. Sélectionnez le fichier .enc reçu
+              2. Collez le texte chiffré reçu
             </div>
             <label style={s.label}>Code à 6 chiffres</label>
             <input value={importCode} onChange={e=>setImportCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-              placeholder="123456" inputMode="numeric" maxLength={6}
+              placeholder='123456' inputMode='numeric' maxLength={6}
               style={{...s.input,fontSize:22,letterSpacing:8,textAlign:'center',marginBottom:14}}/>
+            <label style={{...s.label,marginTop:8}}>Texte chiffré reçu</label>
+            <textarea value={importBlob||''} onChange={e=>setImportBlob(e.target.value)}
+              placeholder='Coller le texte reçu ici…' rows={4}
+              style={{width:'100%',background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:'10px 12px',color:T.text,fontSize:11,outline:'none',boxSizing:'border-box',fontFamily:'monospace',resize:'none',marginBottom:12}}/>
             {error&&<div style={{color:'#f43f5e',fontSize:13,marginBottom:10}}>{error}</div>}
-            {/* Input fichier caché */}
-            <input ref={fileRef} type="file" accept=".enc,application/octet-stream"
-              onChange={handleFileChange} style={{display:'none'}}/>
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setMode(null)} style={{flex:1,background:'none',border:`1px solid ${P.bdr}`,borderRadius:12,color:T.muted,padding:'13px',fontSize:14,cursor:'pointer'}}>Retour</button>
-              <button onClick={()=>{ if(importCode.length===6) fileRef.current?.click(); else setError('Code à 6 chiffres requis.'); }}
-                disabled={busy}
-                style={{flex:1,background:!busy?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
-                {busy?'Import…':'📥 Choisir fichier'}
+              <button onClick={()=>handleImportBlob(importBlob,importCode)}
+                disabled={busy||importCode.length!==6||!importBlob}
+                style={{flex:1,background:!busy&&importCode.length===6&&importBlob?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                {busy?'Import…':'📥 Importer'}
               </button>
             </div>
           </>
