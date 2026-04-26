@@ -128,20 +128,32 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   async function handleCapture(fromGallery = false) {
     setError('');
     try {
+      // Demander les permissions runtime (Android 13+)
+      const perms = await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
+      const granted = fromGallery ? perms.photos : perms.camera;
+      if (granted === 'denied') {
+        setError('Permission refusée. Vérifiez les paramètres de l\'application.');
+        return;
+      }
       const photo = await Camera.getPhoto({
-        quality: 80,
-        width: 1280,
+        quality: 60,
+        width: 800,
+        height: 800,
         resultType: CameraResultType.Base64,
         source: fromGallery ? CameraSource.Photos : CameraSource.Camera,
         allowEditing: false,
         saveToGallery: false,
         correctOrientation: true,
+        presentationStyle: 'fullscreen',
       });
+      if (!photo.base64String) { setError('Photo vide reçue.'); return; }
       setPendingB64(photo.base64String);
       setLabel('');
       setShowLabel(true);
     } catch (e) {
-      if (!e?.message?.includes('cancel')) setError('Impossible d\'accéder à la caméra.');
+      const msg = e?.message || String(e);
+      if (msg.includes('cancel') || msg.includes('User cancelled')) return;
+      setError('Erreur caméra : ' + msg.slice(0, 80));
     }
   }
 
@@ -151,14 +163,18 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     setSaving(true);
     setShowLabel(false);
     setError('');
+    // Libérer pendingB64 de l'état avant de chiffrer (économie mémoire)
+    const photoB64 = pendingB64;
+    setPendingB64(null);
     try {
-      const ts       = Date.now();
-      const filename = photoFilename(service.id, patient.id, ts);
-      const plainBytes = base64ToUint8(pendingB64);
+      const ts         = Date.now();
+      const filename   = photoFilename(service.id, patient.id, ts);
+      const plainBytes = base64ToUint8(photoB64);
       const encBytes   = await encryptBytes(plainBytes, cryptoKey);
+      const encB64     = uint8ToBase64(encBytes);
       await Filesystem.writeFile({
         path: filename,
-        data: uint8ToBase64(encBytes),
+        data: encB64,
         directory: Directory.Data,
         recursive: true,
       });
@@ -168,7 +184,8 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       setPendingB64(null);
       await loadPhotos();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde.');
+      const msg = e?.message || String(e);
+      setError('Erreur sauvegarde : ' + msg.slice(0, 80));
       console.error(e);
     } finally { setSaving(false); }
   }
