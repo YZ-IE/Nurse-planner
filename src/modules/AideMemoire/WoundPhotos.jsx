@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { T, loadDarkPref } from '../../theme.js';
 import { timeStr } from './utils.jsx';
@@ -170,16 +170,12 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     setError('Étape 1: chiffrement…');
     try {
       const enc = await encryptB64(photoB64, cryptoKey);
-      setError('Étape 2: chiffrement OK — écriture…');
-      try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Cache, recursive: true }); } catch {}
-      const ts   = Date.now();
-      const fpath = filename(service.id, patient.id, ts);
-      await Filesystem.writeFile({ path: fpath, data: enc, directory: Directory.Cache });
-      setError('Étape 3: writeFile OK — sauvegarde index…');
+      const ts  = Date.now();
+      localStorage.setItem('am_wound_' + service.id + '_' + patient.id + '_' + ts, enc);
       const idx = loadIdx(service.id, patient.id);
-      idx.push({ ts, path: fpath, label: label.trim() || 'Photo', time: timeStr() });
+      idx.push({ ts, label: label.trim() || 'Photo', time: timeStr() });
       saveIdx(service.id, patient.id, idx);
-      setError('Étape 4: SUCCÈS');
+      setError('');
       await loadPhotos();
       return;
     } catch(e) {
