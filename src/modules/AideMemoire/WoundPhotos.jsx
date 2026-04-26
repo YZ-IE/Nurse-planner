@@ -6,7 +6,7 @@
  * Suppression : à la sortie patient (deleteAllWoundPhotos)
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { T, loadDarkPref } from '../../theme.js';
@@ -103,6 +103,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   const [label,        setLabel]        = useState('');
   const [showLabel,    setShowLabel]    = useState(false);
   const [pendingB64,   setPendingB64]   = useState(null);
+  const pendingRef = React.useRef(null);
   const [error,        setError]        = useState('');
 
   const dark = loadDarkPref();
@@ -149,7 +150,8 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       if (!photo.base64String) { setError('Photo vide.'); return; }
       // Compression via canvas
       const compressed = await compressImage(photo.base64String, 600, 0.7);
-      setPendingB64(compressed);
+      pendingRef.current = compressed;
+      setPendingB64('ready'); // juste un signal, pas la vraie data
       setLabel('');
       setShowLabel(true);
     } catch (e) {
@@ -161,9 +163,10 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
 
   // ── Sauvegarde ───────────────────────────────────────────────────────────────
   async function handleSave() {
-    if (!pendingB64) return;
+    if (!pendingRef.current) return;
     setShowLabel(false);
-    const photoB64 = pendingB64;
+    const photoB64 = pendingRef.current;
+    pendingRef.current = null;
     setPendingB64(null);
     setError('Étape 1: démarrage…');
     try {
@@ -281,7 +284,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
               placeholder="ex : Plaie tibiale J3" autoFocus
               style={{ width:'100%', background:T.bg, border:`1px solid ${T.border}`, borderRadius:10, padding:'11px 14px', color:T.text, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit', marginBottom:12 }}/>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => { setShowLabel(false); setPendingB64(null); }}
+              <button onClick={() => { setShowLabel(false); setPendingB64(null); pendingRef.current = null; }}
                 style={{ flex:1, background:'none', border:`1px solid ${T.border}`, borderRadius:10, color:T.muted, padding:'12px', fontSize:14, cursor:'pointer' }}>
                 Annuler
               </button>
