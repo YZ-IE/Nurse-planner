@@ -7,6 +7,7 @@
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const C = '#f97316';
 
@@ -113,12 +114,16 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       };
       const blobB64 = jsonToB64(blob);
 
-      // Partage : fichier si supporté, texte sinon (maintenant < 60 KB donc passe dans WhatsApp)
-      const shareBytes = new TextEncoder().encode(blobB64);
-      const shareFile  = new File([shareBytes], `plaie_${Date.now()}.nplanr`, { type: 'application/octet-stream' });
+      // Partage via fichier .nplanr — Directory.External (file:// URI, sans permission)
+      // + external-files-path dans file_paths.xml pour que FileProvider le serve
+      const filename = `plaie_${Date.now()}.nplanr`;
       try {
-        await navigator.share({ files: [shareFile], title: 'Photo plaie chiffrée' });
+        await Filesystem.writeFile({ path: filename, data: blobB64, directory: Directory.External, encoding: 'utf8' });
+        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.External });
+        await Share.share({ files: [uri], title: 'Photo plaie chiffrée', dialogTitle: 'Envoyer le fichier .nplanr via…' });
+        Filesystem.deleteFile({ path: filename, directory: Directory.External }).catch(() => {});
       } catch {
+        // Fallback texte si le partage fichier échoue (blob < 60 KB grâce à la compression)
         await Share.share({ text: blobB64, dialogTitle: 'Envoyer via…' });
       }
 
