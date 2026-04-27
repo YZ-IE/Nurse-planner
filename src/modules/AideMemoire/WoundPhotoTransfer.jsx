@@ -7,7 +7,6 @@
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { Share } from '@capacitor/share';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const C = '#f97316';
 
@@ -85,20 +84,14 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       };
       const blobB64 = jsonToB64(blob);
 
-      // Écrire en fichier cache puis partager comme pièce jointe
-      const filename = `nplanr_${Date.now()}.nplanr`;
-      await Filesystem.writeFile({
-        path: filename, data: blobB64,
-        directory: Directory.Cache, encoding: 'utf8',
-      });
-      const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-      await Share.share({
-        files: [uri],
-        title: `Photo plaie chiffrée`,
-        dialogTitle: 'Envoyer le fichier .nplanr via…',
-      });
-      // Nettoyage best-effort
-      Filesystem.deleteFile({ path: filename, directory: Directory.Cache }).catch(() => {});
+      // Web Share API avec File object — pas de Filesystem (évite crash URI/FileProvider)
+      const shareBytes = new TextEncoder().encode(blobB64);
+      const shareFile  = new File([shareBytes], `plaie_${Date.now()}.nplanr`, { type: 'application/octet-stream' });
+      if (navigator.canShare?.({ files: [shareFile] })) {
+        await navigator.share({ files: [shareFile], title: 'Photo plaie chiffrée' });
+      } else {
+        await Share.share({ text: blobB64, dialogTitle: 'Envoyer via…' });
+      }
 
       setCode(newCode);
       setStep('done');
