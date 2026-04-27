@@ -7,6 +7,7 @@
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const C = '#f97316';
 
@@ -84,15 +85,20 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       };
       const blobB64 = jsonToB64(blob);
 
-      // Écrire en cache
-      // Partage via texte (pas de fichier temporaire — évite crash Filesystem)
-      const uri = undefined;
-
-      // Intent Android SEND
-      await Share.share({
-        text: blobB64,
-        dialogTitle: 'Envoyer le fichier chiffré via…',
+      // Écrire en fichier cache puis partager comme pièce jointe
+      const filename = `nplanr_${Date.now()}.nplanr`;
+      await Filesystem.writeFile({
+        path: filename, data: blobB64,
+        directory: Directory.Cache, encoding: 'utf8',
       });
+      const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+      await Share.share({
+        files: [uri],
+        title: `Photo plaie chiffrée`,
+        dialogTitle: 'Envoyer le fichier .nplanr via…',
+      });
+      // Nettoyage best-effort
+      Filesystem.deleteFile({ path: filename, directory: Directory.Cache }).catch(() => {});
 
       setCode(newCode);
       setStep('done');
@@ -212,12 +218,12 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
             <button onClick={()=>{setMode('export');setStep('select');}}
               style={{background:C+'22',border:`1px solid ${C}44`,borderRadius:14,color:C,padding:'15px',fontSize:15,fontWeight:700,cursor:'pointer',textAlign:'left'}}>
               📤 Envoyer une photo
-              <div style={{fontSize:12,color:C+'99',fontWeight:400,marginTop:4}}>Sélectionner → Bluetooth / Nearby Share</div>
+              <div style={{fontSize:12,color:C+'99',fontWeight:400,marginTop:4}}>Sélectionner → fichier .nplanr partagé via WhatsApp / Nearby Share</div>
             </button>
             <button onClick={()=>{setMode('import');setStep('select');}}
               style={{background:P.glass,border:`1px solid ${P.bdr}`,borderRadius:14,color:T.text,padding:'15px',fontSize:15,fontWeight:700,cursor:'pointer',textAlign:'left'}}>
               📥 Recevoir une photo
-              <div style={{fontSize:12,color:T.muted,fontWeight:400,marginTop:4}}>Importer un fichier .enc + code verbal</div>
+              <div style={{fontSize:12,color:T.muted,fontWeight:400,marginTop:4}}>Ouvrir le fichier .nplanr reçu + code verbal</div>
             </button>
           </div>
         )}
@@ -253,23 +259,20 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
           <>
             <div style={{color:T.muted,fontSize:13,marginBottom:12,lineHeight:1.6}}>
               1. Saisissez le code verbal (6 chiffres)<br/>
-              2. Collez le texte chiffré reçu
+              2. Ouvrez le fichier <span style={{fontFamily:'monospace'}}>.nplanr</span> reçu
             </div>
             <label style={s.label}>Code à 6 chiffres</label>
             <input value={importCode} onChange={e=>setImportCode(e.target.value.replace(/\D/g,'').slice(0,6))}
               placeholder='123456' inputMode='numeric' maxLength={6}
               style={{...s.input,fontSize:22,letterSpacing:8,textAlign:'center',marginBottom:14}}/>
-            <label style={{...s.label,marginTop:8}}>Texte chiffré reçu</label>
-            <textarea value={importBlob||''} onChange={e=>setImportBlob(e.target.value)}
-              placeholder='Coller le texte reçu ici…' rows={4}
-              style={{width:'100%',background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:'10px 12px',color:T.text,fontSize:11,outline:'none',boxSizing:'border-box',fontFamily:'monospace',resize:'none',marginBottom:12}}/>
+            <input ref={fileRef} type='file' accept='.nplanr' onChange={handleFileChange} style={{display:'none'}}/>
             {error&&<div style={{color:'#f43f5e',fontSize:13,marginBottom:10}}>{error}</div>}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setMode(null)} style={{flex:1,background:'none',border:`1px solid ${P.bdr}`,borderRadius:12,color:T.muted,padding:'13px',fontSize:14,cursor:'pointer'}}>Retour</button>
-              <button onClick={()=>handleImportBlob(importBlob,importCode)}
-                disabled={busy||importCode.length!==6||!importBlob}
-                style={{flex:1,background:!busy&&importCode.length===6&&importBlob?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
-                {busy?'Import…':'📥 Importer'}
+              <button onClick={()=>fileRef.current?.click()}
+                disabled={busy||importCode.length!==6}
+                style={{flex:1,background:!busy&&importCode.length===6?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                {busy?'Import…':'📂 Ouvrir .nplanr'}
               </button>
             </div>
           </>
