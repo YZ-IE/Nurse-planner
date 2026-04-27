@@ -26,6 +26,18 @@ function b64toU8(b64) {
 function u8toB64(a) {
   let s=''; a.forEach(b=>s+=String.fromCharCode(b)); return btoa(s);
 }
+// btoa() ne supporte pas l'Unicode — on encode en UTF-8 d'abord
+function jsonToB64(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+function b64ToJson(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
 
 export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey, onClose, onImported }) {
   const [mode,       setMode]       = useState(null);
@@ -70,7 +82,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
         expires:Date.now()+15*60*1000,
         iv:u8toB64(iv_t), ct:u8toB64(new Uint8Array(ct_t)),
       };
-      const blobB64 = btoa(JSON.stringify(blob));
+      const blobB64 = jsonToB64(blob);
 
       // Écrire en cache
       // Partage via texte (pas de fichier temporaire — évite crash Filesystem)
@@ -92,12 +104,15 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
   }
 
   // ── IMPORT — lecture via input[type=file] ─────────────────────────────────
-  async function handleImportBlob(blobB64, code) {
+  async function handleImportBlob(blobB64, transferCode) {
     setBusy(true); setError('');
+    let blobDecoded = false;
     try {
-      const blob = JSON.parse(atob(blobB64.trim().replace(/\s+/g, '')));
+      const blob = b64ToJson(blobB64.trim().replace(/\s+/g, ''));
+      blobDecoded = true;
+      if (blob.v !== 1 || !blob.iv || !blob.ct) throw new Error('Blob invalide');
       if (blob.expires < Date.now()) throw new Error('Code expiré (> 15 min)');
-      const tKey  = await deriveTransferKey(code.trim());
+      const tKey  = await deriveTransferKey(transferCode.trim());
       const plain = new Uint8Array(await crypto.subtle.decrypt(
         {name:'AES-GCM', iv:b64toU8(blob.iv)}, tKey, b64toU8(blob.ct)
       ));
@@ -114,7 +129,10 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       setStep('done');
       setTimeout(()=>{ onImported?.(); onClose(); }, 2000);
     } catch(e) {
-      setError(e?.message==='Code expiré (> 15 min)'?'Code expiré.':'Code incorrect ou texte invalide.');
+      console.error('[WoundPhotoTransfer import]', e);
+      if (e?.message === 'Code expiré (> 15 min)') setError('Code expiré.');
+      else if (!blobDecoded || e?.message === 'Blob invalide') setError('Texte invalide — vérifiez le collage.');
+      else setError('Code incorrect — vérifiez les 6 chiffres saisis.');
     } finally { setBusy(false); }
   }
 
@@ -131,7 +149,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
         r.readAsText(file);
       });
 
-      const blob = JSON.parse(atob(blobB64.trim().replace(/\s+/g, '')));
+      const blob = b64ToJson(blobB64.trim().replace(/\s+/g, ''));
       if (blob.v!==1||!blob.iv||!blob.ct) throw new Error('Fichier invalide');
       if (blob.expires < Date.now())       throw new Error('Code expiré (> 15 min)');
       if (!importCode||importCode.length!==6) throw new Error('Code à 6 chiffres requis');
