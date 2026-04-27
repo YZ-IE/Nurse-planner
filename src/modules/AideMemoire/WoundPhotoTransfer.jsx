@@ -39,6 +39,31 @@ function b64ToJson(b64) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+// Réduit l'image à 800px max, JPEG 0.65 — cible < 40 KB pour passer dans WhatsApp
+function compressImageForTransfer(plainBytes) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([plainBytes]);
+    const url  = URL.createObjectURL(blob);
+    const img  = new Image();
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+    img.onload  = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 800;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => {
+        if (!b) { reject(new Error('Compression échouée')); return; }
+        b.arrayBuffer().then(ab => resolve(new Uint8Array(ab))).catch(reject);
+      }, 'image/jpeg', 0.65);
+    };
+    img.src = url;
+  });
+}
+
 export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey, onClose, onImported }) {
   const [mode,       setMode]       = useState(null);
   const [selPhoto,   setSelPhoto]   = useState(null);
@@ -47,7 +72,8 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
   const [step,       setStep]       = useState('select');
   const [error,      setError]      = useState('');
   const [importCode, setImportCode] = useState('');
-  const [importBlob,  setImportBlob]  = useState('');
+  const [importBlob, setImportBlob] = useState('');
+  const [importTab,  setImportTab]  = useState('file'); // 'file' | 'text'
   const fileRef = useRef(null);
 
   const dark = loadDarkPref();
@@ -70,11 +96,14 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       const iv_p = enc.slice(0,12), ct_p = enc.slice(12);
       const plain = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:iv_p}, cryptoKey, ct_p));
 
-      // Re-chiffrer avec clé de transfert
+      // Compresser avant transfert (800px max, JPEG 0.65) → cible < 40 KB
+      const compressed = await compressImageForTransfer(plain);
+
+      // Re-chiffrer la version compressée avec clé de transfert
       const newCode    = String(Math.floor(100000 + Math.random()*900000));
       const tKey       = await deriveTransferKey(newCode);
       const iv_t       = crypto.getRandomValues(new Uint8Array(12));
-      const ct_t       = await crypto.subtle.encrypt({name:'AES-GCM',iv:iv_t}, tKey, plain);
+      const ct_t       = await crypto.subtle.encrypt({name:'AES-GCM',iv:iv_t}, tKey, compressed);
 
       const blob = {
         v:1, label:selPhoto.label, time:selPhoto.time,
@@ -84,12 +113,12 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       };
       const blobB64 = jsonToB64(blob);
 
-      // Web Share API avec File object — pas de Filesystem (évite crash URI/FileProvider)
+      // Partage : fichier si supporté, texte sinon (maintenant < 60 KB donc passe dans WhatsApp)
       const shareBytes = new TextEncoder().encode(blobB64);
       const shareFile  = new File([shareBytes], `plaie_${Date.now()}.nplanr`, { type: 'application/octet-stream' });
-      if (navigator.canShare?.({ files: [shareFile] })) {
+      try {
         await navigator.share({ files: [shareFile], title: 'Photo plaie chiffrée' });
-      } else {
+      } catch {
         await Share.share({ text: blobB64, dialogTitle: 'Envoyer via…' });
       }
 
@@ -250,23 +279,52 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
         {/* IMPORT */}
         {mode==='import' && step==='select' && (
           <>
-            <div style={{color:T.muted,fontSize:13,marginBottom:12,lineHeight:1.6}}>
-              1. Saisissez le code verbal (6 chiffres)<br/>
-              2. Ouvrez le fichier <span style={{fontFamily:'monospace'}}>.nplanr</span> reçu
-            </div>
             <label style={s.label}>Code à 6 chiffres</label>
             <input value={importCode} onChange={e=>setImportCode(e.target.value.replace(/\D/g,'').slice(0,6))}
               placeholder='123456' inputMode='numeric' maxLength={6}
               style={{...s.input,fontSize:22,letterSpacing:8,textAlign:'center',marginBottom:14}}/>
+
+            {/* Onglets fichier / texte */}
+            <div style={{display:'flex',borderRadius:10,overflow:'hidden',border:`1px solid ${P.bdr}`,marginBottom:12}}>
+              {[['file','📂 Fichier .nplanr'],['text','📋 Texte collé']].map(([tab,label])=>(
+                <button key={tab} onClick={()=>setImportTab(tab)}
+                  style={{flex:1,padding:'9px',fontSize:12,fontWeight:importTab===tab?700:400,
+                    background:importTab===tab?C+'22':'none',color:importTab===tab?C:T.muted,
+                    border:'none',cursor:'pointer'}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <input ref={fileRef} type='file' accept='.nplanr' onChange={handleFileChange} style={{display:'none'}}/>
+            {importTab==='file' && (
+              <div style={{color:T.muted,fontSize:12,marginBottom:10,lineHeight:1.5}}>
+                Ouvrez le fichier <span style={{fontFamily:'monospace'}}>.nplanr</span> reçu (WhatsApp → télécharger → ouvrir ici)
+              </div>
+            )}
+            {importTab==='text' && (
+              <>
+                <textarea value={importBlob||''} onChange={e=>setImportBlob(e.target.value)}
+                  placeholder='Coller le texte reçu ici…' rows={4}
+                  style={{width:'100%',background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,
+                    padding:'10px 12px',color:T.text,fontSize:11,outline:'none',
+                    boxSizing:'border-box',fontFamily:'monospace',resize:'none',marginBottom:10}}/>
+              </>
+            )}
+
             {error&&<div style={{color:'#f43f5e',fontSize:13,marginBottom:10}}>{error}</div>}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setMode(null)} style={{flex:1,background:'none',border:`1px solid ${P.bdr}`,borderRadius:12,color:T.muted,padding:'13px',fontSize:14,cursor:'pointer'}}>Retour</button>
-              <button onClick={()=>fileRef.current?.click()}
-                disabled={busy||importCode.length!==6}
-                style={{flex:1,background:!busy&&importCode.length===6?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
-                {busy?'Import…':'📂 Ouvrir .nplanr'}
-              </button>
+              {importTab==='file'
+                ? <button onClick={()=>fileRef.current?.click()} disabled={busy||importCode.length!==6}
+                    style={{flex:1,background:!busy&&importCode.length===6?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                    {busy?'Import…':'📂 Ouvrir fichier'}
+                  </button>
+                : <button onClick={()=>handleImportBlob(importBlob,importCode)} disabled={busy||importCode.length!==6||!importBlob}
+                    style={{flex:1,background:!busy&&importCode.length===6&&importBlob?C:'#555',border:'none',borderRadius:12,color:'#fff',padding:'13px',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                    {busy?'Import…':'📥 Importer texte'}
+                  </button>
+              }
             </div>
           </>
         )}
