@@ -3,6 +3,7 @@
  * Helpers partagés et composant FieldInput
  */
 
+import { useState } from 'react';
 import { T, s } from '../../theme.js';
 
 // ─── Date / heure ────────────────────────────────────────────────────────────
@@ -32,10 +33,57 @@ export function genId() {
 /** Retourne true si un champ de type 'flag' a une valeur active */
 export function isFlagActive(field, value) {
   if (value === undefined || value === null || value === '') return false;
-  if (field.type === 'boolean') return value === true;
-  if (field.type === 'text')   return String(value).trim().length > 0;
-  if (field.type === 'select') return String(value).trim().length > 0;
+  if (field.type === 'boolean')  return value === true;
+  if (field.type === 'text')     return String(value).trim().length > 0;
+  if (field.type === 'textarea') return String(value).trim().length > 0;
+  if (field.type === 'select')   return String(value).trim().length > 0;
+  if (field.type === 'list')     return Array.isArray(value) && value.length > 0;
   return false;
+}
+
+// ─── ListFieldInput ──────────────────────────────────────────────────────────
+
+function ListFieldInput({ value, onChange, accentColor }) {
+  const [draft, setDraft] = useState('');
+  const C     = accentColor;
+  const items = Array.isArray(value) ? value : (value ? [String(value)] : []);
+
+  function add() {
+    const t = draft.trim();
+    if (!t) return;
+    onChange([...items, t]);
+    setDraft('');
+  }
+  function remove(i) { onChange(items.filter((_, idx) => idx !== i)); }
+
+  return (
+    <div>
+      {items.map((item, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+          <span style={{ flex: 1, color: T.text, fontSize: 13, background: T.bg, borderRadius: 7, padding: '6px 10px', border: `1px solid ${T.border}` }}>
+            {item}
+          </span>
+          <button onClick={() => remove(i)}
+            style={{ background: 'none', border: 'none', color: T.muted, fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>
+            ×
+          </button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          placeholder="Ajouter…"
+          style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 13 }}
+        />
+        <button onClick={add} disabled={!draft.trim()}
+          style={{ background: C + '33', border: `1px solid ${C}44`, borderRadius: 8, color: C, fontSize: 20, width: 34, flexShrink: 0, cursor: 'pointer', opacity: draft.trim() ? 1 : 0.4 }}>
+          +
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Composant FieldInput ────────────────────────────────────────────────────
@@ -47,7 +95,7 @@ export function isFlagActive(field, value) {
 export function FieldInput({ field, value, onChange, accentColor, compact = false }) {
   const C   = accentColor;
   const val = (value !== undefined && value !== null) ? value
-    : (field.type === 'boolean' ? false : '');
+    : (field.type === 'boolean' ? false : field.type === 'list' ? [] : '');
 
   // ── Boolean ──────────────────────────────────────────────────────────────
   if (field.type === 'boolean') {
@@ -132,6 +180,24 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
           );
         })}
       </div>
+    );
+  }
+
+  // ── List ─────────────────────────────────────────────────────────────────
+  if (field.type === 'list') {
+    return <ListFieldInput value={val} onChange={onChange} accentColor={C} />;
+  }
+
+  // ── Textarea ─────────────────────────────────────────────────────────────
+  if (field.type === 'textarea') {
+    return (
+      <textarea
+        value={val}
+        onChange={e => onChange(e.target.value)}
+        placeholder="—"
+        rows={3}
+        style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: compact ? 13 : 14, minHeight: 68 }}
+      />
     );
   }
 
