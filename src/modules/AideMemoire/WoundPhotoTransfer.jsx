@@ -7,7 +7,10 @@
 import { useState, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { Share } from '@capacitor/share';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { registerPlugin } from '@capacitor/core';
+
+// Plugin natif minimal — contourne le bug du plugin Share officiel avec les URIs FileProvider
+const ShareFile = registerPlugin('ShareFile');
 
 const C = '#f97316';
 
@@ -114,16 +117,13 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
       };
       const blobB64 = jsonToB64(blob);
 
-      // Partage via fichier .nplanr — Directory.External (file:// URI, sans permission)
-      // + external-files-path dans file_paths.xml pour que FileProvider le serve
+      // Plugin natif ShareFile : écrit en cache, génère le content URI via FileProvider,
+      // lance Intent.ACTION_SEND directement — pas de double-conversion URI
       const filename = `plaie_${Date.now()}.nplanr`;
       try {
-        await Filesystem.writeFile({ path: filename, data: blobB64, directory: Directory.External, encoding: 'utf8' });
-        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.External });
-        await Share.share({ files: [uri], title: 'Photo plaie chiffrée', dialogTitle: 'Envoyer le fichier .nplanr via…' });
-        Filesystem.deleteFile({ path: filename, directory: Directory.External }).catch(() => {});
+        await ShareFile.share({ content: blobB64, filename });
       } catch {
-        // Fallback texte si le partage fichier échoue (blob < 60 KB grâce à la compression)
+        // Fallback texte (blob < 60 KB grâce à la compression)
         await Share.share({ text: blobB64, dialogTitle: 'Envoyer via…' });
       }
 
