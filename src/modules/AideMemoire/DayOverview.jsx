@@ -9,6 +9,48 @@ import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty } from './templates.js';
 import { computeSlots } from './ServiceView.jsx';
+import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
+
+// ─── Helpers photo plaie ──────────────────────────────────────────────────────
+
+function compressWoundImage(base64, maxPx = 600, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+    };
+    img.onerror = reject;
+    img.src = `data:image/jpeg;base64,${base64}`;
+  });
+}
+
+async function encryptWoundB64(plainB64, cryptoKey) {
+  const binStr = atob(plainB64);
+  const bytes  = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, bytes);
+  const combined = new Uint8Array(12 + ct.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ct), 12);
+  let b64 = '';
+  const chunk = 8192;
+  for (let i = 0; i < combined.length; i += chunk)
+    b64 += String.fromCharCode(...combined.subarray(i, i + chunk));
+  return btoa(b64);
+}
+
+function loadWoundIdx(sid, pid) {
+  try { return JSON.parse(localStorage.getItem(`am_wound_idx_${sid}_${pid}`) || '[]'); } catch { return []; }
+}
+function saveWoundIdx(sid, pid, idx) {
+  try { localStorage.setItem(`am_wound_idx_${sid}_${pid}`, JSON.stringify(idx)); } catch {}
+}
 
 // ─── Modal validation soin ────────────────────────────────────────────────────
 
@@ -29,12 +71,17 @@ const CARE_SUB = {
   poids:   { valueLabel: 'Poids (kg)',      valuePlaceholder: 'Ex: 68'      },
 };
 
-function ValidationModal({ entry, onValidate, onClose }) {
-  const sub = CARE_SUB[entry.type] || {};
+function ValidationModal({ entry, service, cryptoKey, onValidate, onClose }) {
+  const sub         = CARE_SUB[entry.type] || {};
+  const isPansement = entry.type === 'pansement';
+
   const [doneTime,    setDoneTime]    = useState(timeStr());
   const [value,       setValue]       = useState('');
   const [subVals,     setSubVals]     = useState({});
   const [confirmEmpty,setConfirmEmpty]= useState(false);
+  const [photoB64,    setPhotoB64]    = useState(null);
+  const [photoError,  setPhotoError]  = useState('');
+  const [photoBusy,   setPhotoBusy]   = useState(false);
 
   function buildValue() {
     if (sub.grouped) {
@@ -46,8 +93,49 @@ function ValidationModal({ entry, onValidate, onClose }) {
   function hasValue() {
     return sub.grouped ? Object.values(subVals).some(v => v?.trim()) : value.trim().length > 0;
   }
-  function handleValidate() {
+
+  async function handleCapturePhoto() {
+    setPhotoError('');
+    setPhotoBusy(true);
+    try {
+      await Camera.requestPermissions({ permissions: ['camera'] });
+      const photo = await Camera.getPhoto({
+        quality: 70,
+        width: 1024,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera,
+        allowEditing: false,
+        saveToGallery: false,
+        correctOrientation: true,
+      });
+      if (!photo.base64String) { setPhotoError('Photo vide.'); return; }
+      const compressed = await compressWoundImage(photo.base64String);
+      setPhotoB64(compressed);
+    } catch (e) {
+      const msg = e?.message || String(e);
+      if (!msg.includes('cancel') && !msg.includes('User cancelled'))
+        setPhotoError('Erreur caméra : ' + msg.slice(0, 60));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function saveWoundPhoto() {
+    try {
+      const enc = await encryptWoundB64(photoB64, cryptoKey);
+      const ts  = Date.now();
+      localStorage.setItem(`am_wound_${service.id}_${entry.patient.id}_${ts}`, enc);
+      const idx = loadWoundIdx(service.id, entry.patient.id);
+      idx.push({ ts, label: entry.label, time: timeStr() });
+      saveWoundIdx(service.id, entry.patient.id, idx);
+    } catch (e) {
+      console.error('[DayOverview] saveWoundPhoto:', e);
+    }
+  }
+
+  async function handleValidate() {
     if (!hasValue() && !confirmEmpty) { setConfirmEmpty(true); return; }
+    if (photoB64) await saveWoundPhoto();
     onValidate(entry.id, doneTime, buildValue());
     onClose();
   }
@@ -56,7 +144,7 @@ function ValidationModal({ entry, onValidate, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '22px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '85vh', overflowY: 'auto' }}>
+      <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '22px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>{entry.label}</div>
@@ -86,6 +174,35 @@ function ValidationModal({ entry, onValidate, onClose }) {
           <div style={{ marginBottom: 14 }}>
             <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{sub.valueLabel}</div>
             <input value={value} onChange={e => setValue(e.target.value)} placeholder={sub.valuePlaceholder} style={INP} />
+          </div>
+        )}
+
+        {isPansement && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Photo de plaie <span style={{ color: T.muted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optionnel)</span>
+            </div>
+            {photoB64 ? (
+              <div style={{ position: 'relative', marginBottom: 4 }}>
+                <img src={`data:image/jpeg;base64,${photoB64}`} alt="plaie"
+                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
+                <button onClick={() => setPhotoB64(null)}
+                  style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: 20, color: '#fff', fontSize: 16, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  ×
+                </button>
+                <div style={{ position: 'absolute', bottom: 6, left: 8, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '2px 8px', color: '#fff', fontSize: 10 }}>
+                  🔒 sera chiffrée
+                </div>
+              </div>
+            ) : (
+              <button onClick={handleCapturePhoto} disabled={photoBusy}
+                style={{ width: '100%', padding: '10px', background: '#06b6d422', border: '1px solid #06b6d444', borderRadius: 10, color: '#06b6d4', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: photoBusy ? 0.6 : 1 }}>
+                {photoBusy ? '⏳ Ouverture caméra…' : '📷 Prendre une photo'}
+              </button>
+            )}
+            {photoError && (
+              <div style={{ color: '#f43f5e', fontSize: 11, marginTop: 4 }}>{photoError}</div>
+            )}
           </div>
         )}
 
@@ -410,6 +527,8 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
       {validating && (
         <ValidationModal
           entry={validating}
+          service={service}
+          cryptoKey={cryptoKey}
           onValidate={(id, doneTime, doneValue) => { handleValidate(id, doneTime, doneValue); setValidating(null); }}
           onClose={() => setValidating(null)}
         />
