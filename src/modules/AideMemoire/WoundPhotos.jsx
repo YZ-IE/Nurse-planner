@@ -6,7 +6,7 @@
  * Suppression : à la sortie patient (deleteAllWoundPhotos)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { T, loadDarkPref } from '../../theme.js';
@@ -91,6 +91,81 @@ export async function deleteAllWoundPhotos(serviceId, patientId) {
     }
     localStorage.removeItem(idxKey(serviceId, patientId));
   } catch {}
+}
+
+// ── Zoom interactif ───────────────────────────────────────────────────────────
+function ZoomableImage({ src, alt }) {
+  const [scale,  setScale]  = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const pinchRef  = useRef(null); // { startDist, startScale }
+  const panRef    = useRef(null); // { startX, startY, startOffset }
+  const lastTapTs = useRef(0);
+
+  function dist2(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+
+  function onTouchStart(e) {
+    if (e.touches.length === 2) {
+      pinchRef.current = { startDist: dist2(e.touches), startScale: scale };
+      panRef.current   = null;
+    } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTapTs.current < 280) {
+        setScale(s => { const next = s > 1 ? 1 : 2.5; if (next === 1) setOffset({ x: 0, y: 0 }); return next; });
+        lastTapTs.current = 0;
+      } else {
+        lastTapTs.current = now;
+        panRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, startOffset: offset };
+      }
+      pinchRef.current = null;
+    }
+  }
+
+  function onTouchMove(e) {
+    if (e.touches.length === 2 && pinchRef.current) {
+      const s = Math.min(4, Math.max(1, pinchRef.current.startScale * (dist2(e.touches) / pinchRef.current.startDist)));
+      setScale(s);
+      if (s <= 1) setOffset({ x: 0, y: 0 });
+    } else if (e.touches.length === 1 && scale > 1 && panRef.current) {
+      const dx = e.touches[0].clientX - panRef.current.startX;
+      const dy = e.touches[0].clientY - panRef.current.startY;
+      setOffset({ x: panRef.current.startOffset.x + dx, y: panRef.current.startOffset.y + dy });
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (e.touches.length < 2) pinchRef.current = null;
+    if (e.touches.length === 0) panRef.current = null;
+    if (scale <= 1) setOffset({ x: 0, y: 0 });
+  }
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '0 8px', touchAction: 'none' }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        draggable={false}
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+          borderRadius: scale > 1 ? 0 : 8,
+          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          transformOrigin: 'center center',
+          transition: scale === 1 ? 'transform 0.25s ease' : 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  );
 }
 
 // ── Composant ─────────────────────────────────────────────────────────────────
@@ -326,12 +401,9 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
               </button>
             )}
           </div>
-          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 8px' }}>
-            <img src={selected.dataUrl} alt={selected.label}
-              style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', borderRadius:8 }}/>
-          </div>
+          <ZoomableImage src={selected.dataUrl} alt={selected.label} />
           <div style={{ padding:'12px 16px 32px', textAlign:'center', color:'rgba(255,255,255,0.4)', fontSize:11 }}>
-            🔒 AES-256 · Supprimée à la sortie
+            🔒 AES-256 · Supprimée à la sortie · 👌 Pincer pour zoomer
           </div>
         </div>
       )}

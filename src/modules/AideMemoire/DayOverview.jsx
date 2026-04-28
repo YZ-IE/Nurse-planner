@@ -80,6 +80,7 @@ function ValidationModal({ entry, service, cryptoKey, onValidate, onClose }) {
   const [subVals,     setSubVals]     = useState({});
   const [confirmEmpty,setConfirmEmpty]= useState(false);
   const [photoB64,    setPhotoB64]    = useState(null);
+  const [photoLabel,  setPhotoLabel]  = useState('');
   const [photoError,  setPhotoError]  = useState('');
   const [photoBusy,   setPhotoBusy]   = useState(false);
 
@@ -126,7 +127,7 @@ function ValidationModal({ entry, service, cryptoKey, onValidate, onClose }) {
       const ts  = Date.now();
       localStorage.setItem(`am_wound_${service.id}_${entry.patient.id}_${ts}`, enc);
       const idx = loadWoundIdx(service.id, entry.patient.id);
-      idx.push({ ts, label: entry.label, time: timeStr() });
+      idx.push({ ts, label: photoLabel.trim() || entry.label, time: timeStr() });
       saveWoundIdx(service.id, entry.patient.id, idx);
     } catch (e) {
       console.error('[DayOverview] saveWoundPhoto:', e);
@@ -183,16 +184,24 @@ function ValidationModal({ entry, service, cryptoKey, onValidate, onClose }) {
               Photo de plaie <span style={{ color: T.muted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optionnel)</span>
             </div>
             {photoB64 ? (
-              <div style={{ position: 'relative', marginBottom: 4 }}>
-                <img src={`data:image/jpeg;base64,${photoB64}`} alt="plaie"
-                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
-                <button onClick={() => setPhotoB64(null)}
-                  style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: 20, color: '#fff', fontSize: 16, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  ×
-                </button>
-                <div style={{ position: 'absolute', bottom: 6, left: 8, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '2px 8px', color: '#fff', fontSize: 10 }}>
-                  🔒 sera chiffrée
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ position: 'relative', marginBottom: 8 }}>
+                  <img src={`data:image/jpeg;base64,${photoB64}`} alt="plaie"
+                    style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
+                  <button onClick={() => { setPhotoB64(null); setPhotoLabel(''); }}
+                    style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: 20, color: '#fff', fontSize: 16, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    ×
+                  </button>
+                  <div style={{ position: 'absolute', bottom: 6, left: 8, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '2px 8px', color: '#fff', fontSize: 10 }}>
+                    🔒 sera chiffrée
+                  </div>
                 </div>
+                <input
+                  value={photoLabel}
+                  onChange={e => setPhotoLabel(e.target.value)}
+                  placeholder={entry.label}
+                  style={{ ...INP, fontSize: 13 }}
+                />
               </div>
             ) : (
               <button onClick={handleCapturePhoto} disabled={photoBusy}
