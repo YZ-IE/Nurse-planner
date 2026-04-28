@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { getSpecialty } from './templates.js';
+import { getSpecialty, getAllFieldsAlpha } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
 
@@ -132,6 +132,97 @@ function AddRdvModal({ patient, infoFields, onAdd, onClose }) {
   );
 }
 
+// ─── Modal centres d'intérêt (QuickEntry) ────────────────────────────────────
+
+function CentreInteretModal({ patient, service, dailyData, onFieldChange, onAddField, onClose }) {
+  const [view,   setView]   = useState('list'); // 'list' | 'add'
+  const [search, setSearch] = useState('');
+
+  const customFields = patient.customFields || [];
+  const daily        = dailyData[patient.id] || { fieldValues: {} };
+
+  if (view === 'add') {
+    const existingIds = new Set([
+      ...service.fields.map(f => f.id),
+      ...customFields.map(f => f.id),
+    ]);
+    const allFields = getAllFieldsAlpha().filter(f => !existingIds.has(f.id));
+    const filtered  = search.trim()
+      ? allFields.filter(f => f.label.toLowerCase().includes(search.toLowerCase()))
+      : allFields;
+
+    function catColor(f) {
+      if (f.category === 'flag')        return '#f43f5e';
+      if (f.category === 'info')        return '#6366f1';
+      if (f.category === 'observation') return '#06b6d4';
+      if (f.category === 'constante')   return '#22c55e';
+      return T.muted;
+    }
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+        <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <button onClick={() => { setView('list'); setSearch(''); }} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer' }}>←</button>
+            <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>➕ Ajouter un centre d'intérêt</span>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
+          </div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+            style={{ ...s.input, width: '100%', boxSizing: 'border-box', marginBottom: 12 }} />
+          {filtered.length === 0 && (
+            <div style={{ color: T.muted, fontSize: 13, textAlign: 'center', marginTop: 16 }}>Aucun champ disponible</div>
+          )}
+          {filtered.map(f => (
+            <button key={f.id} onClick={() => { onAddField(f); setView('list'); setSearch(''); }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 7, background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${catColor(f)}`, borderRadius: 10, color: T.text, padding: '11px 14px', textAlign: 'left', fontSize: 14, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+              <span>{f.label}</span>
+              <span style={{ color: T.muted, fontSize: 11, flexShrink: 0, marginLeft: 8 }}>{f.persistent ? '📌 séjour' : '🔄 journalier'}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div>
+            <div style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>🎯 Centres d'intérêt</div>
+            <div style={{ color: T.muted, fontSize: 12 }}>{patient.initials}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
+        </div>
+
+        {customFields.length === 0 && (
+          <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 14, textAlign: 'center' }}>
+            Aucun centre d'intérêt — ajoutez-en ci-dessous
+          </div>
+        )}
+
+        {customFields.map(f => (
+          <div key={f.id} style={{ marginBottom: 14 }}>
+            <div style={{ color: T.muted, fontSize: 11, marginBottom: 5 }}>{f.label}</div>
+            <FieldInput
+              field={f}
+              value={f.persistent ? (patient.fieldValues || {})[f.id] : daily.fieldValues[f.id]}
+              onChange={v => onFieldChange(patient, f.id, v)}
+              accentColor="#a78bfa"
+            />
+          </div>
+        ))}
+
+        <button onClick={() => setView('add')}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bg, border: '1px dashed rgba(167,139,250,0.5)', borderRadius: 12, color: '#a78bfa', fontSize: 14, padding: '11px 14px', cursor: 'pointer', width: '100%', WebkitTapHighlightColor: 'transparent' }}>
+          <span style={{ fontSize: 18 }}>+</span>
+          <span>Ajouter un centre d'intérêt</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function QuickEntry({ service, cryptoKey, accentColor, onBack, selectedDate: selDate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
@@ -140,8 +231,9 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   const [dailyData, setDailyData] = useState({});
   const [loading,   setLoading]   = useState(true);
   const [eventInputs, setEventInputs] = useState({});
-  const [addCareFor,  setAddCareFor]  = useState(null); // patient
-  const [addRdvFor,   setAddRdvFor]   = useState(null); // patient
+  const [addCareFor,       setAddCareFor]       = useState(null);
+  const [addRdvFor,        setAddRdvFor]        = useState(null);
+  const [centreInteretFor, setCentreInteretFor] = useState(null);
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -215,6 +307,32 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
       setDailyData(nextAll);
       if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
     }
+  }
+
+  async function saveCentreInteretField(patient, fieldId, value) {
+    const field = (patient.customFields || []).find(f => f.id === fieldId);
+    if (!field) return;
+    if (field.persistent) {
+      const nextPts = patients.map(p => p.id === patient.id ? { ...p, fieldValues: { ...(p.fieldValues || {}), [fieldId]: value } } : p);
+      setPatients(nextPts);
+      await secureSet(`patients_${service.id}`, nextPts, cryptoKey);
+    } else {
+      const entry  = dailyData[patient.id] || { fieldValues: {}, events: [] };
+      const next   = { ...entry, fieldValues: { ...(entry.fieldValues || {}), [fieldId]: value } };
+      const nextAll = { ...dailyData, [patient.id]: next };
+      setDailyData(nextAll);
+      if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
+    }
+  }
+
+  async function addPatientCustomField(patient, field) {
+    const existing = patient.customFields || [];
+    if (existing.find(f => f.id === field.id)) return;
+    const nextPts = patients.map(p => p.id === patient.id
+      ? { ...p, customFields: [...existing, { ...field, persistent: true }] }
+      : p);
+    setPatients(nextPts);
+    await secureSet(`patients_${service.id}`, nextPts, cryptoKey);
   }
 
   // ─── Rendu ───────────────────────────────────────────────────────────────
@@ -350,7 +468,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
                 >+</button>
               </div>
 
-              {/* ─ Boutons planifier soin / RDV ─ */}
+              {/* ─ Boutons planifier soin / RDV / Centre d'intérêt ─ */}
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button onClick={() => setAddCareFor(patient)}
                   style={{ flex: 1, background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 8, color: '#f43f5e', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
@@ -362,6 +480,10 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
                     📅 RDV / Info
                   </button>
                 )}
+                <button onClick={() => setCentreInteretFor(patient)}
+                  style={{ flex: 1, background: '#a78bfa11', border: '1px solid #a78bfa33', borderRadius: 8, color: '#a78bfa', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                  🎯 Centres
+                </button>
               </div>
             </div>
           );
@@ -381,6 +503,16 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
           infoFields={service.fields.filter(f => f.category === 'info')}
           onAdd={(fieldId, value) => addRdv(addRdvFor, fieldId, value)}
           onClose={() => setAddRdvFor(null)}
+        />
+      )}
+      {centreInteretFor && (
+        <CentreInteretModal
+          patient={patients.find(p => p.id === centreInteretFor.id) || centreInteretFor}
+          service={service}
+          dailyData={dailyData}
+          onFieldChange={saveCentreInteretField}
+          onAddField={f => addPatientCustomField(centreInteretFor, f)}
+          onClose={() => setCentreInteretFor(null)}
         />
       )}
     </div>
