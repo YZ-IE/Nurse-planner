@@ -18,12 +18,13 @@ export const SPECIALTIES = [
 // Flags communs — tous liés à l'état du patient → persistent: true
 // sauf NPO et antalgie qui sont des prescriptions journalières
 const COMMON_FLAGS = [
-  { id: 'allergie',  label: '⚠️ Allergie',    type: 'text',    persistent: true,  category: 'flag' },
-  { id: 'chute',     label: '🔴 Risque chute', type: 'boolean', persistent: true,  category: 'flag' },
-  { id: 'isolement', label: '🟡 Isolement',     type: 'select',  persistent: true,  category: 'flag',
+  { id: 'allergie',    label: '⚠️ Allergie',                 type: 'text',     persistent: true,  category: 'flag' },
+  { id: 'chute',       label: '🔴 Risque chute',              type: 'boolean',  persistent: true,  category: 'flag' },
+  { id: 'isolement',   label: '🟡 Isolement',                 type: 'select',   persistent: true,  category: 'flag',
     options: ['Contact', 'Gouttelettes', 'Air', 'Protecteur'] },
-  { id: 'npo',       label: '🚫 À jeun (NPO)', type: 'boolean', persistent: false, category: 'flag' },
-  { id: 'douleur',   label: '💊 Antalgie',      type: 'select',  persistent: false, category: 'flag',
+  { id: 'surv_part',   label: '👁 Surveillance particulière', type: 'textarea', persistent: true,  category: 'flag' },
+  { id: 'npo',         label: '🚫 À jeun (NPO)',              type: 'boolean',  persistent: false, category: 'flag' },
+  { id: 'douleur',     label: '💊 Antalgie',                  type: 'select',   persistent: false, category: 'flag',
     options: ['Palier 1', 'Palier 2', 'Palier 3 LP', 'Palier 3 sb'] },
 ];
 
@@ -32,15 +33,15 @@ export const TEMPLATES = {
   traumato: { fields: [
     ...COMMON_FLAGS,
     // ── Séjour (état / date) ──
-    { id: 'rdv_chir',   label: 'RDV Chirurgie',     type: 'text',    persistent: true,  category: 'info' },
+    { id: 'rdv_chir',   label: 'RDV',                type: 'list',    persistent: true,  category: 'info' },
     { id: 'appui',      label: 'Appui autorisé',     type: 'select',  persistent: true,  category: 'info',
       options: ['Total', 'Partiel', 'Non autorisé', 'À préciser'] },
-    { id: 'zimmer',     label: 'Zimmer / Attelle',   type: 'text',    persistent: true,  category: 'info' },
-    { id: 'hbpm',       label: 'HBPM prescrit',      type: 'boolean', persistent: true,  category: 'info' },
-    // ── Journalier (soins / surveillance) ──
-    { id: 'j_postop',   label: 'J post-op',           type: 'number',  persistent: false, category: 'observation' },
-    { id: 'avq',        label: 'AVQ / Autonomie',     type: 'select',  persistent: true,  category: 'observation',
+    { id: 'zimmer',     label: 'Équipement',         type: 'list',    persistent: true,  category: 'info' },
+    { id: 'hbpm',       label: 'Injectable',         type: 'list',    persistent: true,  category: 'info' },
+    { id: 'avq',        label: 'AVQ / Autonomie',    type: 'select',  persistent: true,  category: 'info',
       options: ['Autonome', 'Aide partielle', 'Aide totale'] },
+    // ── Journalier (soins / surveillance) ──
+    { id: 'j_postop',   label: 'J post-op',          type: 'number',  persistent: false, category: 'observation' },
     { id: 'pst',        label: 'Pansement réalisé',   type: 'boolean', persistent: false, category: 'observation' },
     { id: 'constantes', label: 'Constantes',           type: 'text',    persistent: false, category: 'constante' },
   ]},
@@ -67,16 +68,16 @@ export const TEMPLATES = {
     ...COMMON_FLAGS,
     // ── Séjour (état / date) ──
     { id: 'stomie',     label: '🩺 Stomie',             type: 'boolean', persistent: true,  category: 'flag' },
-    { id: 'rdv_chir',   label: 'RDV Chirurgie',         type: 'text',    persistent: true,  category: 'info' },
+    { id: 'rdv_chir',   label: 'RDV',                    type: 'list',    persistent: true,  category: 'info' },
     { id: 'appui',      label: 'Appui autorisé',         type: 'select',  persistent: true,  category: 'info',
       options: ['Total', 'Partiel', 'Non autorisé'] },
     { id: 'drain',      label: 'Drain en place',         type: 'text',    persistent: true,  category: 'info' },
+    { id: 'avq',        label: 'AVQ / Autonomie',        type: 'select',  persistent: true,  category: 'info',
+      options: ['Autonome', 'Aide partielle', 'Aide totale'] },
     // ── Journalier (soins / surveillance) ──
     { id: 'j_postop',   label: 'J post-op',              type: 'number',  persistent: false, category: 'observation' },
     { id: 'transit',    label: 'Reprise transit',         type: 'select',  persistent: false, category: 'observation',
       options: ['Non', 'Gaz', 'Selles'] },
-    { id: 'avq',        label: 'AVQ / Autonomie',     type: 'select',  persistent: true,  category: 'observation',
-      options: ['Autonome', 'Aide partielle', 'Aide totale'] },
     { id: 'pst',        label: 'Pansement réalisé',       type: 'boolean', persistent: false, category: 'observation' },
     { id: 'constantes', label: 'Constantes',              type: 'text',    persistent: false, category: 'constante' },
   ]},
@@ -102,7 +103,7 @@ export const TEMPLATES = {
     // ── Journalier ──
     { id: 'flacc',        label: 'Score douleur FLACC',     type: 'number', persistent: false, category: 'constante' },
     { id: 'accompagnant', label: 'Accompagnant présent',     type: 'boolean',persistent: false, category: 'observation' },
-    { id: 'avq',        label: 'AVQ / Autonomie',     type: 'select',  persistent: true,  category: 'observation',
+    { id: 'avq',        label: 'AVQ / Autonomie',     type: 'select',  persistent: true,  category: 'info',
       options: ['Parent', 'Aide IDE', 'Autonome'] },
     { id: 'constantes',   label: 'Constantes',               type: 'text',   persistent: false, category: 'constante' },
   ]},
