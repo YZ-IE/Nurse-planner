@@ -9,6 +9,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
+import { computeSlots } from './ServiceView.jsx';
 
 // ─── Types de soins ───────────────────────────────────────────────────────────
 
@@ -227,7 +228,13 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   }
 
   const constFields = service.fields.filter(f => f.category === 'constante');
-  const sortedPatients = [...patients].sort((a, b) => a.bedNumber - b.bedNumber);
+  const slots = computeSlots(service);
+  const bedLabel = Object.fromEntries(slots.map(sl => [sl.slotIndex, sl.roomLabel]));
+  const sortedPatients = [...patients].sort((a, b) => {
+    const la = bedLabel[a.bedNumber] ?? String(a.bedNumber);
+    const lb = bedLabel[b.bedNumber] ?? String(b.bedNumber);
+    return la.localeCompare(lb, 'fr', { numeric: true });
+  });
 
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
@@ -270,7 +277,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
 
               {/* ─ En-tête patient ─ */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ color: T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>🛏 {patient.bedNumber}</span>
+                <span style={{ color: T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>🛏 {bedLabel[patient.bedNumber] ?? patient.bedNumber}</span>
                 <span style={{ color: T.text, fontSize: 15, fontWeight: 800 }}>{patient.initials}</span>
                 <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
                 {flagEmoji.length > 0 && (
