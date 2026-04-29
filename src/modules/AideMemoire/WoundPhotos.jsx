@@ -17,7 +17,7 @@ const C = '#f97316';
 const WOUND_DIR = 'nplanr_wounds';
 
 // ── Compression canvas ────────────────────────────────────────────────────────
-function compressImage(base64, maxPx = 600, quality = 0.7) {
+function compressImage(base64, format = 'jpeg', maxPx = 600, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -29,8 +29,10 @@ function compressImage(base64, maxPx = 600, quality = 0.7) {
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
     };
-    img.onerror = reject;
-    img.src = `data:image/jpeg;base64,${base64}`;
+    img.onerror = () => reject(new Error(`Format non décodable : ${format}`));
+    // HEIC/HEIF renvoyés par Capacitor sont déjà ré-encodés en JPEG côté natif
+    const mime = ['heic', 'heif'].includes((format || '').toLowerCase()) ? 'jpeg' : (format || 'jpeg');
+    img.src = `data:image/${mime};base64,${base64}`;
   });
 }
 
@@ -210,9 +212,12 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   async function handleCapture(fromGallery = false) {
     setError('');
     try {
-      await Camera.requestPermissions({
-        permissions: fromGallery ? ['photos'] : ['camera'],
-      });
+      // requestPermissions peut throw si la permission est déjà accordée/refusée —
+      // on l'ignore et on tente getPhoto de toute façon
+      try {
+        await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
+      } catch {}
+
       const photo = await Camera.getPhoto({
         quality: 70,
         width: 1024,
@@ -223,16 +228,17 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
         correctOrientation: true,
       });
       if (!photo.base64String) { setError('Photo vide.'); return; }
-      // Compression via canvas
-      const compressed = await compressImage(photo.base64String, 600, 0.7);
+
+      // Passer le format réel pour que compressImage utilise le bon MIME type
+      const compressed = await compressImage(photo.base64String, photo.format, 600, 0.7);
       pendingRef.current = compressed;
-      setPendingB64('ready'); // juste un signal, pas la vraie data
+      setPendingB64('ready');
       setLabel('');
       setShowLabel(true);
     } catch (e) {
       const msg = e?.message || String(e);
-      if (msg.includes('cancel') || msg.includes('User cancelled')) return;
-      setError('Erreur caméra : ' + msg.slice(0, 80));
+      if (/cancel|User cancelled|No image picked/i.test(msg)) return;
+      setError('Erreur : ' + msg.slice(0, 100));
     }
   }
 
