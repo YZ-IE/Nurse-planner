@@ -221,16 +221,21 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const photo = await Camera.getPhoto({
         quality: 70,
         width: 1024,
-        resultType: CameraResultType.Base64,
+        resultType: CameraResultType.DataUrl,
         source: fromGallery ? CameraSource.Photos : CameraSource.Camera,
         allowEditing: false,
         saveToGallery: false,
         correctOrientation: true,
       });
-      if (!photo.base64String) { setError('Photo vide.'); return; }
+      if (!photo.dataUrl) { setError('Photo vide.'); return; }
 
-      // Passer le format réel pour que compressImage utilise le bon MIME type
-      const compressed = await compressImage(photo.base64String, photo.format, 600, 0.7);
+      // Le MIME type est intégré dans le dataUrl (ex: "data:image/png;base64,…")
+      // → extraction fiable sans dépendre de photo.format qui peut être undefined
+      const commaIdx = photo.dataUrl.indexOf(',');
+      const header   = photo.dataUrl.slice(0, commaIdx);
+      const base64   = photo.dataUrl.slice(commaIdx + 1);
+      const fmt      = header.match(/image\/(\w+)/i)?.[1] || 'jpeg';
+      const compressed = await compressImage(base64, fmt, 600, 0.7);
       pendingRef.current = compressed;
       setPendingB64('ready');
       setLabel('');
