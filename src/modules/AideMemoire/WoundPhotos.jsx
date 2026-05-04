@@ -396,7 +396,10 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       )}
 
       {selected && (
-        <div onTouchMove={e => e.stopPropagation()}
+        <div
+          onTouchStart={e => e.stopPropagation()}
+          onTouchMove={e => e.stopPropagation()}
+          onTouchEnd={e => e.stopPropagation()}
           style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.95)', display:'flex', flexDirection:'column', zIndex:300 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 16px 12px' }}>
             <button onClick={() => setSelected(null)}
