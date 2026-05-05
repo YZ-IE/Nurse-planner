@@ -12,6 +12,7 @@ import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { T, loadDarkPref } from '../../theme.js';
 import { timeStr } from './utils.jsx';
 import WoundPhotoTransfer from './WoundPhotoTransfer.jsx';
+import WoundPhotoQRTransfer from './WoundPhotoQRTransfer.jsx';
 
 const C = '#f97316';
 const WOUND_DIR = 'nplanr_wounds';
@@ -176,7 +177,8 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   const [loading,      setLoading]      = useState(true);
   const [saving,       setSaving]       = useState(false);
   const [selected,     setSelected]     = useState(null);
-  const [showTransfer, setShowTransfer] = useState(false);
+  const [showTransfer,   setShowTransfer]   = useState(false);
+  const [showQRTransfer, setShowQRTransfer] = useState(false);
   const [label,        setLabel]        = useState('');
   const [showLabel,    setShowLabel]    = useState(false);
   const [pendingB64,   setPendingB64]   = useState(null);
@@ -317,10 +319,16 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
           </div>
         </div>
         {photos.length > 0 && !readOnly && (
-          <button onClick={() => setShowTransfer(true)}
-            style={{ background:P.glass, border:`1px solid ${P.bdr}`, borderRadius:8, color:C, fontSize:12, padding:'6px 10px', cursor:'pointer' }}>
-            📤 Partager
-          </button>
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={() => setShowTransfer(true)}
+              style={{ background:P.glass, border:`1px solid ${P.bdr}`, borderRadius:8, color:C, fontSize:12, padding:'6px 10px', cursor:'pointer' }}>
+              📤 Fichier
+            </button>
+            <button onClick={() => setShowQRTransfer(true)}
+              style={{ background:P.glass, border:`1px solid ${P.bdr}`, borderRadius:8, color:C, fontSize:12, padding:'6px 10px', cursor:'pointer' }}>
+              📱 QR
+            </button>
+          </div>
         )}
       </div>
 
@@ -429,6 +437,17 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
           service={service}
           cryptoKey={cryptoKey}
           onClose={() => setShowTransfer(false)}
+          onImported={loadPhotos}
+        />
+      )}
+
+      {showQRTransfer && (
+        <WoundPhotoQRTransfer
+          photos={photos}
+          patient={patient}
+          service={service}
+          cryptoKey={cryptoKey}
+          onClose={() => setShowQRTransfer(false)}
           onImported={loadPhotos}
         />
       )}
