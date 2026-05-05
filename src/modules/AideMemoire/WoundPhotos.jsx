@@ -182,7 +182,8 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   const [label,        setLabel]        = useState('');
   const [showLabel,    setShowLabel]    = useState(false);
   const [pendingB64,   setPendingB64]   = useState(null);
-  const pendingRef = React.useRef(null);
+  const pendingRef  = React.useRef(null);
+  const galleryRef  = useRef(null);
   const [error,        setError]        = useState('');
 
   const dark = loadDarkPref();
@@ -210,33 +211,24 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
 
   useEffect(() => { loadPhotos(); }, [loadPhotos]);
 
-  // ── Capture ──────────────────────────────────────────────────────────────────
-  async function handleCapture(fromGallery = false) {
+  // ── Capture caméra ───────────────────────────────────────────────────────────
+  async function handleCapture() {
     setError('');
     try {
-      // requestPermissions peut throw si la permission est déjà accordée/refusée —
-      // on l'ignore et on tente getPhoto de toute façon
-      try {
-        await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
-      } catch {}
-
+      try { await Camera.requestPermissions({ permissions: ['camera'] }); } catch {}
       const photo = await Camera.getPhoto({
         quality: 70,
         width: 1024,
         resultType: CameraResultType.DataUrl,
-        source: fromGallery ? CameraSource.Photos : CameraSource.Camera,
+        source: CameraSource.Camera,
         allowEditing: false,
         saveToGallery: false,
         correctOrientation: true,
       });
       if (!photo.dataUrl) { setError('Photo vide.'); return; }
-
-      // Le MIME type est intégré dans le dataUrl (ex: "data:image/png;base64,…")
-      // → extraction fiable sans dépendre de photo.format qui peut être undefined
-      const commaIdx = photo.dataUrl.indexOf(',');
-      const header   = photo.dataUrl.slice(0, commaIdx);
-      const base64   = photo.dataUrl.slice(commaIdx + 1);
-      const fmt      = header.match(/image\/(\w+)/i)?.[1] || 'jpeg';
+      const commaIdx   = photo.dataUrl.indexOf(',');
+      const base64     = photo.dataUrl.slice(commaIdx + 1);
+      const fmt        = photo.dataUrl.slice(0, commaIdx).match(/image\/(\w+)/i)?.[1] || 'jpeg';
       const compressed = await compressImage(base64, fmt, 600, 0.7);
       pendingRef.current = compressed;
       setPendingB64('ready');
@@ -246,6 +238,32 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const msg = e?.message || String(e);
       if (/cancel|User cancelled|No image picked/i.test(msg)) return;
       setError('Erreur : ' + msg.slice(0, 100));
+    }
+  }
+
+  // ── Import galerie (input natif — fiable sur tous Android) ───────────────────
+  async function handleGalleryFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError('');
+    try {
+      const dataUrl = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload  = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      const commaIdx   = dataUrl.indexOf(',');
+      const base64     = dataUrl.slice(commaIdx + 1);
+      const fmt        = dataUrl.slice(0, commaIdx).match(/image\/(\w+)/i)?.[1] || 'jpeg';
+      const compressed = await compressImage(base64, fmt, 600, 0.7);
+      pendingRef.current = compressed;
+      setPendingB64('ready');
+      setLabel('');
+      setShowLabel(true);
+    } catch (err) {
+      setError('Erreur lecture : ' + (err?.message || '').slice(0, 100));
     }
   }
 
@@ -370,11 +388,12 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
 
       {!readOnly && (
         <div style={{ display:'flex', gap:10 }}>
-          <button onClick={() => handleCapture(false)} disabled={saving}
+          <input ref={galleryRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleGalleryFile}/>
+          <button onClick={() => handleCapture()} disabled={saving}
             style={{ flex:1, background:C+'22', border:`1px solid ${C}44`, borderRadius:12, color:C, padding:'13px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
             📷 {saving ? 'Enregistrement…' : 'Photo'}
           </button>
-          <button onClick={() => handleCapture(true)} disabled={saving}
+          <button onClick={() => galleryRef.current?.click()} disabled={saving}
             style={{ flex:1, background:P.glass, border:`1px solid ${P.bdr}`, borderRadius:12, color:T.muted, padding:'13px', fontSize:14, cursor:'pointer' }}>
             🖼 Galerie
           </button>
