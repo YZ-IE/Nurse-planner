@@ -17,6 +17,8 @@ import PatientSheet   from './PatientSheet.jsx';
 import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
+import TourneeView    from './Tournee/TourneeView.jsx';
+import { isTournee }  from './templates.js';
 import { dateStrOffset } from './utils.jsx';
 
 const ACCENT = '#6366f1';
@@ -203,18 +205,21 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   // ── Vue service ───────────────────────────────────────────────────────────
   if (nav.screen === 'service' && nav.service) return screenWrap(
     <>{TimeoutBanner}
-      <ServiceView
-        service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT}
-        refreshKey={nav.refreshKey} onBack={goBack}
-        onSelectPatient={patientId => goTo('patient', { patientId })}
-        selectedDate={nav.selectedDate || dateStrOffset(0)}
-        onDateChange={date => setNav(prev => ({ ...prev, selectedDate: date, refreshKey: prev.refreshKey + 1 }))}
-        onQuickEntry={() => goTo('quick')}
-        onDayOverview={() => goTo('dayoverview')}
-        onServiceUpdate={handleServiceUpdate}
-        onTransfer={() => goTo('transfer')}
-        onLog={() => goTo('log')}
-      />
+      {isTournee(nav.service.specialty)
+        ? <TourneeView service={nav.service} cryptoKey={cryptoKey} onBack={goBack} />
+        : <ServiceView
+            service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT}
+            refreshKey={nav.refreshKey} onBack={goBack}
+            onSelectPatient={patientId => goTo('patient', { patientId })}
+            selectedDate={nav.selectedDate || dateStrOffset(0)}
+            onDateChange={date => setNav(prev => ({ ...prev, selectedDate: date, refreshKey: prev.refreshKey + 1 }))}
+            onQuickEntry={() => goTo('quick')}
+            onDayOverview={() => goTo('dayoverview')}
+            onServiceUpdate={handleServiceUpdate}
+            onTransfer={() => goTo('transfer')}
+            onLog={() => goTo('log')}
+          />
+      }
     </>
   );
 

@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
+import { SPECIALTIES, getTemplateFields, getSpecialty, isTournee } from './templates.js';
 import { formatDateFR } from './utils.jsx';
 
 export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService, onImport }) {
@@ -33,7 +33,13 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
     if (!name) return;
     setSaving(true);
     try {
-      const newService = { id: Date.now().toString(), name, specialty: form.specialty, bedCount: Number(form.bedCount), fields: getTemplateFields(form.specialty), bedConfig: {}, createdAt: Date.now() };
+      const tournee    = isTournee(form.specialty);
+      const newService = {
+        id: Date.now().toString(), name, specialty: form.specialty,
+        bedCount: tournee ? 0 : Number(form.bedCount),
+        fields: tournee ? [] : getTemplateFields(form.specialty),
+        bedConfig: {}, createdAt: Date.now(),
+      };
       await persistServices([...services, newService]);
       setForm({ name: '', specialty: 'traumato', bedCount: 20 });
       setView('list');
@@ -55,7 +61,8 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
 
   if (view === 'create') {
     const sp            = getSpecialty(form.specialty);
-    const previewFields = getTemplateFields(form.specialty);
+    const tournee       = isTournee(form.specialty);
+    const previewFields = tournee ? [] : getTemplateFields(form.specialty);
     return (
       <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
@@ -81,24 +88,37 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
               );
             })}
           </div>
-          <div>
-            <div style={{ ...s.label, color: T.muted, marginBottom: 10 }}>NOMBRE DE LITS</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <button onClick={() => setForm(f => ({ ...f, bedCount: Math.max(1, f.bedCount - 1) }))}
-                style={{ ...s.btn(C), width: 48, height: 48, fontSize: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-              <span style={{ color: T.text, fontSize: 26, fontWeight: 700, minWidth: 50, textAlign: 'center' }}>{form.bedCount}</span>
-              <button onClick={() => setForm(f => ({ ...f, bedCount: Math.min(80, f.bedCount + 1) }))}
-                style={{ ...s.btn(C), width: 48, height: 48, fontSize: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+          {!tournee && (
+            <div>
+              <div style={{ ...s.label, color: T.muted, marginBottom: 10 }}>NOMBRE DE LITS</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <button onClick={() => setForm(f => ({ ...f, bedCount: Math.max(1, f.bedCount - 1) }))}
+                  style={{ ...s.btn(C), width: 48, height: 48, fontSize: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                <span style={{ color: T.text, fontSize: 26, fontWeight: 700, minWidth: 50, textAlign: 'center' }}>{form.bedCount}</span>
+                <button onClick={() => setForm(f => ({ ...f, bedCount: Math.min(80, f.bedCount + 1) }))}
+                  style={{ ...s.btn(C), width: 48, height: 48, fontSize: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+              </div>
             </div>
-          </div>
-          <div style={{ ...s.card, padding: 14 }}>
-            <div style={{ ...s.label, color: T.muted, marginBottom: 10 }}>CHAMPS ({previewFields.length})</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {previewFields.map(f => (
-                <span key={f.id} style={{ background: sp.color + '1a', border: `1px solid ${sp.color}44`, borderRadius: 6, color: sp.color, fontSize: 12, padding: '3px 8px' }}>{f.label}</span>
-              ))}
+          )}
+          {tournee ? (
+            <div style={{ ...s.card, padding: 14, background: sp.color + '0d', border: `1px solid ${sp.color}33` }}>
+              <div style={{ color: sp.color, fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
+                {form.specialty === 'tournee_had' ? '🏠 Hospitalisation à Domicile' : '🚗 Tournée infirmière libérale'}
+              </div>
+              <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
+                Liste de patients ordonnée · Cotation NGAP intégrée · Validation des visites avec horodatage
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ ...s.card, padding: 14 }}>
+              <div style={{ ...s.label, color: T.muted, marginBottom: 10 }}>CHAMPS ({previewFields.length})</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {previewFields.map(f => (
+                  <span key={f.id} style={{ background: sp.color + '1a', border: `1px solid ${sp.color}44`, borderRadius: 6, color: sp.color, fontSize: 12, padding: '3px 8px' }}>{f.label}</span>
+                ))}
+              </div>
+            </div>
+          )}
           <button onClick={handleCreate} disabled={!form.name.trim() || saving}
             style={{ ...s.btn(C), width: '100%', padding: '15px', fontSize: 16, fontWeight: 700, opacity: form.name.trim() && !saving ? 1 : 0.4 }}>
             {saving ? 'Enregistrement…' : 'Créer le service'}
@@ -159,7 +179,10 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
                   {/* Infos */}
                   <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => !isDeleting && onSelectService(service)}>
                     <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>{service.name}</div>
-                    <div style={{ color: T.muted, fontSize: 13 }}>{sp.label.slice(sp.label.indexOf(' ') + 1)} · {service.bedCount} lits</div>
+                    <div style={{ color: T.muted, fontSize: 13 }}>
+                      {sp.label.slice(sp.label.indexOf(' ') + 1)}
+                      {isTournee(service.specialty) ? ' · Itinérant' : ` · ${service.bedCount} lits`}
+                    </div>
                   </div>
 
                   {/* Bouton supprimer */}

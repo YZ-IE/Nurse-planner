@@ -7,13 +7,20 @@
  */
 
 export const SPECIALTIES = [
-  { id: 'traumato',  label: '🦴 Traumatologie', color: '#f97316' },
-  { id: 'neuro',     label: '🧠 Neurologie',     color: '#a78bfa' },
-  { id: 'chirurgie', label: '🔪 Chirurgie',       color: '#06b6d4' },
-  { id: 'medecine',  label: '🫀 Médecine',        color: '#22c55e' },
-  { id: 'pediatrie', label: '👶 Pédiatrie',       color: '#fbbf24' },
-  { id: 'custom',    label: '⚙️ Personnalisé',    color: '#64748b' },
+  { id: 'traumato',        label: '🦴 Traumatologie',   color: '#f97316' },
+  { id: 'neuro',           label: '🧠 Neurologie',       color: '#a78bfa' },
+  { id: 'chirurgie',       label: '🔪 Chirurgie',         color: '#06b6d4' },
+  { id: 'medecine',        label: '🫀 Médecine',          color: '#22c55e' },
+  { id: 'pediatrie',       label: '👶 Pédiatrie',         color: '#fbbf24' },
+  { id: 'tournee_liberal', label: '🚗 Tournée Libérale', color: '#ec4899' },
+  { id: 'tournee_had',     label: '🏠 HAD',              color: '#8b5cf6' },
+  { id: 'custom',          label: '⚙️ Personnalisé',     color: '#64748b' },
 ];
+
+/** Retourne true si la spécialité utilise le module Tournée (données propres) */
+export function isTournee(specialtyId) {
+  return specialtyId === 'tournee_liberal' || specialtyId === 'tournee_had';
+}
 
 // Flags communs — tous liés à l'état du patient → persistent: true
 // sauf NPO et antalgie qui sont des prescriptions journalières
