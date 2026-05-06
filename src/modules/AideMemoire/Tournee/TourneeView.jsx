@@ -1,82 +1,126 @@
 /**
- * TourneeView.jsx — Module Tournée (Libéral / HAD)
- * Gestion locale des visites à domicile, cotation NGAP intégrée.
- * Données chiffrées AES-256 — 100% local, aucun serveur.
+ * TourneeView.jsx — Tournée Libérale / HAD
+ * Libéral : patients persistants + planning récurrent + cotation NGAP + historique
+ * HAD     : placeholder (module distinct à venir)
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { T, s, loadDarkPref } from '../../../theme.js';
 import { secureGet, secureSet } from '../crypto.js';
 import { timeStr, genId } from '../utils.jsx';
-import { ACTES, MAJORATIONS, LETTER_VALUES, CATS, calcVisitTotal } from './ngap.js';
+import { ACTES, MAJORATIONS, LETTER_VALUES, CATS, actePrice, calcVisitTotal } from './ngap.js';
 
 const C_LIB = '#ec4899';
-const C_HAD  = '#8b5cf6';
+const C_HAD = '#8b5cf6';
+const DAYS_FR   = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const DAYS_FULL = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const HISTORY_DAYS = 60; // nb de jours d'historique chargés
 
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ── Sélecteur NGAP ────────────────────────────────────────────────────────────
+function dateLabel(dateStr) {
+  const today = todayStr();
+  const d = new Date(dateStr + 'T12:00:00');
+  if (dateStr === today) return "Aujourd'hui";
+  return d.toLocaleDateString('fr-FR', { weekday:'short', day:'2-digit', month:'short' });
+}
 
+/** Retourne les créneaux du jour pour un tableau de patients */
+function getSlotsForDate(patients, dateStr) {
+  const dow = new Date(dateStr + 'T12:00:00').getDay();
+  const slots = [];
+  for (const p of patients) {
+    for (const sl of p.schedule || []) {
+      if (sl.dow === dow) slots.push({ patient: p, slot: sl, key: `${p.id}_${sl.id}` });
+    }
+  }
+  return slots.sort((a, b) => a.slot.heure.localeCompare(b.slot.heure));
+}
+
+// ── Clé d'index des dates ─────────────────────────────────────────────────────
+function datesIndexKey(serviceId) { return `tr_dates_${serviceId}`; }
+function loadDatesIndex(serviceId) {
+  try { return JSON.parse(localStorage.getItem(datesIndexKey(serviceId)) || '[]'); } catch { return []; }
+}
+function appendDateIndex(serviceId, date) {
+  const idx = loadDatesIndex(serviceId);
+  if (!idx.includes(date)) { idx.push(date); localStorage.setItem(datesIndexKey(serviceId), JSON.stringify(idx)); }
+}
+
+// ── NGAPSelector ──────────────────────────────────────────────────────────────
 function NGAPSelector({ selected, majorations, onChangeActes, onChangeMaj, C }) {
   const [cat, setCat] = useState(null);
   const shown = cat ? ACTES.filter(a => a.cat === cat) : ACTES;
 
   return (
     <div>
-      {/* Filtre catégorie */}
       <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
         {[null, ...CATS].map(c => (
           <button key={c ?? '__all'} onClick={() => setCat(c)}
             style={{ background:cat===c?C+'33':'none', border:`1px solid ${cat===c?C:T.border}`,
-              borderRadius:7, color:cat===c?C:T.muted, padding:'3px 10px', fontSize:12, cursor:'pointer',
-              WebkitTapHighlightColor:'transparent' }}>
+              borderRadius:7, color:cat===c?C:T.muted, padding:'3px 9px', fontSize:11, cursor:'pointer' }}>
             {c ?? 'Tous'}
           </button>
         ))}
       </div>
 
-      {/* Actes */}
       {shown.map(acte => {
         const sel = selected.find(x => x.id === acte.id);
-        const prix = (LETTER_VALUES[acte.code] * acte.coeff).toFixed(2);
+        const prix = actePrice({ ...acte, qty:1 }).toFixed(2);
         return (
-          <div key={acte.id} onClick={() => onChangeActes(
-            sel ? selected.filter(x => x.id !== acte.id) : [...selected, { ...acte, qty:1 }]
-          )} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-            padding:'9px 12px', marginBottom:4, borderRadius:8, cursor:'pointer',
-            background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}`,
-            WebkitTapHighlightColor:'transparent' }}>
+          <div key={acte.id} onClick={() =>
+            onChangeActes(sel ? selected.filter(x=>x.id!==acte.id) : [...selected, { ...acte, qty:1 }])
+          } style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'8px 11px', marginBottom:3, borderRadius:8, cursor:'pointer',
+            background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}` }}>
             <div>
               <div style={{ color:sel?C:T.text, fontSize:13, fontWeight:sel?600:400 }}>{acte.label}</div>
-              <div style={{ color:T.muted, fontSize:11 }}>{acte.code} ×{acte.coeff} = {prix}€</div>
+              <div style={{ color:T.muted, fontSize:11 }}>
+                {acte.flat ? `Forfait ${prix}€` : `${acte.code} ×${acte.coeff} = ${prix}€`}
+              </div>
             </div>
-            {sel && <span style={{ color:C, fontSize:16 }}>✓</span>}
+            {sel && <span style={{ color:C, fontSize:15 }}>✓</span>}
           </div>
         );
       })}
 
-      {/* Majorations */}
       <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${T.border}` }}>
         <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1.5, marginBottom:8 }}>MAJORATIONS</div>
         {MAJORATIONS.map(m => {
           const sel = majorations.find(x => x.id === m.id);
           return (
-            <div key={m.id} onClick={() => onChangeMaj(
-              sel ? majorations.filter(x => x.id !== m.id) : [...majorations, m]
-            )} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-              padding:'8px 12px', marginBottom:4, borderRadius:8, cursor:'pointer',
-              background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}`,
-              WebkitTapHighlightColor:'transparent' }}>
-              <div style={{ color:sel?C:T.text, fontSize:13 }}>{m.label}</div>
-              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <span style={{ color:T.muted, fontSize:11 }}>
-                  {m.flat ? `+${m.flat.toFixed(2)}€` : `×${m.factor}`}
-                </span>
-                {sel && <span style={{ color:C, fontSize:14 }}>✓</span>}
+            <div key={m.id}>
+              <div onClick={() =>
+                onChangeMaj(sel ? majorations.filter(x=>x.id!==m.id) : [...majorations, { ...m, km: m.perKm ? 0 : undefined }])
+              } style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                padding:'8px 11px', marginBottom: (sel && m.perKm) ? 0 : 3, borderRadius: sel&&m.perKm?'8px 8px 0 0':8,
+                cursor:'pointer', background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}` }}>
+                <div style={{ color:sel?C:T.text, fontSize:13 }}>{m.label}</div>
+                <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                  <span style={{ color:T.muted, fontSize:11 }}>
+                    {m.flat ? `+${m.flat.toFixed(2)}€` : m.factor ? `×${m.factor}` : `${m.perKm}€/km`}
+                  </span>
+                  {sel && <span style={{ color:C, fontSize:13 }}>✓</span>}
+                </div>
               </div>
+              {sel && m.perKm && (
+                <div style={{ background:C+'10', border:`1px solid ${C}`, borderTop:'none', borderRadius:'0 0 8px 8px', padding:'6px 11px 8px', marginBottom:3 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ color:T.muted, fontSize:12 }}>Km :</span>
+                    <input type="number" min={0} value={sel.km ?? 0}
+                      onChange={e => onChangeMaj(majorations.map(x =>
+                        x.id === 'ik' ? { ...x, km: Number(e.target.value) } : x
+                      ))}
+                      style={{ ...s.input, width:70, textAlign:'center', fontSize:13 }} />
+                    <span style={{ color:C, fontSize:12, fontWeight:700 }}>
+                      = {((sel.km||0) * m.perKm).toFixed(2)}€
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -85,65 +129,56 @@ function NGAPSelector({ selected, majorations, onChangeActes, onChangeMaj, C }) 
   );
 }
 
-// ── Fiche visite patient ──────────────────────────────────────────────────────
-
-function PatientVisitModal({ patient, visitData, C, onClose, onSave }) {
+// ── VisitModal ────────────────────────────────────────────────────────────────
+function VisitModal({ patient, slot, visitData, C, onClose, onSave }) {
   const defaultActes = patient.ordonnance?.[0]?.actes || [];
-  const [actes,  setActes]  = useState(visitData?.actesFaits  || defaultActes);
-  const [majs,   setMajs]   = useState(visitData?.majorations || []);
-  const [notes,  setNotes]  = useState(visitData?.notes       || '');
-  const [heure,  setHeure]  = useState(visitData?.heureDebut  || timeStr());
+  const [actes,    setActes]    = useState(visitData?.actesFaits  || defaultActes);
+  const [majs,     setMajs]     = useState(visitData?.majorations || []);
+  const [notes,    setNotes]    = useState(visitData?.notes       || '');
+  const [heure,    setHeure]    = useState(visitData?.heureDebut  || slot?.heure || timeStr());
   const [showNGAP, setShowNGAP] = useState(false);
 
   const total = calcVisitTotal(actes, majs);
-  const dark  = loadDarkPref();
 
   return (
     <div onTouchStart={e=>e.stopPropagation()} onTouchMove={e=>e.stopPropagation()} onTouchEnd={e=>e.stopPropagation()}
-      style={{ position:'absolute', inset:0, background:T.bg, zIndex:200, display:'flex', flexDirection:'column', overflowY:'auto' }}>
+      style={{ position:'absolute', inset:0, background:T.bg, zIndex:200, display:'flex', flexDirection:'column' }}>
 
-      {/* Header */}
-      <div style={{ padding:'16px 16px 12px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+      <div style={{ padding:'14px 16px 12px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
         <button onClick={onClose} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ color:T.text, fontWeight:700, fontSize:17 }}>{patient.initials}</div>
+          <div style={{ color:T.text, fontWeight:700, fontSize:16 }}>{patient.initials}</div>
           {patient.adresse && <div style={{ color:T.muted, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{patient.adresse}</div>}
         </div>
         <div style={{ background:C+'22', border:`1px solid ${C}44`, borderRadius:10, padding:'5px 12px', textAlign:'center', flexShrink:0 }}>
-          <div style={{ color:C, fontWeight:800, fontSize:18 }}>{total.toFixed(2)}€</div>
+          <div style={{ color:C, fontWeight:800, fontSize:17 }}>{total.toFixed(2)}€</div>
           <div style={{ color:C+'99', fontSize:10 }}>total visite</div>
         </div>
       </div>
 
-      {/* Corps */}
-      <div style={{ flex:1, overflowY:'auto', padding:'14px 16px' }}>
-
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px' }}>
         {patient.allergie && (
-          <div style={{ background:'#f43f5e15', border:'1px solid #f43f5e33', borderRadius:8, padding:'8px 12px', marginBottom:12 }}>
+          <div style={{ background:'#f43f5e15', border:'1px solid #f43f5e33', borderRadius:8, padding:'7px 12px', marginBottom:12 }}>
             <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️ Allergie : {patient.allergie}</span>
           </div>
         )}
 
-        {/* Heure */}
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-          <span style={{ color:T.muted, fontSize:12, fontWeight:700, minWidth:50 }}>HEURE</span>
+          <span style={{ color:T.muted, fontSize:12, fontWeight:700 }}>HEURE</span>
           <input type="time" value={heure} onChange={e=>setHeure(e.target.value)}
             style={{ ...s.input, width:120, textAlign:'center', fontSize:14 }} />
         </div>
 
-        {/* Actes sélectionnés */}
         <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1.5, marginBottom:8 }}>ACTES</div>
-        {actes.length === 0 && (
-          <div style={{ color:T.muted, fontSize:13, marginBottom:8, fontStyle:'italic' }}>Aucun acte — utilisez Cotation NGAP ci-dessous</div>
-        )}
+        {actes.length === 0 && <div style={{ color:T.muted, fontSize:13, marginBottom:8, fontStyle:'italic' }}>Aucun acte — utilisez Cotation NGAP</div>}
         {actes.map(a => (
-          <div key={a.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', marginBottom:4, background:C+'15', border:`1px solid ${C}33`, borderRadius:8 }}>
+          <div key={a.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 11px', marginBottom:3, background:C+'15', border:`1px solid ${C}33`, borderRadius:8 }}>
             <div>
               <div style={{ color:T.text, fontSize:13 }}>{a.label}</div>
-              <div style={{ color:T.muted, fontSize:11 }}>{a.code} ×{a.coeff}</div>
+              <div style={{ color:T.muted, fontSize:11 }}>{a.flat ? 'Forfait' : `${a.code} ×${a.coeff}`}</div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ color:C, fontSize:12, fontWeight:700 }}>{(LETTER_VALUES[a.code]*a.coeff).toFixed(2)}€</span>
+              <span style={{ color:C, fontSize:12, fontWeight:700 }}>{actePrice(a).toFixed(2)}€</span>
               <button onClick={() => setActes(actes.filter(x=>x.id!==a.id))}
                 style={{ background:'none', border:'none', color:T.muted, fontSize:18, cursor:'pointer', padding:'0 4px', lineHeight:1 }}>×</button>
             </div>
@@ -151,43 +186,44 @@ function PatientVisitModal({ patient, visitData, C, onClose, onSave }) {
         ))}
 
         {majs.map(m => (
-          <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 12px', marginBottom:4, background:'#f9731615', border:'1px solid #f9731633', borderRadius:8 }}>
-            <div style={{ color:T.text, fontSize:12 }}>{m.label}</div>
+          <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 11px', marginBottom:3, background:'#f9731615', border:'1px solid #f9731633', borderRadius:8 }}>
+            <div style={{ color:T.text, fontSize:12 }}>
+              {m.label}{m.perKm && m.km ? ` (${m.km} km)` : ''}
+            </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ color:'#f97316', fontSize:12 }}>{m.flat?`+${m.flat.toFixed(2)}€`:`×${m.factor}`}</span>
+              <span style={{ color:'#f97316', fontSize:12 }}>
+                {m.flat ? `+${m.flat.toFixed(2)}€` : m.factor ? `×${m.factor}` : `+${((m.km||0)*m.perKm).toFixed(2)}€`}
+              </span>
               <button onClick={() => setMajs(majs.filter(x=>x.id!==m.id))}
                 style={{ background:'none', border:'none', color:T.muted, fontSize:18, cursor:'pointer', padding:'0 4px', lineHeight:1 }}>×</button>
             </div>
           </div>
         ))}
 
-        <button onClick={() => setShowNGAP(v => !v)}
+        <button onClick={() => setShowNGAP(v=>!v)}
           style={{ width:'100%', background:C+'15', border:`1px dashed ${C}55`, borderRadius:8, color:C,
-            padding:'10px', fontSize:13, cursor:'pointer', margin:'6px 0 12px', WebkitTapHighlightColor:'transparent' }}>
+            padding:'9px', fontSize:13, cursor:'pointer', margin:'6px 0 12px' }}>
           {showNGAP ? '— Fermer cotation' : '＋ Cotation NGAP'}
         </button>
-
         {showNGAP && (
-          <div style={{ background:dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', borderRadius:10, border:`1px solid ${T.border}`, padding:12, marginBottom:14 }}>
+          <div style={{ background:T.surface, borderRadius:10, border:`1px solid ${T.border}`, padding:12, marginBottom:14 }}>
             <NGAPSelector selected={actes} majorations={majs} onChangeActes={setActes} onChangeMaj={setMajs} C={C} />
           </div>
         )}
 
-        {/* Notes */}
         <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>NOTES</div>
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="—" rows={3}
-          style={{ ...s.input, width:'100%', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', fontSize:13, minHeight:64 }} />
+          style={{ ...s.input, width:'100%', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', fontSize:13, minHeight:60 }} />
 
         <div style={{ color:T.muted, fontSize:10, marginTop:8, lineHeight:1.5 }}>
-          Valeurs lettre-clé indicatives (AMI {LETTER_VALUES.AMI}€ · AIS {LETTER_VALUES.AIS}€) — vérifier les avenants CPAM.
+          Valeurs indicatives (AMI {LETTER_VALUES.AMI}€ · AIS {LETTER_VALUES.AIS}€ · IK 0.62€/km) — vérifier les avenants CPAM.
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ padding:'12px 16px 36px', borderTop:`1px solid ${T.border}`, display:'flex', gap:10, flexShrink:0 }}>
-        <button onClick={onClose} style={{ flex:1, background:'none', border:`1px solid ${T.border}`, borderRadius:12, color:T.muted, padding:'13px', fontSize:14, cursor:'pointer' }}>Annuler</button>
+      <div style={{ padding:'10px 16px 34px', borderTop:`1px solid ${T.border}`, display:'flex', gap:10, flexShrink:0 }}>
+        <button onClick={onClose} style={{ flex:1, background:'none', border:`1px solid ${T.border}`, borderRadius:12, color:T.muted, padding:'12px', fontSize:14, cursor:'pointer' }}>Annuler</button>
         <button onClick={() => onSave({ actesFaits:actes, majorations:majs, notes, heureDebut:heure, heureFin:timeStr(), status:'done', total })}
-          style={{ flex:2, background:C, border:'none', borderRadius:12, color:'#fff', padding:'13px', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+          style={{ flex:2, background:C, border:'none', borderRadius:12, color:'#fff', padding:'12px', fontSize:14, fontWeight:700, cursor:'pointer' }}>
           ✓ Valider la visite
         </button>
       </div>
@@ -195,74 +231,274 @@ function PatientVisitModal({ patient, visitData, C, onClose, onSave }) {
   );
 }
 
-// ── Formulaire ajout patient ──────────────────────────────────────────────────
+// ── ScheduleEditor ────────────────────────────────────────────────────────────
+function ScheduleEditor({ schedule, onChange, C }) {
+  const [addingDow, setAddingDow] = useState(null);
+  const [newHeure,  setNewHeure]  = useState('09:00');
 
-function AddPatientModal({ C, onClose, onSave }) {
-  const [form, setForm] = useState({ initials:'', heurePrevu:'09:00', adresse:'', tel:'', allergie:'', notes:'' });
-  const [actes, setActes]     = useState([]);
-  const [showNGAP, setShowNGAP] = useState(false);
+  function addSlot() {
+    if (addingDow === null) return;
+    onChange([...schedule, { id: genId(), dow: addingDow, heure: newHeure }]);
+    setAddingDow(null);
+    setNewHeure('09:00');
+  }
+  function removeSlot(id) { onChange(schedule.filter(s => s.id !== id)); }
+
+  return (
+    <div>
+      {DAYS_FR.map((day, dow) => {
+        const slots = schedule.filter(s => s.dow === dow).sort((a,b) => a.heure.localeCompare(b.heure));
+        return (
+          <div key={dow} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:8 }}>
+            <div style={{ width:34, paddingTop:8, color:T.muted, fontSize:12, fontWeight:700, flexShrink:0 }}>{day}</div>
+            <div style={{ flex:1, display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+              {slots.map(sl => (
+                <div key={sl.id} style={{ display:'flex', alignItems:'center', gap:4, background:C+'20', border:`1px solid ${C}44`, borderRadius:8, padding:'4px 8px' }}>
+                  <span style={{ color:C, fontSize:13, fontWeight:600 }}>{sl.heure}</span>
+                  <button onClick={() => removeSlot(sl.id)}
+                    style={{ background:'none', border:'none', color:C+'99', fontSize:15, cursor:'pointer', padding:'0 2px', lineHeight:1 }}>×</button>
+                </div>
+              ))}
+              {addingDow === dow ? (
+                <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                  <input type="time" value={newHeure} onChange={e=>setNewHeure(e.target.value)}
+                    style={{ ...s.input, width:105, fontSize:13, padding:'4px 8px' }} />
+                  <button onClick={addSlot}
+                    style={{ background:C, border:'none', borderRadius:7, color:'#fff', padding:'5px 10px', fontSize:13, cursor:'pointer' }}>OK</button>
+                  <button onClick={() => setAddingDow(null)}
+                    style={{ background:'none', border:'none', color:T.muted, fontSize:18, cursor:'pointer' }}>×</button>
+                </div>
+              ) : (
+                <button onClick={() => setAddingDow(dow)}
+                  style={{ background:'none', border:`1px dashed ${C}55`, borderRadius:7, color:C, padding:'4px 8px', fontSize:12, cursor:'pointer' }}>+</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── PatientHistory ────────────────────────────────────────────────────────────
+function PatientHistory({ patient, serviceId, cryptoKey, C }) {
+  const [entries, setEntries] = useState(null); // null = loading
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const dates = loadDatesIndex(serviceId).sort((a,b) => b.localeCompare(a)).slice(0, HISTORY_DAYS);
+      const result = [];
+      for (const date of dates) {
+        try {
+          const d = await secureGet('tr_' + serviceId + '_' + date, cryptoKey);
+          if (!d?.visits) continue;
+          // chercher toutes les visites du patient ce jour
+          for (const [key, visit] of Object.entries(d.visits)) {
+            if (key.startsWith(patient.id + '_') && visit.status === 'done') {
+              result.push({ date, ...visit });
+            }
+          }
+        } catch {}
+      }
+      if (!cancelled) setEntries(result);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [patient.id, serviceId, cryptoKey]); // eslint-disable-line
+
+  if (entries === null) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:13 }}>Chargement…</div>;
+  if (entries.length === 0) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:13 }}>Aucune visite enregistrée</div>;
+
+  return (
+    <div>
+      {entries.map((e, i) => (
+        <div key={i} style={{ background:T.surface, border:`1px solid ${T.border}`, borderLeft:`3px solid ${C}`, borderRadius:10, padding:'10px 14px', marginBottom:8 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+            <div style={{ color:T.text, fontSize:13, fontWeight:700 }}>{dateLabel(e.date)}</div>
+            <div style={{ color:C, fontSize:13, fontWeight:700 }}>{e.total?.toFixed(2)} €</div>
+          </div>
+          <div style={{ color:T.muted, fontSize:12, marginBottom: e.actesFaits?.length ? 5 : 0 }}>
+            {e.heureDebut} → {e.heureFin}
+          </div>
+          {e.actesFaits?.length > 0 && (
+            <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+              {e.actesFaits.map(a => (
+                <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:5, color:C, fontSize:10, padding:'2px 6px' }}>
+                  {a.label.split('—')[0].trim()}
+                </span>
+              ))}
+            </div>
+          )}
+          {e.notes ? <div style={{ color:T.muted, fontSize:11, marginTop:5, fontStyle:'italic' }}>{e.notes}</div> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── PatientDetail ─────────────────────────────────────────────────────────────
+function PatientDetail({ patient, serviceId, cryptoKey, C, onClose, onEdit, onDelete }) {
+  const [tab, setTab] = useState('info'); // 'info'|'planning'|'historique'
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  const tabs = [['info','ℹ️ Info'], ['planning','📅 Planning'], ['historique','🕐 Historique']];
+
+  return (
+    <div style={{ position:'absolute', inset:0, background:T.bg, zIndex:150, display:'flex', flexDirection:'column' }}>
+      <div style={{ padding:'14px 16px 0', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
+          <div style={{ flex:1 }}>
+            <div style={{ color:T.text, fontWeight:700, fontSize:17 }}>{patient.initials}</div>
+            {patient.adresse && <div style={{ color:T.muted, fontSize:12 }}>{patient.adresse}</div>}
+          </div>
+          <button onClick={onEdit}
+            style={{ background:C+'22', border:`1px solid ${C}44`, borderRadius:8, color:C, fontSize:12, padding:'6px 12px', cursor:'pointer' }}>
+            ✏️ Modifier
+          </button>
+        </div>
+        <div style={{ display:'flex', gap:0 }}>
+          {tabs.map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              style={{ flex:1, background:'none', border:'none', borderBottom:`2px solid ${tab===id?C:'transparent'}`,
+                color:tab===id?C:T.muted, padding:'8px 4px', fontSize:12, fontWeight:tab===id?700:400, cursor:'pointer' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex:1, overflowY:'auto', padding:'14px 16px' }}>
+        {tab === 'info' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {patient.allergie && (
+              <div style={{ background:'#f43f5e15', border:'1px solid #f43f5e33', borderRadius:8, padding:'8px 12px' }}>
+                <span style={{ color:'#f43f5e', fontSize:13 }}>⚠️ Allergie : {patient.allergie}</span>
+              </div>
+            )}
+            {[['Adresse', patient.adresse], ['Téléphone', patient.tel], ['Notes', patient.notes]].map(([l,v]) =>
+              v ? (
+                <div key={l}>
+                  <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:3 }}>{l.toUpperCase()}</div>
+                  <div style={{ color:T.text, fontSize:14 }}>{v}</div>
+                </div>
+              ) : null
+            )}
+            {patient.ordonnance?.[0]?.actes?.length > 0 && (
+              <div>
+                <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:6 }}>ORDONNANCE</div>
+                {patient.ordonnance[0].actes.map(a => (
+                  <div key={a.id} style={{ display:'flex', justifyContent:'space-between', padding:'7px 10px', marginBottom:3, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8 }}>
+                    <div style={{ color:T.text, fontSize:13 }}>{a.label}</div>
+                    <div style={{ color:T.muted, fontSize:12 }}>{actePrice(a).toFixed(2)}€</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ marginTop:8, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
+              {!confirmDel
+                ? <button onClick={() => setConfirmDel(true)}
+                    style={{ background:'none', border:'1px solid #f43f5e44', borderRadius:10, color:'#f43f5e', padding:'10px', fontSize:13, cursor:'pointer', width:'100%' }}>
+                    🗑 Supprimer ce patient
+                  </button>
+                : <div style={{ background:'#f43f5e10', border:'1px solid #f43f5e33', borderRadius:10, padding:12 }}>
+                    <div style={{ color:T.text, fontSize:13, marginBottom:10 }}>Supprimer définitivement {patient.initials} ?</div>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => setConfirmDel(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, color:T.muted, padding:'9px', cursor:'pointer', fontSize:13 }}>Annuler</button>
+                      <button onClick={onDelete} style={{ flex:1, background:'#f43f5e', border:'none', borderRadius:8, color:'#fff', padding:'9px', fontSize:13, fontWeight:700, cursor:'pointer' }}>Supprimer</button>
+                    </div>
+                  </div>
+              }
+            </div>
+          </div>
+        )}
+
+        {tab === 'planning' && (
+          <div>
+            <div style={{ color:T.muted, fontSize:12, marginBottom:14, lineHeight:1.5 }}>
+              Jours et heures de passage récurrents. Un patient peut avoir plusieurs créneaux le même jour.
+            </div>
+            <ScheduleEditor schedule={patient.schedule || []} onChange={() => {}} C={C} />
+            <div style={{ color:T.muted, fontSize:11, marginTop:10 }}>Planning modifiable via ✏️ Modifier</div>
+          </div>
+        )}
+
+        {tab === 'historique' && (
+          <PatientHistory patient={patient} serviceId={serviceId} cryptoKey={cryptoKey} C={C} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AddEditPatient ────────────────────────────────────────────────────────────
+function AddEditPatient({ initial, C, onClose, onSave }) {
+  const [form, setForm] = useState({
+    initials:   initial?.initials   || '',
+    adresse:    initial?.adresse    || '',
+    tel:        initial?.tel        || '',
+    allergie:   initial?.allergie   || '',
+    notes:      initial?.notes      || '',
+  });
+  const [schedule, setSchedule]   = useState(initial?.schedule || []);
+  const [actes,    setActes]      = useState(initial?.ordonnance?.[0]?.actes || []);
+  const [showNGAP, setShowNGAP]   = useState(false);
 
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
   const ok  = form.initials.trim().length > 0;
+  const isEdit = !!initial;
 
   return (
-    <div style={{ position:'absolute', inset:0, background:T.bg, zIndex:200, overflowY:'auto',
-      padding:'20px 20px 48px', boxSizing:'border-box' }}>
-
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+    <div style={{ position:'absolute', inset:0, background:T.bg, zIndex:200, overflowY:'auto', padding:'18px 16px 52px', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:22 }}>
         <button onClick={onClose} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
-        <span style={{ color:T.text, fontSize:18, fontWeight:700 }}>Nouveau patient</span>
+        <span style={{ color:T.text, fontSize:18, fontWeight:700 }}>{isEdit ? 'Modifier' : 'Nouveau patient'}</span>
       </div>
 
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}>
-            <div style={{ ...s.label, marginBottom:6 }}>INITIALES</div>
-            <input value={form.initials} onChange={e=>set('initials')(e.target.value.toUpperCase().slice(0,5))}
-              placeholder="M.D" autoFocus
-              style={{ ...s.input, width:'100%', boxSizing:'border-box', textAlign:'center', fontWeight:700, fontSize:16 }} />
-          </div>
-          <div style={{ flex:1 }}>
-            <div style={{ ...s.label, marginBottom:6 }}>HEURE PRÉVUE</div>
-            <input type="time" value={form.heurePrevu} onChange={e=>set('heurePrevu')(e.target.value)}
-              style={{ ...s.input, width:'100%', boxSizing:'border-box' }} />
-          </div>
+        <div>
+          <div style={{ ...s.label, marginBottom:6 }}>INITIALES *</div>
+          <input value={form.initials} onChange={e=>set('initials')(e.target.value.toUpperCase().slice(0,5))}
+            placeholder="M.D" autoFocus
+            style={{ ...s.input, width:'100%', boxSizing:'border-box', textAlign:'center', fontWeight:700, fontSize:18 }} />
         </div>
-
         <div>
           <div style={{ ...s.label, marginBottom:6 }}>ADRESSE</div>
           <input value={form.adresse} onChange={e=>set('adresse')(e.target.value)} placeholder="12 rue de la Paix, Paris"
             style={{ ...s.input, width:'100%', boxSizing:'border-box' }} />
         </div>
-
         <div>
           <div style={{ ...s.label, marginBottom:6 }}>TÉLÉPHONE</div>
           <input value={form.tel} onChange={e=>set('tel')(e.target.value)} placeholder="06 xx xx xx xx" inputMode="tel"
             style={{ ...s.input, width:'100%', boxSizing:'border-box' }} />
         </div>
-
         <div>
           <div style={{ ...s.label, marginBottom:6 }}>⚠️ ALLERGIE / ALERTE</div>
           <input value={form.allergie} onChange={e=>set('allergie')(e.target.value)} placeholder="Pénicilline, iode…"
             style={{ ...s.input, width:'100%', boxSizing:'border-box' }} />
         </div>
-
         <div>
           <div style={{ ...s.label, marginBottom:6 }}>NOTES</div>
           <textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} placeholder="Informations utiles…" rows={2}
             style={{ ...s.input, width:'100%', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', fontSize:14 }} />
         </div>
 
-        {/* Actes ordonnance */}
+        {/* Planning */}
+        <div>
+          <div style={{ ...s.label, marginBottom:10 }}>PLANNING DE PASSAGE</div>
+          <ScheduleEditor schedule={schedule} onChange={setSchedule} C={C} />
+        </div>
+
+        {/* Ordonnance */}
         <div>
           <div style={{ ...s.label, marginBottom:8 }}>ACTES PRESCRITS (ORDONNANCE)</div>
           {actes.map(a => (
             <div key={a.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
-              padding:'7px 10px', marginBottom:4, background:C+'15', border:`1px solid ${C}33`, borderRadius:8 }}>
+              padding:'7px 10px', marginBottom:3, background:C+'15', border:`1px solid ${C}33`, borderRadius:8 }}>
               <div>
                 <div style={{ color:T.text, fontSize:13 }}>{a.label}</div>
-                <div style={{ color:T.muted, fontSize:11 }}>{a.code} ×{a.coeff} = {(LETTER_VALUES[a.code]*a.coeff).toFixed(2)}€</div>
+                <div style={{ color:T.muted, fontSize:11 }}>{actePrice(a).toFixed(2)}€</div>
               </div>
               <button onClick={() => setActes(actes.filter(x=>x.id!==a.id))}
                 style={{ background:'none', border:'none', color:T.muted, fontSize:18, cursor:'pointer', lineHeight:1 }}>×</button>
@@ -270,41 +506,208 @@ function AddPatientModal({ C, onClose, onSave }) {
           ))}
           <button onClick={() => setShowNGAP(v=>!v)}
             style={{ width:'100%', background:C+'15', border:`1px dashed ${C}55`, borderRadius:8, color:C,
-              padding:'9px', fontSize:13, cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
-            {showNGAP ? '— Fermer' : '＋ Ajouter actes de l\'ordonnance'}
+              padding:'9px', fontSize:13, cursor:'pointer' }}>
+            {showNGAP ? '— Fermer' : '＋ Actes de l\'ordonnance'}
           </button>
           {showNGAP && (
-            <div style={{ marginTop:10, background:T.surface, borderRadius:10, border:`1px solid ${T.border}`, padding:12 }}>
+            <div style={{ marginTop:8, background:T.surface, borderRadius:10, border:`1px solid ${T.border}`, padding:12 }}>
               <NGAPSelector selected={actes} majorations={[]} onChangeActes={setActes} onChangeMaj={()=>{}} C={C} />
             </div>
           )}
         </div>
 
-        <button onClick={() => ok && onSave({
-          id: genId(), serviceId: undefined,
-          ...form,
-          ordonnance: [{ id: genId(), actes }],
-        })} disabled={!ok}
+        <button onClick={() => ok && onSave({ ...form, schedule, ordonnance: [{ id: initial?.ordonnance?.[0]?.id || genId(), actes }] })}
+          disabled={!ok}
           style={{ background:ok?C:'#555', border:'none', borderRadius:12, color:'#fff',
             padding:'14px', fontSize:15, fontWeight:700, cursor:ok?'pointer':'default', opacity:ok?1:0.5 }}>
-          Ajouter à la tournée
+          {isEdit ? '✓ Enregistrer les modifications' : 'Ajouter à la tournée'}
         </button>
       </div>
     </div>
   );
 }
 
-// ── Vue principale ────────────────────────────────────────────────────────────
+// ── Onglet Patients ───────────────────────────────────────────────────────────
+function PatientsTab({ patients, serviceId, cryptoKey, C, onAdd, onEdit, onDelete }) {
+  const [detailPid, setDetailPid] = useState(null);
+  const detailPatient = patients.find(p => p.id === detailPid);
 
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 80px' }}>
+      {patients.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'48px 0', color:T.muted }}>
+          <div style={{ fontSize:44, marginBottom:10 }}>👤</div>
+          <div style={{ color:T.text, fontSize:15, fontWeight:600, marginBottom:5 }}>Aucun patient enregistré</div>
+          <div style={{ fontSize:13 }}>Ajoutez vos patients avec le bouton +</div>
+        </div>
+      ) : patients.map(p => {
+        const nextSlot = (() => {
+          const today = new Date();
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(today); d.setDate(today.getDate() + i);
+            const dow = d.getDay();
+            const slots = (p.schedule || []).filter(s => s.dow === dow).sort((a,b) => a.heure.localeCompare(b.heure));
+            if (slots.length) return { day: i === 0 ? "Auj." : DAYS_FR[dow], heure: slots[0].heure };
+          }
+          return null;
+        })();
+
+        return (
+          <div key={p.id} onClick={() => setDetailPid(p.id)}
+            style={{ background:T.surface, border:`1px solid ${T.border}`, borderLeft:`3px solid ${C}`, borderRadius:12,
+              padding:'12px 14px', marginBottom:8, cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ color:T.text, fontWeight:700, fontSize:15 }}>{p.initials}</span>
+                {p.allergie && <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️</span>}
+              </div>
+              {nextSlot && (
+                <div style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:7, padding:'3px 8px' }}>
+                  <span style={{ color:C, fontSize:12, fontWeight:600 }}>{nextSlot.day} {nextSlot.heure}</span>
+                </div>
+              )}
+            </div>
+            {p.adresse && <div style={{ color:T.muted, fontSize:12, marginTop:2 }}>{p.adresse}</div>}
+            {(p.schedule || []).length > 0 && (
+              <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:5 }}>
+                {DAYS_FR.map((day, dow) => {
+                  const slots = (p.schedule || []).filter(s => s.dow === dow);
+                  if (!slots.length) return null;
+                  return (
+                    <span key={dow} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:6, fontSize:10, padding:'2px 6px', color:T.muted }}>
+                      {day} {slots.map(s=>s.heure).join(' · ')}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {detailPatient && (
+        <PatientDetail
+          patient={detailPatient}
+          serviceId={serviceId}
+          cryptoKey={cryptoKey}
+          C={C}
+          onClose={() => setDetailPid(null)}
+          onEdit={() => { onEdit(detailPatient); setDetailPid(null); }}
+          onDelete={() => { onDelete(detailPatient.id); setDetailPid(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Onglet Tournée du jour ────────────────────────────────────────────────────
+function DayTab({ patients, daily, C, slots, onVisit, onMoveSlot }) {
+  const doneCount = slots.filter(sl => daily.visits[sl.key]?.status === 'done').length;
+  const totalEur  = slots.reduce((s, sl) => s + (daily.visits[sl.key]?.total || 0), 0);
+
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 80px' }}>
+      {/* Résumé journée */}
+      {slots.length > 0 && (
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12,
+          background:C+'10', border:`1px solid ${C}30`, borderRadius:10, padding:'8px 14px' }}>
+          <span style={{ color:T.muted, fontSize:13 }}>{doneCount}/{slots.length} visites effectuées</span>
+          <span style={{ color:C, fontWeight:800, fontSize:15 }}>{totalEur.toFixed(2)} €</span>
+        </div>
+      )}
+
+      {slots.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'48px 0', color:T.muted }}>
+          <div style={{ fontSize:44, marginBottom:10 }}>📅</div>
+          <div style={{ color:T.text, fontSize:15, fontWeight:600, marginBottom:5 }}>
+            Aucun passage prévu {DAYS_FULL[new Date().getDay()]}
+          </div>
+          <div style={{ fontSize:13 }}>Programmez les jours via l'onglet Patients</div>
+        </div>
+      ) : slots.map((sl, idx) => {
+        const visit = daily.visits[sl.key];
+        const done  = visit?.status === 'done';
+        const p     = sl.patient;
+        return (
+          <div key={sl.key} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:9 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+              <button onClick={() => onMoveSlot(sl.key, -1)} disabled={idx===0}
+                style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
+                  width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===0?0.25:1 }}>↑</button>
+              <button onClick={() => onMoveSlot(sl.key, 1)} disabled={idx===slots.length-1}
+                style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
+                  width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===slots.length-1?0.25:1 }}>↓</button>
+            </div>
+            <div onClick={() => onVisit(sl)} style={{ flex:1, background:done?C+'10':T.surface,
+              border:`1px solid ${done?C+'55':T.border}`, borderLeft:`3px solid ${done?C:T.border}`,
+              borderRadius:12, padding:'11px 13px', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:2 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ color:T.text, fontWeight:700, fontSize:15 }}>{p.initials}</span>
+                  {p.allergie && <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️</span>}
+                </div>
+                <div>
+                  {done
+                    ? <span style={{ color:C, fontSize:12, fontWeight:700 }}>✓ {visit.total?.toFixed(2)}€</span>
+                    : <span style={{ color:T.muted, fontSize:13, fontWeight:600 }}>{sl.slot.heure}</span>}
+                </div>
+              </div>
+              {p.adresse && <div style={{ color:T.muted, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.adresse}</div>}
+              {!done && p.ordonnance?.[0]?.actes?.length > 0 && (
+                <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:4 }}>
+                  {p.ordonnance[0].actes.slice(0,3).map(a => (
+                    <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:5, color:C, fontSize:10, padding:'2px 6px' }}>
+                      {a.label.split('—')[0].trim().slice(0,22)}
+                    </span>
+                  ))}
+                  {p.ordonnance[0].actes.length > 3 && <span style={{ color:T.muted, fontSize:10 }}>+{p.ordonnance[0].actes.length-3}</span>}
+                </div>
+              )}
+              {done && visit.notes ? <div style={{ color:T.muted, fontSize:11, marginTop:3, fontStyle:'italic' }}>{visit.notes.slice(0,70)}{visit.notes.length>70?'…':''}</div> : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Placeholder HAD ───────────────────────────────────────────────────────────
+function HADPlaceholder({ service, onBack }) {
+  return (
+    <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
+      <div style={{ padding:'16px 16px 12px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:10 }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
+        <div>
+          <div style={{ color:T.text, fontWeight:700, fontSize:17 }}>{service.name}</div>
+          <div style={{ color:T.muted, fontSize:11 }}>Hospitalisation à Domicile</div>
+        </div>
+      </div>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', textAlign:'center' }}>
+        <div style={{ fontSize:52, marginBottom:16 }}>🏠</div>
+        <div style={{ color:T.text, fontWeight:700, fontSize:18, marginBottom:10 }}>Module HAD — En développement</div>
+        <div style={{ color:T.muted, fontSize:14, lineHeight:1.7, maxWidth:320 }}>
+          Le module HAD intégrera la coordination multi-intervenants, les plans de soins continus et le suivi d'admission.
+          Il fera l'objet d'un module distinct du module Libéral.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Composant principal ───────────────────────────────────────────────────────
 export default function TourneeView({ service, cryptoKey, onBack }) {
-  const C    = service.specialty === 'tournee_had' ? C_HAD : C_LIB;
+  if (service.specialty === 'tournee_had') return <HADPlaceholder service={service} onBack={onBack} />;
+
+  const C    = C_LIB;
   const DATE = todayStr();
 
-  const [patients, setPatients] = useState([]);
-  const [daily,    setDaily]    = useState({ visits:{}, order:[] });
-  const [loading,  setLoading]  = useState(true);
-  const [view,     setView]     = useState('list'); // 'list'|'patient'|'add'
-  const [selPid,   setSelPid]   = useState(null);
+  const [patients,  setPatients]  = useState([]);
+  const [daily,     setDaily]     = useState({ visits:{}, dayOrder:{} }); // dayOrder: {key: overrideIdx}
+  const [loading,   setLoading]   = useState(true);
+  const [tab,       setTab]       = useState('jour'); // 'jour'|'patients'
+  const [addEdit,   setAddEdit]   = useState(null);   // null | patient object (edit) | true (add)
+  const [visitSel,  setVisitSel]  = useState(null);   // {patient, slot, key}
 
   const PKEY = 'patients_' + service.id;
   const DKEY = 'tr_' + service.id + '_' + DATE;
@@ -313,8 +716,7 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
     setLoading(true);
     try {
       const pts = await secureGet(PKEY, cryptoKey) || [];
-      const d   = await secureGet(DKEY, cryptoKey) || { visits:{}, order:[] };
-      if (!d.order?.length) d.order = pts.map(p => p.id);
+      const d   = await secureGet(DKEY, cryptoKey) || { visits:{}, dayOrder:{} };
       setPatients(pts);
       setDaily(d);
     } finally { setLoading(false); }
@@ -322,50 +724,46 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
 
   useEffect(() => { load(); }, [load]);
 
-  async function savePatients(next) {
-    setPatients(next);
-    await secureSet(PKEY, next, cryptoKey);
-  }
+  async function savePatients(next) { setPatients(next); await secureSet(PKEY, next, cryptoKey); }
+  async function saveDaily(next)    { setDaily(next);    await secureSet(DKEY, next, cryptoKey); appendDateIndex(service.id, DATE); }
 
-  async function saveDaily(next) {
-    setDaily(next);
-    await secureSet(DKEY, next, cryptoKey);
-  }
-
-  async function handleAddPatient(data) {
-    const p    = { ...data, serviceId: service.id };
-    const next = [...patients, p];
-    await savePatients(next);
-    await saveDaily({ ...daily, order: [...daily.order, p.id] });
-    setView('list');
-  }
-
-  async function handleSaveVisit(pid, visitData) {
-    await saveDaily({ ...daily, visits: { ...daily.visits, [pid]: visitData } });
-    setView('list');
-  }
-
-  async function moveStop(pid, dir) {
-    const order = [...daily.order];
-    const i = order.indexOf(pid);
-    const j = i + dir;
-    if (j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
-    await saveDaily({ ...daily, order });
+  async function handleSavePatient(data) {
+    if (addEdit === true) {
+      const p = { id: genId(), serviceId: service.id, ...data };
+      await savePatients([...patients, p]);
+    } else {
+      await savePatients(patients.map(p => p.id === addEdit.id ? { ...p, ...data } : p));
+    }
+    setAddEdit(null);
   }
 
   async function handleDeletePatient(pid) {
     await savePatients(patients.filter(p => p.id !== pid));
-    const visits = { ...daily.visits };
-    delete visits[pid];
-    await saveDaily({ ...daily, visits, order: daily.order.filter(id => id !== pid) });
-    setView('list');
   }
 
-  const ordered   = daily.order.map(id => patients.find(p => p.id === id)).filter(Boolean);
-  const doneCount = ordered.filter(p => daily.visits[p.id]?.status === 'done').length;
-  const totalEur  = ordered.reduce((s, p) => s + (daily.visits[p.id]?.total || 0), 0);
-  const selPatient = patients.find(p => p.id === selPid);
+  async function handleSaveVisit(key, visitData) {
+    await saveDaily({ ...daily, visits: { ...daily.visits, [key]: visitData } });
+    setVisitSel(null);
+  }
+
+  async function handleMoveSlot(key, dir) {
+    const order = [...sortedSlots.map(sl => sl.key)];
+    const i = order.indexOf(key);
+    const j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    await saveDaily({ ...daily, dayOrder: order });
+  }
+
+  // Slots du jour triés selon dayOrder (tableau de clés)
+  const sortedSlots = (() => {
+    const base = getSlotsForDate(patients, DATE);
+    const order = daily.dayOrder;
+    if (!Array.isArray(order) || order.length === 0) return base;
+    const mapped = order.map(k => base.find(sl => sl.key === k)).filter(Boolean);
+    const rest   = base.filter(sl => !order.includes(sl.key));
+    return [...mapped, ...rest];
+  })();
 
   if (loading) return (
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -377,7 +775,7 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
 
       {/* Header */}
-      <div style={{ padding:'16px 16px 10px', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
+      <div style={{ padding:'14px 16px 0', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
           <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
           <div style={{ flex:1, minWidth:0 }}>
@@ -386,115 +784,67 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
               {new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long' })}
             </div>
           </div>
-          <div style={{ textAlign:'right', flexShrink:0 }}>
-            <div style={{ color:C, fontWeight:800, fontSize:17 }}>{totalEur.toFixed(2)} €</div>
-            <div style={{ color:T.muted, fontSize:11 }}>{doneCount}/{ordered.length} visites</div>
-          </div>
+          {tab === 'patients' && (
+            <button onClick={() => setAddEdit(true)}
+              style={{ background:C+'22', border:`1px solid ${C}44`, borderRadius:8, color:C, width:36, height:36,
+                fontSize:22, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>+</button>
+          )}
         </div>
-        {ordered.length > 0 && (
-          <div style={{ height:4, background:T.border, borderRadius:4, overflow:'hidden' }}>
-            <div style={{ height:'100%', background:C, borderRadius:4, transition:'width 0.4s',
-              width:`${ordered.length ? (doneCount/ordered.length)*100 : 0}%` }} />
-          </div>
-        )}
+        {/* Tabs */}
+        <div style={{ display:'flex' }}>
+          {[['jour','🗓 Tournée du jour'],['patients','👤 Patients']].map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              style={{ flex:1, background:'none', border:'none', borderBottom:`2px solid ${tab===id?C:'transparent'}`,
+                color:tab===id?C:T.muted, padding:'8px 4px', fontSize:13, fontWeight:tab===id?700:400, cursor:'pointer' }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Liste */}
-      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 80px' }}>
-        {ordered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'52px 0', color:T.muted }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🚗</div>
-            <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:6 }}>Tournée vide</div>
-            <div style={{ fontSize:13 }}>Ajoutez vos patients avec le bouton +</div>
-          </div>
-        ) : ordered.map((p, idx) => {
-          const visit = daily.visits[p.id];
-          const done  = visit?.status === 'done';
-          return (
-            <div key={p.id} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:10 }}>
-
-              {/* Boutons réordonnancement */}
-              <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-                <button onClick={() => moveStop(p.id, -1)} disabled={idx===0}
-                  style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
-                    width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===0?0.25:1 }}>↑</button>
-                <button onClick={() => moveStop(p.id, 1)} disabled={idx===ordered.length-1}
-                  style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
-                    width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===ordered.length-1?0.25:1 }}>↓</button>
-              </div>
-
-              {/* Carte */}
-              <div onClick={() => { setSelPid(p.id); setView('patient'); }}
-                style={{ flex:1, background:done?C+'10':T.surface, border:`1px solid ${done?C+'55':T.border}`,
-                  borderRadius:12, padding:'11px 14px', cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                  borderLeft:`3px solid ${done?C:T.border}` }}>
-
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:3 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ background:done?C:T.border, color:done?'#fff':T.muted, borderRadius:5,
-                      minWidth:20, height:20, display:'inline-flex', alignItems:'center', justifyContent:'center',
-                      fontSize:11, fontWeight:700, padding:'0 4px' }}>{idx+1}</span>
-                    <span style={{ color:T.text, fontWeight:700, fontSize:15 }}>{p.initials}</span>
-                    {p.allergie && <span style={{ color:'#f43f5e', fontSize:12 }} title={p.allergie}>⚠️</span>}
-                  </div>
-                  <div>
-                    {done
-                      ? <span style={{ color:C, fontSize:12, fontWeight:700 }}>✓ {visit.total?.toFixed(2)}€</span>
-                      : <span style={{ color:T.muted, fontSize:12 }}>{p.heurePrevu}</span>}
-                  </div>
-                </div>
-
-                {p.adresse && (
-                  <div style={{ color:T.muted, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.adresse}</div>
-                )}
-
-                {/* Actes ordonnance (si visite non encore faite) */}
-                {!done && (p.ordonnance?.[0]?.actes?.length > 0) && (
-                  <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:5 }}>
-                    {p.ordonnance[0].actes.slice(0,3).map(a => (
-                      <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:5,
-                        color:C, fontSize:10, padding:'2px 6px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:130 }}>
-                        {a.label.split('—')[0].trim()}
-                      </span>
-                    ))}
-                    {p.ordonnance[0].actes.length > 3 && (
-                      <span style={{ color:T.muted, fontSize:10 }}>+{p.ordonnance[0].actes.length-3}</span>
-                    )}
-                  </div>
-                )}
-
-                {/* Notes visite effectuée */}
-                {done && visit.notes ? (
-                  <div style={{ color:T.muted, fontSize:11, marginTop:3, fontStyle:'italic' }}>
-                    {visit.notes.slice(0,80)}{visit.notes.length>80?'…':''}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-
-        <button onClick={() => setView('add')}
-          style={{ width:'100%', background:C+'15', border:`1px dashed ${C}55`, borderRadius:12,
-            color:C, padding:'13px', fontSize:14, fontWeight:600, cursor:'pointer', marginTop:4,
-            WebkitTapHighlightColor:'transparent' }}>
-          + Ajouter un patient
-        </button>
-      </div>
-
-      {/* Modales */}
-      {view === 'patient' && selPatient && (
-        <PatientVisitModal
-          patient={selPatient}
-          visitData={daily.visits[selPid]}
+      {/* Contenu */}
+      {tab === 'jour' && (
+        <DayTab
+          patients={patients}
+          daily={daily}
+          slots={sortedSlots}
           C={C}
-          onClose={() => setView('list')}
-          onSave={data => handleSaveVisit(selPid, data)}
+          onVisit={sl => setVisitSel(sl)}
+          onMoveSlot={handleMoveSlot}
+        />
+      )}
+      {tab === 'patients' && (
+        <PatientsTab
+          patients={patients}
+          serviceId={service.id}
+          cryptoKey={cryptoKey}
+          C={C}
+          onAdd={() => setAddEdit(true)}
+          onEdit={p => setAddEdit(p)}
+          onDelete={handleDeletePatient}
         />
       )}
 
-      {view === 'add' && (
-        <AddPatientModal C={C} onClose={() => setView('list')} onSave={handleAddPatient} />
+      {/* Modal ajout/édition patient */}
+      {addEdit !== null && (
+        <AddEditPatient
+          initial={addEdit === true ? null : addEdit}
+          C={C}
+          onClose={() => setAddEdit(null)}
+          onSave={handleSavePatient}
+        />
+      )}
+
+      {/* Modal visite */}
+      {visitSel && (
+        <VisitModal
+          patient={visitSel.patient}
+          slot={visitSel.slot}
+          visitData={daily.visits[visitSel.key]}
+          C={C}
+          onClose={() => setVisitSel(null)}
+          onSave={data => handleSaveVisit(visitSel.key, data)}
+        />
       )}
     </div>
   );
