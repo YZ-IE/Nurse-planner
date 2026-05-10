@@ -223,7 +223,7 @@ function CentreInteretModal({ patient, service, dailyData, onFieldChange, onAddF
   );
 }
 
-export default function QuickEntry({ service, cryptoKey, accentColor, onBack, selectedDate: selDate }) {
+export default function QuickEntry({ service, cryptoKey, accentColor, onBack, selectedDate: selDate, onNavigate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -393,14 +393,19 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
 
               {/* ─ En-tête patient ─ */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ color: T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>🛏 {bedLabel[patient.bedNumber] ?? patient.bedNumber}</span>
+                <span style={{ color: bedLabel[patient.bedNumber] == null ? '#f97316' : T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>
+                  🛏 {bedLabel[patient.bedNumber] ?? `⚠️${patient.bedNumber}`}
+                </span>
                 <span style={{ color: T.text, fontSize: 15, fontWeight: 800 }}>{patient.initials}</span>
                 <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
-                {flagEmoji.length > 0 && (
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
-                    {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
-                  </div>
-                )}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 3, alignItems: 'center' }}>
+                  {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
+                  {onNavigate && (
+                    <button onClick={() => onNavigate(patient.id)}
+                      style={{ background: 'none', border: 'none', color: T.muted, fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+                      title="Ouvrir la fiche patient">›</button>
+                  )}
+                </div>
               </div>
 
               {/* Motif abrégé */}

@@ -319,6 +319,32 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
             </div>
           );
         })}
+
+        {/* Patients sans lit valide — slots supprimés / renumérotés */}
+        {(() => {
+          const validSlotIndexes = new Set(slots.map(s => s.slotIndex));
+          const orphans = presentPts.filter(p => !validSlotIndexes.has(p.bedNumber));
+          if (orphans.length === 0) return null;
+          return (
+            <div style={{ marginTop: 16, padding: '12px 14px', background: '#f9731611', border: '1px solid #f9731633', borderRadius: 10 }}>
+              <div style={{ color: '#f97316', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                ⚠️ Patients sans lit attribué
+              </div>
+              {orphans.map(p => (
+                <div key={p.id} onClick={() => !readOnly && onSelectPatient(p.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: '1px solid #f9731633', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  <span style={{ color: '#f97316', fontSize: 12, fontWeight: 700, minWidth: 60 }}>Lit #{p.bedNumber}</span>
+                  <span style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>{p.initials}</span>
+                  <span style={{ color: T.muted, fontSize: 12 }}>{p.gender} {p.age}a</span>
+                  <span style={{ marginLeft: 'auto', color: T.muted, fontSize: 18 }}>›</span>
+                </div>
+              ))}
+              <div style={{ color: T.muted, fontSize: 11, marginTop: 6 }}>
+                La configuration des chambres a changé. Ouvrez la fiche pour déplacer ou sortir ces patients.
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Modal ajout patient */}
