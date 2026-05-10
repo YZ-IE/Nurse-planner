@@ -296,7 +296,15 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
   useEffect(() => { loadData(); }, [loadData]);
 
   async function savePatientData(updatedPatient) {
-    const pts     = await secureGet(`patients_${service.id}`, cryptoKey) || [];
+    const pts = await secureGet(`patients_${service.id}`, cryptoKey) || [];
+    if (pts.length === 0 && allPatients.length > 0) {
+      // Decryption returned empty — fall back to in-memory list to avoid wiping all patients
+      const updated = allPatients.map(p => p.id === patientId ? updatedPatient : p);
+      setPatient(updatedPatient);
+      setAllPatients(updated);
+      await secureSet(`patients_${service.id}`, updated, cryptoKey);
+      return;
+    }
     const updated = pts.map(p => p.id === patientId ? updatedPatient : p);
     setPatient(updatedPatient);
     setAllPatients(updated);

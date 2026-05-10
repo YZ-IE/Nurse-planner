@@ -292,14 +292,18 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
     if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
   }
 
+  async function savePatientPersistent(patientId, updater) {
+    const allPts = await secureGet(`patients_${service.id}`, cryptoKey) || [];
+    const allUpdated = allPts.map(p => p.id === patientId ? updater(p) : p);
+    setPatients(prev => prev.map(p => p.id === patientId ? updater(p) : p));
+    await secureSet(`patients_${service.id}`, allUpdated, cryptoKey);
+  }
+
   async function addRdv(patient, fieldId, value) {
     const field = service.fields.find(f => f.id === fieldId) || (patients.find(p => p.id === patient.id)?.customFields || []).find(f => f.id === fieldId);
     if (!field) return;
     if (field.persistent) {
-      // Écrire dans patients
-      const nextPts = patients.map(p => p.id === patient.id ? { ...p, fieldValues: { ...(p.fieldValues || {}), [fieldId]: value } } : p);
-      setPatients(nextPts);
-      await secureSet(`patients_${service.id}`, nextPts, cryptoKey);
+      await savePatientPersistent(patient.id, p => ({ ...p, fieldValues: { ...(p.fieldValues || {}), [fieldId]: value } }));
     } else {
       const entry  = dailyData[patient.id] || { fieldValues: {}, events: [] };
       const next   = { ...entry, fieldValues: { ...(entry.fieldValues || {}), [fieldId]: value } };
@@ -313,9 +317,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
     const field = (patient.customFields || []).find(f => f.id === fieldId);
     if (!field) return;
     if (field.persistent) {
-      const nextPts = patients.map(p => p.id === patient.id ? { ...p, fieldValues: { ...(p.fieldValues || {}), [fieldId]: value } } : p);
-      setPatients(nextPts);
-      await secureSet(`patients_${service.id}`, nextPts, cryptoKey);
+      await savePatientPersistent(patient.id, p => ({ ...p, fieldValues: { ...(p.fieldValues || {}), [fieldId]: value } }));
     } else {
       const entry  = dailyData[patient.id] || { fieldValues: {}, events: [] };
       const next   = { ...entry, fieldValues: { ...(entry.fieldValues || {}), [fieldId]: value } };
@@ -328,11 +330,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   async function addPatientCustomField(patient, field) {
     const existing = patient.customFields || [];
     if (existing.find(f => f.id === field.id)) return;
-    const nextPts = patients.map(p => p.id === patient.id
-      ? { ...p, customFields: [...existing, { ...field, persistent: true }] }
-      : p);
-    setPatients(nextPts);
-    await secureSet(`patients_${service.id}`, nextPts, cryptoKey);
+    await savePatientPersistent(patient.id, p => ({ ...p, customFields: [...(p.customFields || []), { ...field, persistent: true }] }));
   }
 
   // ─── Rendu ───────────────────────────────────────────────────────────────
