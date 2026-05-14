@@ -674,6 +674,12 @@ function DayTab({ patients, daily, C, slots, onVisit, onMoveSlot }) {
 
 // ── Placeholder HAD ───────────────────────────────────────────────────────────
 function HADPlaceholder({ service, onBack }) {
+  const PLANNED = [
+    'Coordination multi-intervenants (IDE, kiné, médecin)',
+    'Plans de soins continus sur plusieurs semaines',
+    'Suivi des passages et transmissions HAD',
+    'Gestion des prescriptions et renouvellements',
+  ];
   return (
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
       <div style={{ padding:'16px 16px 12px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:10 }}>
@@ -683,13 +689,31 @@ function HADPlaceholder({ service, onBack }) {
           <div style={{ color:T.muted, fontSize:11 }}>Hospitalisation à Domicile</div>
         </div>
       </div>
-      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'32px 24px', textAlign:'center' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>🏠</div>
-        <div style={{ color:T.text, fontWeight:700, fontSize:18, marginBottom:10 }}>Module HAD — En développement</div>
-        <div style={{ color:T.muted, fontSize:14, lineHeight:1.7, maxWidth:320 }}>
-          Le module HAD intégrera la coordination multi-intervenants, les plans de soins continus et le suivi d'admission.
-          Il fera l'objet d'un module distinct du module Libéral.
+      <div style={{ flex:1, overflowY:'auto', padding:'28px 20px 40px', display:'flex', flexDirection:'column', alignItems:'center', gap:20 }}>
+        <div style={{ fontSize:52 }}>🏠</div>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ color:T.text, fontWeight:700, fontSize:18, marginBottom:6 }}>Module HAD</div>
+          <span style={{ background:'#f9731622', color:'#f97316', fontSize:11, fontWeight:700, borderRadius:6, padding:'2px 8px', letterSpacing:0.5 }}>EN DÉVELOPPEMENT</span>
         </div>
+        <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:'14px 16px', width:'100%', maxWidth:360 }}>
+          <div style={{ color:T.muted, fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Fonctionnalités prévues</div>
+          {PLANNED.map((f, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:8 }}>
+              <span style={{ color:'#8b5cf6', fontSize:14, flexShrink:0 }}>◦</span>
+              <span style={{ color:T.muted, fontSize:13, lineHeight:1.5 }}>{f}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ background:'#06b6d422', border:'1px solid #06b6d444', borderRadius:10, padding:'12px 14px', width:'100%', maxWidth:360 }}>
+          <div style={{ color:'#06b6d4', fontSize:12, fontWeight:700, marginBottom:4 }}>💡 En attendant</div>
+          <div style={{ color:T.muted, fontSize:13, lineHeight:1.6 }}>
+            Le mode <strong style={{ color:T.text }}>Tournée Libérale</strong> couvre déjà la majorité des besoins HAD : organisation des visites, transmissions et soins journaliers. Supprimez ce service et recréez-le en type "Libéral" pour l'utiliser dès maintenant.
+          </div>
+        </div>
+        <button onClick={onBack}
+          style={{ background:C_HAD, border:'none', borderRadius:12, color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', padding:'13px 32px', width:'100%', maxWidth:360 }}>
+          ← Retour aux services
+        </button>
       </div>
     </div>
   );
