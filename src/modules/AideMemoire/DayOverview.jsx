@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { todayStr, timeStr, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, timeStr, isReadOnly, formatDateLabel, EmptyState } from './utils.jsx';
 import { getSpecialty } from './templates.js';
 import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
@@ -254,7 +254,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
   const [dailyData, setDailyData] = useState({});
   const [loading,   setLoading]   = useState(true);
   const [tab,       setTab]       = useState('soins');
-  const [groupMode,  setGroupMode]  = useState('patient'); // 'patient' | 'chrono'
+  const [groupMode,  setGroupMode]  = useState(() => localStorage.getItem('am_dayoverview_group') || 'patient');
   const [validating,setValidating]= useState(null); // entry en cours de validation
 
   const loadData = useCallback(async () => {
@@ -393,7 +393,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
         </div>
         {tab === 'soins' && (
           <div style={{ display:'flex', justifyContent:'flex-end', padding:'4px 16px 8px' }}>
-            <button onClick={() => setGroupMode(m => m === 'patient' ? 'chrono' : 'patient')}
+            <button onClick={() => setGroupMode(m => { const next = m === 'patient' ? 'chrono' : 'patient'; localStorage.setItem('am_dayoverview_group', next); return next; })}
               style={{ background:'#6366f122', border:'1px solid #6366f144', borderRadius:20, color:'#818cf8', fontSize:11, fontWeight:700, padding:'4px 12px', cursor:'pointer' }}>
               {groupMode === 'patient' ? '🕐 Chrono' : '👤 Patients'}
             </button>
@@ -406,7 +406,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
 
         {/* ── Soins ── */}
         {tab === 'soins' && (
-          allCare.length === 0 ? <Empty text="Aucun soin programmé aujourd'hui" /> : (
+          allCare.length === 0 ? <EmptyState text="Aucun soin programmé aujourd'hui" /> : (
             <div>
               {groupMode === 'chrono' ? allCare.map((entry, i) => {
                   const { emoji, color } = careMeta(entry.type);
@@ -466,7 +466,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
 
         {/* ── Événements ── */}
         {tab === 'events' && (
-          allEvents.length === 0 ? <Empty text="Aucun événement enregistré aujourd'hui" /> : (
+          allEvents.length === 0 ? <EmptyState text="Aucun événement enregistré aujourd'hui" /> : (
             <div>
               {allEvents.map((ev, i) => (
                 <div key={ev.id || i} style={{
@@ -491,7 +491,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
 
         {/* ── RDV ── */}
         {tab === 'rdv' && (
-          allRdv.length === 0 ? <Empty text="Aucun RDV ou information planifiée" /> : (
+          allRdv.length === 0 ? <EmptyState text="Aucun RDV ou information planifiée" /> : (
             <div>
               {patients.map(p => {
                 const rdvs = allRdv.filter(r => r.patient.id === p.id);
@@ -534,11 +534,3 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
   );
 }
 
-function Empty({ text }) {
-  return (
-    <div style={{ textAlign: 'center', marginTop: 60 }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-      <div style={{ color: T.muted, fontSize: 14 }}>{text}</div>
-    </div>
-  );
-}

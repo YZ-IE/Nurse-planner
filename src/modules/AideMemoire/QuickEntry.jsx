@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty, getAllFieldsAlpha } from './templates.js';
-import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel, EmptyState } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
 import { CARE_TYPES, getCareType } from './careTypes.js';
 
@@ -365,10 +365,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
       <div style={{ padding: '10px 16px 60px' }}>
 
         {sortedPatients.length === 0 && (
-          <div style={{ textAlign: 'center', marginTop: 60 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🛏</div>
-            <div style={{ color: T.muted, fontSize: 14 }}>Aucun patient présent dans ce service</div>
-          </div>
+          <EmptyState icon="🛏" text="Aucun patient présent dans ce service" sub="Admettez un patient depuis la vue service" />
         )}
 
         {sortedPatients.map(patient => {

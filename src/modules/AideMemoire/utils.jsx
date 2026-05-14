@@ -272,3 +272,14 @@ export function formatDateLabel(dateStr) {
   if (dateStr === d2)    return 'Avant-hier';
   return dateStr;
 }
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+export function EmptyState({ icon = '📭', text, sub }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '32px 16px', color: T.muted }}>
+      <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.6 }}>{icon}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: T.muted }}>{text}</div>
+      {sub && <div style={{ fontSize: 12, marginTop: 4, opacity: 0.7 }}>{sub}</div>}
+    </div>
+  );
+}

@@ -6,7 +6,7 @@
 
 import { useState, useRef } from 'react';
 import { T } from '../../theme.js';
-import { timeStr, genId } from './utils.jsx';
+import { timeStr, genId, EmptyState } from './utils.jsx';
 import { CARE_TYPES, getCareType as getCT } from './careTypes.js';
 
 const BG  = T.bg;
@@ -205,7 +205,7 @@ export default function CareSchedule({ careEntries = [], onEntriesChange }) {
 
   return (
     <div>
-      {careEntries.length === 0 && <div style={{ color: MUT, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun soin programmé</div>}
+      {careEntries.length === 0 && <EmptyState icon="💊" text="Aucun soin programmé" sub="Appuyez sur + pour ajouter un soin" />}
 
       {[...careEntries].sort((a, b) => a.plannedTime.localeCompare(b.plannedTime))
         .filter(e => !e.done)
