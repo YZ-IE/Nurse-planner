@@ -10,22 +10,7 @@ import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty, getAllFieldsAlpha } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
-
-// ─── Types de soins ───────────────────────────────────────────────────────────
-
-const CARE_TYPES = [
-  { id: 'constantes_vitales', label: 'Constantes vitales', emoji: '📊', color: '#06b6d4' },
-  { id: 'antalgie',  label: 'Antalgie',        emoji: '💊', color: '#f43f5e' },
-  { id: 'bilan',     label: 'Bilan sanguin',   emoji: '🧪', color: '#a78bfa' },
-  { id: 'diurese',   label: 'Diurèse',         emoji: '💧', color: '#06b6d4' },
-  { id: 'ecg',       label: 'ECG',             emoji: '📈', color: '#a78bfa' },
-  { id: 'hgt',       label: 'Glycémie (HGT)',  emoji: '🩸', color: '#f97316' },
-  { id: 'injection', label: 'Injection',        emoji: '💉', color: '#a78bfa' },
-  { id: 'pansement', label: 'Pansement',        emoji: '🩹', color: '#06b6d4' },
-  { id: 'perfusion', label: 'Perfusion',        emoji: '🫙', color: '#22c55e' },
-  { id: 'poids',     label: 'Poids',            emoji: '⚖️', color: '#22c55e' },
-  { id: 'autre',     label: 'Autre',            emoji: '📋', color: '#64748b' },
-];
+import { CARE_TYPES, getCareType } from './careTypes.js';
 
 // ─── Modal ajout soin ─────────────────────────────────────────────────────────
 
@@ -34,7 +19,7 @@ function AddCareModal({ patient, onAdd, onClose }) {
   const [label,       setLabel]       = useState('');
   const [plannedTime, setPlannedTime] = useState(timeStr());
   const [note,        setNote]        = useState('');
-  const ct = CARE_TYPES.find(t => t.id === type) || CARE_TYPES[0];
+  const ct = getCareType(type);
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>

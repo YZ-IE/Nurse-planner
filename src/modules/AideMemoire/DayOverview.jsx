@@ -8,6 +8,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty } from './templates.js';
+import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
 
@@ -231,20 +232,7 @@ function ValidationModal({ entry, service, cryptoKey, onValidate, onClose }) {
 }
 
 // Couleurs et emojis des soins (dupliqués ici pour éviter la dépendance circulaire)
-const CARE_META = {
-  constantes_vitales: { emoji: '📊', color: '#06b6d4' },
-  antalgie:           { emoji: '💊', color: '#f43f5e' },
-  bilan:              { emoji: '🧪', color: '#a78bfa' },
-  diurese:            { emoji: '💧', color: '#06b6d4' },
-  ecg:                { emoji: '📈', color: '#a78bfa' },
-  hgt:                { emoji: '🩸', color: '#f97316' },
-  injection:          { emoji: '💉', color: '#a78bfa' },
-  pansement:          { emoji: '🩹', color: '#06b6d4' },
-  perfusion:          { emoji: '🫙', color: '#22c55e' },
-  poids:              { emoji: '⚖️', color: '#22c55e' },
-  autre:              { emoji: '📋', color: '#64748b' },
-};
-function careMeta(type) { return CARE_META[type] || CARE_META.autre; }
+function careMeta(type) { return getCareType(type); }
 
 function slotDisplay(service, bedNumber) {
   const slots = computeSlots(service);
