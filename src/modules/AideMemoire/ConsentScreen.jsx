@@ -83,7 +83,7 @@ const SECTIONS = [
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 
-export default function ConsentScreen({ onAccepted }) {
+export default function ConsentScreen({ onAccepted, onDeclined }) {
   const [expanded,  setExpanded]  = useState(null);
   const [checked1,  setChecked1]  = useState(false); // lu et compris
   const [checked2,  setChecked2]  = useState(false); // secret professionnel
@@ -209,6 +209,15 @@ export default function ConsentScreen({ onAccepted }) {
         >
           {canProceed ? '✅ Accepter et continuer' : 'Cochez les 3 cases pour continuer'}
         </button>
+
+        {onDeclined && (
+          <button
+            onClick={onDeclined}
+            style={{ width: '100%', padding: '12px', marginTop: 10, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 13, cursor: 'pointer' }}
+          >
+            Refuser — quitter l'application
+          </button>
+        )}
 
         <div style={{ color: T.border, fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
           Ce consentement est enregistré localement sur votre appareil.{'\n'}

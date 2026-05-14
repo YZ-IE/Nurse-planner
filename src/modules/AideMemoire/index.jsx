@@ -169,10 +169,35 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   // ── Consentement (premier lancement uniquement) ───────────────────────────
   if (nav.screen === 'consent') {
     return screenWrap(
-      <ConsentScreen onAccepted={() => {
-        appendLog('CONSENT', 'Consentement donné');
-        goTo('pin');
-      }} />
+      <ConsentScreen
+        onAccepted={() => {
+          appendLog('CONSENT', 'Consentement donné');
+          goTo('pin');
+        }}
+        onDeclined={() => {
+          appendLog('CONSENT', 'Consentement refusé');
+          goTo('declined');
+        }}
+      />
+    );
+  }
+
+  // ── Refus consentement ───────────────────────────────────────────────────
+  if (nav.screen === 'declined') {
+    return screenWrap(
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 32, gap: 16, background: T.bg }}>
+        <div style={{ fontSize: 48 }}>🔒</div>
+        <div style={{ color: T.text, fontSize: 17, fontWeight: 700, textAlign: 'center' }}>Application non disponible</div>
+        <div style={{ color: T.muted, fontSize: 14, textAlign: 'center', lineHeight: 1.6 }}>
+          L'utilisation d'InfirmierPro nécessite votre accord sur le traitement des données de santé.
+        </div>
+        <button
+          onClick={() => goTo('consent')}
+          style={{ marginTop: 8, padding: '12px 24px', background: '#6366f1', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+        >
+          Revoir les informations
+        </button>
+      </div>
     );
   }
 
