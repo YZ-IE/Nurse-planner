@@ -16,7 +16,7 @@ const LIGHT = {
 const DARK = {
   bg:'#0D1117', surface:'#161C26', surface2:'#1C2333',
   border:'#232D3F', border2:'#2E3D55',
-  text:'#F0F4FA', muted:'#5A6880',
+  text:'#F0F4FA', muted:'#7A8FA8',
   iatr:'#F43F5E', urg:'#FF6B47', score:'#8B7FF8',
   soins:'#38B6FF', orga:'#2DD47A', form:'#FBBF24', ia:'#38BDF8',
   iatrDim:'#1F0A10', urgDim:'#1F0E08', scoreDim:'#12102A',
@@ -24,7 +24,11 @@ const DARK = {
 };
 
 export function loadDarkPref() {
-  try { return localStorage.getItem('nplanr_dark') === 'true'; } catch { return false; }
+  try {
+    const stored = localStorage.getItem('nplanr_dark');
+    if (stored !== null) return stored === 'true';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  } catch { return false; }
 }
 export function saveDarkPref(val) {
   try { localStorage.setItem('nplanr_dark', val ? 'true' : 'false'); } catch {}
