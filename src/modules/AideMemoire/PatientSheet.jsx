@@ -366,14 +366,14 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
 
   const occupiedBeds = allPatients.filter(p => p.present && p.id !== patientId).map(p => p.bedNumber);
 
+  const pendingCare = (dailyEntry.careEntries || []).filter(e => !e.done).length;
+
   const TABS = [
-    { label: '🏥', name: 'Séjour',      idx: 0 },
-    { label: '⚠️', name: 'Alertes',     idx: 1 },
-    { label: '📋', name: 'Journalier',  idx: 2 },
-    { label: '💊', name: 'Soins',       idx: 3 },
-    { label: '🎯', name: 'Centres',     idx: 4 },
-    { label: '📝', name: 'Événements',  idx: 5 },
-    { label: '🩹', name: 'Plaies',       idx: 6 },
+    { label: '🏥', name: 'Séjour',      idx: 0, badge: activeFlags.length > 0 ? activeFlags.length : null },
+    { label: '📋', name: 'Journalier',  idx: 1, badge: pendingCare > 0 ? pendingCare : null },
+    { label: '🎯', name: 'Centres',     idx: 2 },
+    { label: '📝', name: 'Événements',  idx: 3 },
+    { label: '🩹', name: 'Plaies',      idx: 4 },
   ];
 
   return (
@@ -462,7 +462,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
       {/* ── Contenu ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 16px', animation: slideDir === 'left' ? 'slideLeft 0.22s ease forwards' : slideDir === 'right' ? 'slideRight 0.22s ease forwards' : 'fadeUp 0.2s ease' }}>
 
-        {/* TAB 0 — SÉJOUR */}
+        {/* TAB 0 — SÉJOUR + ALERTES */}
         {activeTab === 0 && (
           <>
             <Section title="SÉJOUR" color={sp.color}>
@@ -471,6 +471,17 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
               {infoFields.filter(f => f.persistent).map(f => (
                 <FieldRow key={f.id} field={f} accentColor={C}
                   value={patient.fieldValues[f.id]} onChange={v => savePersistentField(f.id, v)} />
+              ))}
+            </Section>
+
+            <Section title="ALERTES / RISQUES" color="#f43f5e">
+              {flagFields.length === 0 && (
+                <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic' }}>Aucun champ d'alerte configuré</div>
+              )}
+              {flagFields.map(f => (
+                <FieldRow key={f.id} field={f} accentColor="#f43f5e"
+                  value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
+                  onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
               ))}
             </Section>
 
@@ -506,22 +517,8 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
           </>
         )}
 
-        {/* TAB 1 — ALERTES */}
+        {/* TAB 1 — JOURNALIER + SOINS */}
         {activeTab === 1 && (
-          <Section title="ALERTES / RISQUES" color="#f43f5e">
-            {flagFields.length === 0 && (
-              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic' }}>Aucun champ d'alerte configuré</div>
-            )}
-            {flagFields.map(f => (
-              <FieldRow key={f.id} field={f} accentColor="#f43f5e"
-                value={f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id]}
-                onChange={v => f.persistent ? savePersistentField(f.id, v) : saveDailyField(f.id, v)} />
-            ))}
-          </Section>
-        )}
-
-        {/* TAB 2 — JOURNALIER */}
-        {activeTab === 2 && (
           <>
             {(obsFields.length > 0 || infoFields.some(f => !f.persistent)) && (
               <Section title="JOURNALIER" color={C}>
@@ -551,26 +548,22 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
                 ))}
               </Section>
             )}
+            <Section title="SOINS PROGRAMMÉS" color="#f97316">
+              <CareSchedule
+                careEntries={dailyEntry.careEntries || []}
+                onEntriesChange={entries => saveDailyEntry({ ...dailyEntry, careEntries: entries })}
+              />
+            </Section>
             {obsFields.length === 0 && !infoFields.some(f => !f.persistent) && constFields.length === 0 && (
-              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', textAlign: 'center', marginTop: 40 }}>
+              <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>
                 Aucun champ journalier configuré
               </div>
             )}
           </>
         )}
 
-        {/* TAB 3 — SOINS */}
-        {activeTab === 3 && (
-          <Section title="SOINS PROGRAMMÉS" color="#f97316">
-            <CareSchedule
-              careEntries={dailyEntry.careEntries || []}
-              onEntriesChange={entries => saveDailyEntry({ ...dailyEntry, careEntries: entries })}
-            />
-          </Section>
-        )}
-
-        {/* TAB 4 — CENTRES */}
-        {activeTab === 4 && (
+        {/* TAB 2 — CENTRES */}
+        {activeTab === 2 && (
           <Section title="CENTRES D'INTÉRÊT PATIENT" color="#a78bfa">
             {(patient.customFields || []).length === 0 && (
               <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun centre d'intérêt additionnel</div>
@@ -595,8 +588,8 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
           </Section>
         )}
 
-        {/* TAB 5 — ÉVÉNEMENTS */}
-        {activeTab === 5 && (
+        {/* TAB 3 — ÉVÉNEMENTS */}
+        {activeTab === 3 && (
           <Section title="ÉVÉNEMENTS DU JOUR" color="#22c55e">
             {(dailyEntry.events || []).length === 0 && (
               <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 10 }}>Aucun événement</div>
@@ -618,8 +611,9 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
             </div>
           </Section>
         )}
-        {/* TAB 6 — PLAIES */}
-        {activeTab === 6 && (
+
+        {/* TAB 4 — PLAIES */}
+        {activeTab === 4 && (
           <WoundPhotos
             patient={patient}
             service={service}
@@ -637,7 +631,12 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
             {activeTab === t.idx && (
               <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%', height: 2, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: '0 0 2px 2px' }} />
             )}
-            <span style={{ fontSize: 22, lineHeight: 1 }}>{t.label}</span>
+            <span style={{ fontSize: 22, lineHeight: 1, position: 'relative' }}>
+              {t.label}
+              {t.badge && (
+                <span style={{ position: 'absolute', top: -4, right: -8, background: t.idx === 0 ? '#f43f5e' : '#f97316', color: '#fff', fontSize: 9, fontWeight: 800, borderRadius: 8, padding: '1px 4px', lineHeight: 1.4 }}>{t.badge}</span>
+              )}
+            </span>
             {t.name}
           </button>
         ))}
