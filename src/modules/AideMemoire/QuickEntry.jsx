@@ -368,6 +368,14 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
         </div>
       </div>
 
+      {/* ── Bandeau lecture seule ── */}
+      {readOnly && (
+        <div style={{ background: '#6366f122', borderBottom: `1px solid #6366f133`, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14 }}>🔒</span>
+          <span style={{ color: '#818cf8', fontSize: 12, fontWeight: 600 }}>Consultation uniquement — les modifications sont désactivées pour cette date</span>
+        </div>
+      )}
+
       {/* ── Patients ── */}
       <div style={{ padding: '10px 16px 60px' }}>
 
@@ -386,9 +394,10 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
           return (
             <div key={patient.id} style={{
               background: T.surface, border: `1px solid ${T.border}`,
-              borderLeft: `3px solid ${sp.color}`,
+              borderLeft: `3px solid ${readOnly ? T.border : sp.color}`,
               borderRadius: 12, padding: '14px 14px 12px',
               marginBottom: 12,
+              opacity: readOnly ? 0.72 : 1,
             }}>
 
               {/* ─ En-tête patient ─ */}
@@ -472,22 +481,24 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
               </div>
 
               {/* ─ Boutons planifier soin / RDV / Centre d'intérêt ─ */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button onClick={() => setAddCareFor(patient)}
-                  style={{ flex: 1, background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 8, color: '#f43f5e', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
-                  💊 Soin
-                </button>
-                {service.fields.some(f => f.category === 'info') && (
-                  <button onClick={() => setAddRdvFor(patient)}
-                    style={{ flex: 1, background: '#6366f111', border: '1px solid #6366f133', borderRadius: 8, color: '#6366f1', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
-                    📅 RDV / Info
+              {!readOnly && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => setAddCareFor(patient)}
+                    style={{ flex: 1, background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 8, color: '#f43f5e', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                    💊 Soin
                   </button>
-                )}
-                <button onClick={() => setCentreInteretFor(patient)}
-                  style={{ flex: 1, background: '#a78bfa11', border: '1px solid #a78bfa33', borderRadius: 8, color: '#a78bfa', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
-                  🎯 Centres
-                </button>
-              </div>
+                  {service.fields.some(f => f.category === 'info') && (
+                    <button onClick={() => setAddRdvFor(patient)}
+                      style={{ flex: 1, background: '#6366f111', border: '1px solid #6366f133', borderRadius: 8, color: '#6366f1', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                      📅 RDV / Info
+                    </button>
+                  )}
+                  <button onClick={() => setCentreInteretFor(patient)}
+                    style={{ flex: 1, background: '#a78bfa11', border: '1px solid #a78bfa33', borderRadius: 8, color: '#a78bfa', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                    🎯 Centres
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
