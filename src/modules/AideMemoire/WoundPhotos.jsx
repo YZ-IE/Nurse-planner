@@ -231,7 +231,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const fmt        = photo.dataUrl.slice(0, commaIdx).match(/image\/(\w+)/i)?.[1] || 'jpeg';
       const compressed = await compressImage(base64, fmt, 600, 0.7);
       pendingRef.current = compressed;
-      setPendingB64('ready');
+      setPendingB64(compressed);
       setLabel('');
       setShowLabel(true);
     } catch (e) {
@@ -259,7 +259,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       const fmt        = dataUrl.slice(0, commaIdx).match(/image\/(\w+)/i)?.[1] || 'jpeg';
       const compressed = await compressImage(base64, fmt, 600, 0.7);
       pendingRef.current = compressed;
-      setPendingB64('ready');
+      setPendingB64(compressed);
       setLabel('');
       setShowLabel(true);
     } catch (err) {
@@ -404,6 +404,11 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
         <div onTouchMove={e => e.stopPropagation()}
           style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'flex-end', zIndex:200 }}>
           <div style={{ background:T.surface, borderRadius:'20px 20px 0 0', padding:'20px 20px 40px', width:'100%', boxSizing:'border-box' }}>
+            {pendingB64 && (
+              <div style={{ marginBottom:14, borderRadius:12, overflow:'hidden', maxHeight:180, display:'flex', alignItems:'center', justifyContent:'center', background:'#000' }}>
+                <img src={pendingB64} alt="Aperçu" style={{ maxWidth:'100%', maxHeight:180, objectFit:'contain', display:'block' }} />
+              </div>
+            )}
             <div style={{ color:T.text, fontWeight:700, fontSize:16, marginBottom:14 }}>📝 Libellé</div>
             <input value={label} onChange={e => setLabel(e.target.value)}
               placeholder="ex : Plaie tibiale J3" autoFocus
