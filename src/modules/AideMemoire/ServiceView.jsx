@@ -163,6 +163,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [saving,       setSaving]       = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [showBedsCfg,  setShowBedsCfg] = useState(false);
+  const [showMenu,     setShowMenu]     = useState(false);
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -219,7 +220,8 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const presentPts = patients.filter(p => p.present);
 
   return (
-    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}
+         onClick={() => showMenu && setShowMenu(false)}>
 
       {/* Header */}
       <div style={{ padding: '14px 16px 0', background: T.bg, position: 'sticky', top: 0, zIndex: 10 }}>
@@ -232,18 +234,31 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
             </div>
             <div style={{ color: T.muted, fontSize: 12 }}>{sp.label} · {presentPts.length}/{slots.length} lits</div>
           </div>
-          {[
-            { icon: '⚙️', fn: () => setShowBedsCfg(true), col: T.muted,   bg: T.surface,   title: 'Config chambres'    },
-            { icon: '📋', fn: onDayOverview,               col: T.muted,   bg: T.surface,   title: 'Vue du jour'        },
-            { icon: '⚡', fn: readOnly ? null : onQuickEntry, col: readOnly ? T.muted : C, bg: readOnly ? T.surface : C + '22', title: 'Saisie rapide' },
-            { icon: '🔄', fn: onTransfer,                  col: '#6366f1', bg: '#6366f122', title: 'Transfert sécurisé' },
-            { icon: '🗒️', fn: onLog,                       col: T.muted,   bg: T.surface,   title: 'Journal accès'      },
-          ].map((b, i) => (
-            <button key={i} onClick={b.fn} title={b.title}
-              style={{ background: b.bg, border: `1px solid ${T.border}`, borderRadius: 8, color: b.col, fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>
-              {b.icon}
-            </button>
-          ))}
+          {/* Boutons principaux */}
+          <button onClick={() => setShowBedsCfg(true)} title="Config chambres"
+            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>⚙️</button>
+          <button onClick={readOnly ? undefined : onQuickEntry} title="Saisie rapide"
+            style={{ background: readOnly ? T.surface : C + '22', border: `1px solid ${readOnly ? T.border : C + '55'}`, borderRadius: 8, color: readOnly ? T.muted : C, fontSize: 16, padding: '6px 9px', cursor: readOnly ? 'default' : 'pointer', flexShrink: 0, opacity: readOnly ? 0.5 : 1 }}>⚡</button>
+          <button onClick={onTransfer} title="Transfert sécurisé"
+            style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 8, color: '#6366f1', fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>🔄</button>
+          {/* Menu "…" pour actions secondaires */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button onClick={() => setShowMenu(m => !m)} title="Plus d'options"
+              style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 14, fontWeight: 700, padding: '6px 9px', cursor: 'pointer', letterSpacing: 1 }}>•••</button>
+            {showMenu && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', zIndex: 50, minWidth: 180, overflow: 'hidden' }}
+                   onClick={() => setShowMenu(false)}>
+                <button onClick={onDayOverview}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <span>📋</span><span>Vue du jour</span>
+                </button>
+                <button onClick={onLog}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <span>🗒️</span><span>Journal d'accès</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
