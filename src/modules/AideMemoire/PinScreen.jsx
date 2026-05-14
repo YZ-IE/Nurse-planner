@@ -270,6 +270,19 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
       <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
+
+      {bioBusy && (
+        <div style={{ position: 'absolute', inset: 0, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
+          <div style={{ fontSize: 52 }}>👆</div>
+          <div style={{ color: T.text, fontSize: 16, fontWeight: 600 }}>Authentification biométrique…</div>
+          <div style={{ color: T.muted, fontSize: 13 }}>Utilisez votre empreinte ou visage</div>
+          <button onClick={() => setBioBusy(false)}
+            style={{ marginTop: 8, background: 'none', border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 13, cursor: 'pointer', padding: '10px 20px' }}>
+            Ignorer — utiliser le mot de passe
+          </button>
+        </div>
+      )}
+
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
       <div style={{ color: T.text, fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>Déverrouiller</div>
       <div style={{ color: T.muted, fontSize: 13, marginBottom: failures > 0 ? 12 : 28, textAlign: 'center' }}>Saisir votre mot de passe</div>
