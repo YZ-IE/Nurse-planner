@@ -433,7 +433,10 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
           return (
             <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px 8px', gap: 0 }}>
               <button onClick={() => prev && onNavigate(prev.id)} disabled={!prev}
-                style={{ background: prev ? P.glass : 'transparent', border: `1px solid ${prev ? P.glassBdr : 'transparent'}`, borderRadius: '10px 0 0 10px', color: prev ? T.text : T.border, fontSize: 18, padding: '7px 14px', cursor: prev ? 'pointer' : 'default', flexShrink: 0 }}>‹</button>
+                style={{ background: prev ? P.glass : 'transparent', border: `1px solid ${prev ? P.glassBdr : 'transparent'}`, borderRadius: '10px 0 0 10px', color: prev ? T.text : T.border, fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: prev ? 'pointer' : 'default', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, minWidth: 56 }}>
+                <span style={{ fontSize: 16 }}>‹</span>
+                {prev && <span style={{ maxWidth: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prev.initials}</span>}
+              </button>
               <select onChange={e => onNavigate(e.target.value)} value={patientId}
                 style={{ flex: 1, background: loadDarkPref() ? 'rgba(15,23,42,0.8)' : T.surface, border: `1px solid ${T.border}`, borderLeft: 'none', borderRight: 'none', color: T.text, fontSize: 13, fontWeight: 600, padding: '7px 10px', cursor: 'pointer', minWidth: 0 }}>
                 {present.map(pt => {
@@ -442,13 +445,16 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
                 })}
               </select>
               <button onClick={() => next && onNavigate(next.id)} disabled={!next}
-                style={{ background: next ? P.glass : 'transparent', border: `1px solid ${next ? P.glassBdr : 'transparent'}`, borderRadius: '0 10px 10px 0', color: next ? T.text : T.border, fontSize: 18, padding: '7px 14px', cursor: next ? 'pointer' : 'default', flexShrink: 0 }}>›</button>
+                style={{ background: next ? P.glass : 'transparent', border: `1px solid ${next ? P.glassBdr : 'transparent'}`, borderRadius: '0 10px 10px 0', color: next ? T.text : T.border, fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: next ? 'pointer' : 'default', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, minWidth: 56, justifyContent: 'flex-end' }}>
+                {next && <span style={{ maxWidth: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{next.initials}</span>}
+                <span style={{ fontSize: 16 }}>›</span>
+              </button>
             </div>
           );
         })()}
 
-        {/* Alertes actives */}
-        {activeFlags.length > 0 && activeTab !== 1 && (
+        {/* Alertes actives (masquées sur l'onglet Séjour qui les affiche déjà) */}
+        {activeFlags.length > 0 && activeTab !== 0 && (
           <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, padding: '0 16px 8px', overflowX: 'auto' }}>
             {activeFlags.map(f => {
               const v = f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id];
