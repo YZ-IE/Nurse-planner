@@ -193,8 +193,12 @@ function MoveBedModal({ patient, service, occupiedBeds, onMove, onClose }) {
           })}
         </div>
         <button onClick={() => { if (selected) { onMove(selected); onClose(); } }} disabled={!selected}
-          style={{ background: selected ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : P.glass, border: 'none', borderRadius: 12, color: '#fff', padding: '13px', fontSize: 15, fontWeight: 700, cursor: 'pointer', width: '100%', opacity: selected ? 1 : 0.4 }}>
+          style={{ background: selected ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : P.glass, border: 'none', borderRadius: 12, color: '#fff', padding: '13px', fontSize: 15, fontWeight: 700, cursor: 'pointer', width: '100%', opacity: selected ? 1 : 0.4, marginBottom: 8 }}>
           Déplacer vers {selectedLabel}
+        </button>
+        <button onClick={() => { onMove(null); onClose(); }}
+          style={{ background: 'none', border: `1px solid ${P.glassBdr}`, borderRadius: 12, color: T.muted, padding: '10px', fontSize: 13, cursor: 'pointer', width: '100%' }}>
+          Retirer du lit (sans lit attribué)
         </button>
       </div>
     </div>
