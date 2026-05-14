@@ -4,7 +4,7 @@
  * - Valeur non obligatoire mais confirmation si validation sans valeur
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { T } from '../../theme.js';
 import { timeStr, genId } from './utils.jsx';
 
@@ -177,7 +177,19 @@ function ValidationModal({ entry, onValidate, onClose }) {
 
 function CareRow({ entry, onValidate, onUndo, onRemove, onTimeChange }) {
   const ct = getCT(entry.type);
-  const [editTime, setEditTime] = useState(false);
+  const [editTime,    setEditTime]    = useState(false);
+  const [confirmDel,  setConfirmDel]  = useState(false);
+  const confirmTimer = useRef(null);
+
+  function handleDeleteTap() {
+    if (confirmDel) {
+      clearTimeout(confirmTimer.current);
+      onRemove(entry.id);
+    } else {
+      setConfirmDel(true);
+      confirmTimer.current = setTimeout(() => setConfirmDel(false), 2000);
+    }
+  }
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: SRF, border: `1px solid ${entry.done ? BRD : ct.color + '44'}`, borderLeft: `3px solid ${entry.done ? '#22c55e' : ct.color}`, borderRadius: 9, padding: '10px 12px', marginBottom: 7, opacity: entry.done ? 0.7 : 1 }}>
@@ -201,7 +213,10 @@ function CareRow({ entry, onValidate, onUndo, onRemove, onTimeChange }) {
           {entry.done && entry.doneTime && <span style={{ color: '#22c55e', fontSize: 11 }}>✓ {entry.doneTime}</span>}
         </div>
       </div>
-      <button onClick={() => onRemove(entry.id)} style={{ background: 'none', border: 'none', color: MUT, fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 }}>×</button>
+      <button onClick={handleDeleteTap}
+        style={{ background: confirmDel ? '#f43f5e22' : 'none', border: confirmDel ? '1px solid #f43f5e66' : 'none', borderRadius: 6, color: confirmDel ? '#f43f5e' : MUT, fontSize: confirmDel ? 11 : 18, fontWeight: confirmDel ? 700 : 400, cursor: 'pointer', padding: confirmDel ? '3px 6px' : 0, lineHeight: 1, flexShrink: 0, transition: 'all 0.15s' }}>
+        {confirmDel ? '✕ ?' : '×'}
+      </button>
     </div>
   );
 }
