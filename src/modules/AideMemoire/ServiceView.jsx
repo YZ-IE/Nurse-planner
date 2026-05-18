@@ -10,6 +10,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
 import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
+import ImportFromPhoto from './ImportFromPhoto.jsx';
 
 const SURVEILLANCE_TYPES = new Set(['constantes_vitales','hgt','bilan','diurese','ecg','poids']);
 
@@ -162,8 +163,9 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [addForm,      setAddForm]      = useState({ initials: '', age: '', gender: 'M', reason: '', atcd: '' });
   const [saving,       setSaving]       = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [showBedsCfg,  setShowBedsCfg] = useState(false);
+  const [showBedsCfg,  setShowBedsCfg]  = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
+  const [showImport,   setShowImport]   = useState(false);
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -252,6 +254,12 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span>📋</span><span>Vue du jour</span>
                 </button>
+                {!readOnly && (
+                  <button onClick={() => { setShowImport(true); setShowMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                    <span>📷</span><span>Import depuis photo</span>
+                  </button>
+                )}
                 <button onClick={onLog}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span>🗒️</span><span>Journal d'accès</span>
@@ -411,6 +419,15 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
       })()}
 
       {showBedsCfg && <BedsConfigModal service={service} onSave={handleBedsSave} onClose={() => setShowBedsCfg(false)} />}
+
+      {showImport && (
+        <ImportFromPhoto
+          service={service}
+          existingPatients={patients}
+          onImport={async newPts => { await savePatients([...patients, ...newPts]); }}
+          onClose={() => setShowImport(false)}
+        />
+      )}
     </div>
   );
 }
