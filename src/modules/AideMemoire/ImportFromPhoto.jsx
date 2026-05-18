@@ -1,11 +1,13 @@
 /**
  * ImportFromPhoto.jsx — Import de patients depuis une photo de feuille de transmission
- * OCR via Shape Detection API (TextDetector) — natif Android WebView, 100% offline.
+ * OCR via @pantrist/capacitor-plugin-ml-kit-text-recognition (ML Kit natif, offline).
  * Parsing : Mme/Mr + NOM majuscules → initiales/genre, lit (3 chiffres + P/F), âge 2 chiffres.
  */
 
 import { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
+import { CapacitorPluginMlKitTextRecognition } from '@pantrist/capacitor-plugin-ml-kit-text-recognition';
 import { T } from '../../theme.js';
 import { genId } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
@@ -17,10 +19,10 @@ const INP = {
   color: T.text, fontSize: 13, padding: '6px 8px', width: '100%', boxSizing: 'border-box',
 };
 
-// ─── OCR (Shape Detection API — ML Kit natif Android) ─────────────────────────
+// ─── OCR (ML Kit natif via Capacitor, 100% offline) ───────────────────────────
 
 export function isOCRSupported() {
-  return 'TextDetector' in window;
+  return Capacitor.isNativePlatform();
 }
 
 async function runOCR(dataUrl, onProgress) {
@@ -28,30 +30,18 @@ async function runOCR(dataUrl, onProgress) {
     throw new Error('OCR_UNSUPPORTED');
   }
 
-  onProgress(10, 'Chargement de l\'image…');
+  onProgress(30, 'Analyse OCR en cours…');
 
-  const img = new Image();
-  img.src = dataUrl;
-  await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+  // Le plugin attend le base64 brut (sans le préfixe "data:image/...;base64,")
+  const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
 
-  onProgress(40, 'Analyse OCR en cours…');
+  const result = await CapacitorPluginMlKitTextRecognition.detectText({
+    base64Image: base64,
+    rotation: 0,
+  });
 
-  // eslint-disable-next-line no-undef
-  const detector = new TextDetector();
-  const blocks = await detector.detect(img);
-
-  onProgress(90, 'Traitement…');
-
-  // Trier par position verticale puis horizontale pour reconstituer l'ordre de lecture
-  const sorted = [...blocks].sort((a, b) =>
-    a.boundingBox.top !== b.boundingBox.top
-      ? a.boundingBox.top - b.boundingBox.top
-      : a.boundingBox.left - b.boundingBox.left
-  );
-
-  const text = sorted.map(b => b.rawValue).join('\n');
   onProgress(100, 'Terminé');
-  return text;
+  return result.text || '';
 }
 
 // ─── Parsing ──────────────────────────────────────────────────────────────────
