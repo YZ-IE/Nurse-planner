@@ -1,6 +1,7 @@
 /**
  * ImportFromPhoto.jsx — Import de patients depuis une photo de feuille de transmission
- * OCR via Tesseract.js (chargé à la demande). Parsing : Mme/Mr + NOM → initiales/genre/âge/lit.
+ * OCR via Shape Detection API (TextDetector) — natif Android WebView, 100% offline.
+ * Parsing : Mme/Mr + NOM majuscules → initiales/genre, lit (3 chiffres + P/F), âge 2 chiffres.
  */
 
 import { useState } from 'react';
@@ -16,23 +17,41 @@ const INP = {
   color: T.text, fontSize: 13, padding: '6px 8px', width: '100%', boxSizing: 'border-box',
 };
 
-// ─── OCR ─────────────────────────────────────────────────────────────────────
+// ─── OCR (Shape Detection API — ML Kit natif Android) ─────────────────────────
+
+export function isOCRSupported() {
+  return 'TextDetector' in window;
+}
 
 async function runOCR(dataUrl, onProgress) {
-  const { createWorker } = await import('tesseract.js');
-  const worker = await createWorker('fra', 1, {
-    logger: m => {
-      if (m.status === 'loading language traineddata') onProgress(5, 'Téléchargement du moteur…');
-      else if (m.status === 'recognizing text') onProgress(10 + Math.round(m.progress * 85), 'Analyse en cours…');
-    },
-  });
-  try {
-    const { data: { text } } = await worker.recognize(dataUrl);
-    onProgress(100, 'Terminé');
-    return text;
-  } finally {
-    await worker.terminate();
+  if (!isOCRSupported()) {
+    throw new Error('OCR_UNSUPPORTED');
   }
+
+  onProgress(10, 'Chargement de l\'image…');
+
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+
+  onProgress(40, 'Analyse OCR en cours…');
+
+  // eslint-disable-next-line no-undef
+  const detector = new TextDetector();
+  const blocks = await detector.detect(img);
+
+  onProgress(90, 'Traitement…');
+
+  // Trier par position verticale puis horizontale pour reconstituer l'ordre de lecture
+  const sorted = [...blocks].sort((a, b) =>
+    a.boundingBox.top !== b.boundingBox.top
+      ? a.boundingBox.top - b.boundingBox.top
+      : a.boundingBox.left - b.boundingBox.left
+  );
+
+  const text = sorted.map(b => b.rawValue).join('\n');
+  onProgress(100, 'Terminé');
+  return text;
 }
 
 // ─── Parsing ──────────────────────────────────────────────────────────────────
@@ -122,6 +141,12 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
     } catch (e) {
       const msg = e?.message || String(e);
       if (/cancel|User cancelled|No image picked/i.test(msg)) { setPhase('capture'); return; }
+      if (msg === 'OCR_UNSUPPORTED') {
+        // TextDetector non disponible — passer directement à la revue vide pour saisie manuelle
+        setDetected([]);
+        setPhase('review');
+        return;
+      }
       setError('Erreur OCR : ' + msg.slice(0, 100));
       setPhase('capture');
     }
@@ -172,8 +197,10 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
           <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6 }}>
             Photographiez la feuille. L'app détecte automatiquement les <strong style={{ color: T.text }}>numéros de chambre</strong>, <strong style={{ color: T.text }}>noms</strong> et <strong style={{ color: T.text }}>âges</strong> des patients.
           </div>
-          <div style={{ color: T.muted, fontSize: 11, marginTop: 8, opacity: 0.75 }}>
-            ⚠️ Première utilisation : connexion réseau requise pour télécharger le moteur OCR (~4 Mo, mis en cache ensuite).
+          <div style={{ color: isOCRSupported() ? '#22c55e' : T.muted, fontSize: 11, marginTop: 8 }}>
+            {isOCRSupported()
+              ? '✓ OCR natif disponible — fonctionne sans connexion réseau'
+              : '⚠️ OCR non disponible sur cet appareil — vous pourrez ajouter les patients manuellement'}
           </div>
         </div>
 
@@ -210,9 +237,13 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
       <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <button onClick={() => setPhase('capture')} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
         <div style={{ flex: 1 }}>
-          <div style={{ color: T.text, fontWeight: 700, fontSize: 16 }}>Résultats OCR</div>
+          <div style={{ color: T.text, fontWeight: 700, fontSize: 16 }}>
+            {isOCRSupported() ? 'Résultats OCR' : 'Saisie manuelle'}
+          </div>
           <div style={{ color: T.muted, fontSize: 12 }}>
-            {detected.length} patient{detected.length !== 1 ? 's' : ''} détecté{detected.length !== 1 ? 's' : ''} · <span style={{ color: readyCount > 0 ? ACCENT : T.muted }}>{readyCount} prêt{readyCount !== 1 ? 's' : ''}</span>
+            {isOCRSupported()
+              ? <>{detected.length} patient{detected.length !== 1 ? 's' : ''} détecté{detected.length !== 1 ? 's' : ''} · <span style={{ color: readyCount > 0 ? ACCENT : T.muted }}>{readyCount} prêt{readyCount !== 1 ? 's' : ''}</span></>
+              : 'OCR non disponible — ajoutez les patients manuellement'}
           </div>
         </div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -223,9 +254,15 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
 
         {detected.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 16px' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>😕</div>
-            <div style={{ color: T.text, fontSize: 14, fontWeight: 600 }}>Aucun patient détecté</div>
-            <div style={{ color: T.muted, fontSize: 12, marginTop: 4 }}>Prenez une photo plus nette ou ajoutez manuellement</div>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>{isOCRSupported() ? '😕' : '✏️'}</div>
+            <div style={{ color: T.text, fontSize: 14, fontWeight: 600 }}>
+              {isOCRSupported() ? 'Aucun patient détecté' : 'Saisie manuelle'}
+            </div>
+            <div style={{ color: T.muted, fontSize: 12, marginTop: 4 }}>
+              {isOCRSupported()
+                ? 'Prenez une photo plus nette ou ajoutez manuellement'
+                : 'Utilisez le bouton ci-dessous pour ajouter les patients un par un'}
+            </div>
           </div>
         )}
 
