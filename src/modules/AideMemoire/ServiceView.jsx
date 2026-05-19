@@ -538,6 +538,9 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           service={service}
           patients={patients}
           dailyData={dailyData}
+          cryptoKey={cryptoKey}
+          selectedDate={selectedDate}
+          onDailyDataChange={setDailyData}
           onClose={() => setShowGantt(false)}
         />
       )}
