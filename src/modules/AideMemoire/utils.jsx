@@ -237,6 +237,106 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
   );
 }
 
+// ─── Alertes constantes vitales ──────────────────────────────────────────────
+
+const VITAL_THRESHOLDS = {
+  ta: {
+    label: 'TA',
+    parse: v => {
+      const m = String(v).match(/(\d+)\s*\/\s*(\d+)/);
+      return m ? { sys: Number(m[1]), dia: Number(m[2]) } : null;
+    },
+    check: ({ sys, dia }) => {
+      if (sys >= 180 || dia >= 110) return { level: 'critical', msg: `TA ${sys}/${dia} — HTA sévère` };
+      if (sys >= 160 || dia >= 100) return { level: 'warning',  msg: `TA ${sys}/${dia} — HTA grade 2` };
+      if (sys < 90  || dia < 60)   return { level: 'critical', msg: `TA ${sys}/${dia} — Hypotension` };
+      return null;
+    },
+  },
+  spo2: {
+    label: 'SpO2',
+    parse: v => { const n = parseFloat(v); return isNaN(n) ? null : n; },
+    check: n => {
+      if (n < 92) return { level: 'critical', msg: `SpO2 ${n}% — Désaturation sévère` };
+      if (n < 95) return { level: 'warning',  msg: `SpO2 ${n}% — Désaturation` };
+      return null;
+    },
+  },
+  temp: {
+    label: 'T°',
+    parse: v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; },
+    check: n => {
+      if (n >= 39.5) return { level: 'critical', msg: `T° ${n}°C — Hyperthermie` };
+      if (n >= 38.0) return { level: 'warning',  msg: `T° ${n}°C — Fièvre` };
+      if (n < 36.0)  return { level: 'warning',  msg: `T° ${n}°C — Hypothermie` };
+      return null;
+    },
+  },
+  fc: {
+    label: 'FC',
+    parse: v => { const n = parseInt(v); return isNaN(n) ? null : n; },
+    check: n => {
+      if (n > 130 || n < 40) return { level: 'critical', msg: `FC ${n} bpm — Trouble du rythme` };
+      if (n > 100 || n < 50) return { level: 'warning',  msg: `FC ${n} bpm — Tachycardie/bradycardie` };
+      return null;
+    },
+  },
+};
+
+const HGT_THRESHOLD = {
+  parse: v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; },
+  check: n => {
+    if (n > 3.0 || n < 0.5) return { level: 'critical', msg: `HGT ${n} g/L — Urgence glycémique` };
+    if (n > 2.0 || n < 0.7) return { level: 'warning',  msg: `HGT ${n} g/L — Glycémie anormale` };
+    return null;
+  },
+};
+
+/**
+ * Analyse les soins réalisés et retourne les alertes vitales actives.
+ * @param {Array} careEntries - tableau de soins du jour
+ * @returns {Array} alertes [{level:'critical'|'warning', msg:string}]
+ */
+export function parseVitalAlerts(careEntries) {
+  if (!Array.isArray(careEntries)) return [];
+  const alerts = [];
+
+  for (const entry of careEntries) {
+    if (!entry.done || !entry.doneValue) continue;
+
+    if (entry.type === 'constantes_vitales') {
+      // Format: "TA: 185/100 | SpO2: 98 | T°: 37.2 | FC: 72"
+      const parts = entry.doneValue.split('|').map(s => s.trim());
+      for (const part of parts) {
+        for (const [key, thr] of Object.entries(VITAL_THRESHOLDS)) {
+          const labelRE = new RegExp(`^${thr.label}[^:]*:\\s*(.+)$`, 'i');
+          const m = part.match(labelRE);
+          if (!m) continue;
+          const parsed = thr.parse(m[1]);
+          if (parsed === null) continue;
+          const alert = thr.check(parsed);
+          if (alert) alerts.push(alert);
+        }
+      }
+    }
+
+    if (entry.type === 'hgt') {
+      const parsed = HGT_THRESHOLD.parse(entry.doneValue);
+      if (parsed !== null) {
+        const alert = HGT_THRESHOLD.check(parsed);
+        if (alert) alerts.push(alert);
+      }
+    }
+  }
+
+  // Dédupliquer par message, prioriser critical
+  const seen = new Map();
+  for (const a of alerts) {
+    if (!seen.has(a.msg) || a.level === 'critical') seen.set(a.msg, a);
+  }
+  return [...seen.values()].sort((a, b) => (a.level === 'critical' ? -1 : 1));
+}
+
 // ─── Constante visuelle d'un patient ─────────────────────────────────────────
 
 /** Résume les flags actifs d'un patient sous forme d'emoji (max 4) */

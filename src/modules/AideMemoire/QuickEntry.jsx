@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty, getAllFieldsAlpha } from './templates.js';
-import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel, EmptyState } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel, EmptyState, parseVitalAlerts } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
 import { CARE_TYPES, getCareType } from './careTypes.js';
 
@@ -369,21 +369,24 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
         )}
 
         {sortedPatients.map(patient => {
-          const daily      = dailyData[patient.id] || { fieldValues: {}, events: [], observations: '' };
-          const flagEmoji  = activeFlagsEmoji(service.fields, patient.fieldValues, daily.fieldValues);
-          const events     = daily.events || [];
+          const daily        = dailyData[patient.id] || { fieldValues: {}, events: [], observations: '' };
+          const flagEmoji    = activeFlagsEmoji(service.fields, patient.fieldValues, daily.fieldValues);
+          const vitalAlerts  = parseVitalAlerts(daily.careEntries || []);
+          const hasCritical  = vitalAlerts.some(a => a.level === 'critical');
+          const events       = daily.events || [];
 
           return (
             <div key={patient.id} style={{
-              background: T.surface, border: `1px solid ${T.border}`,
-              borderLeft: `3px solid ${readOnly ? T.border : sp.color}`,
+              background: T.surface,
+              border: `1px solid ${hasCritical ? '#f43f5e88' : vitalAlerts.length > 0 ? '#f9731688' : T.border}`,
+              borderLeft: `3px solid ${hasCritical ? '#f43f5e' : vitalAlerts.length > 0 ? '#f97316' : readOnly ? T.border : sp.color}`,
               borderRadius: 12, padding: '14px 14px 12px',
               marginBottom: 12,
               opacity: readOnly ? 0.72 : 1,
             }}>
 
               {/* ─ En-tête patient ─ */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: vitalAlerts.length > 0 ? 6 : 10 }}>
                 <span style={{ color: bedLabel[patient.bedNumber] == null ? '#f97316' : T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>
                   🛏 {bedLabel[patient.bedNumber] ?? `⚠️${patient.bedNumber}`}
                 </span>
@@ -398,6 +401,14 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
                   )}
                 </div>
               </div>
+
+              {/* ─ Alertes constantes ─ */}
+              {vitalAlerts.map((a, i) => (
+                <div key={i} style={{ background: a.level === 'critical' ? '#f43f5e18' : '#f9731618', border: `1px solid ${a.level === 'critical' ? '#f43f5e55' : '#f9731655'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 13 }}>{a.level === 'critical' ? '🔴' : '🟠'}</span>
+                  <span style={{ color: a.level === 'critical' ? '#f43f5e' : '#f97316', fontSize: 12, fontWeight: 700 }}>{a.msg}</span>
+                </div>
+              ))}
 
               {/* Motif abrégé */}
               {patient.admissionReason && (

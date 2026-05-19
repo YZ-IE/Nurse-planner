@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel, parseVitalAlerts } from './utils.jsx';
 import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
 import WoundPhotos, { deleteAllWoundPhotos } from './WoundPhotos.jsx';
@@ -370,10 +370,12 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
 
   const occupiedBeds = allPatients.filter(p => p.present && p.id !== patientId).map(p => p.bedNumber);
 
-  const pendingCare = (dailyEntry.careEntries || []).filter(e => !e.done).length;
+  const pendingCare  = (dailyEntry.careEntries || []).filter(e => !e.done).length;
+  const vitalAlerts  = parseVitalAlerts(dailyEntry.careEntries || []);
+  const totalAlerts  = activeFlags.length + vitalAlerts.length;
 
   const TABS = [
-    { label: '🏥', name: 'Séjour',      idx: 0, badge: activeFlags.length > 0 ? activeFlags.length : null },
+    { label: '🏥', name: 'Séjour',      idx: 0, badge: totalAlerts > 0 ? totalAlerts : null },
     { label: '📋', name: 'Journalier',  idx: 1, badge: pendingCare > 0 ? pendingCare : null },
     { label: '🎯', name: 'Centres',     idx: 2 },
     { label: '📝', name: 'Événements',  idx: 3 },
@@ -458,8 +460,13 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
         })()}
 
         {/* Alertes actives (masquées sur l'onglet Séjour qui les affiche déjà) */}
-        {activeFlags.length > 0 && activeTab !== 0 && (
+        {(activeFlags.length > 0 || vitalAlerts.length > 0) && activeTab !== 0 && (
           <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, padding: '0 16px 8px', overflowX: 'auto' }}>
+            {vitalAlerts.map((a, i) => (
+              <span key={`v${i}`} style={{ background: a.level === 'critical' ? '#f43f5e22' : '#f9731622', border: `1px solid ${a.level === 'critical' ? '#f43f5e44' : '#f9731644'}`, borderRadius: 6, color: a.level === 'critical' ? '#f43f5e' : '#f97316', fontSize: 11, padding: '2px 8px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {a.level === 'critical' ? '🔴' : '🟠'} {a.msg}
+              </span>
+            ))}
             {activeFlags.map(f => {
               const v = f.persistent ? patient.fieldValues[f.id] : dailyEntry.fieldValues[f.id];
               const lbl = f.type === 'text' ? `${f.label}: ${v}` : f.type === 'select' ? `${f.label.split(' ')[0]} ${v}` : f.label;
@@ -485,8 +492,15 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
             </Section>
 
             <Section title="ALERTES / RISQUES" color="#f43f5e">
-              {flagFields.length === 0 && (
-                <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic' }}>Aucun champ d'alerte configuré</div>
+              {/* Alertes constantes vitales automatiques */}
+              {vitalAlerts.map((a, i) => (
+                <div key={i} style={{ background: a.level === 'critical' ? '#f43f5e18' : '#f9731618', border: `1px solid ${a.level === 'critical' ? '#f43f5e55' : '#f9731655'}`, borderRadius: 8, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>{a.level === 'critical' ? '🔴' : '🟠'}</span>
+                  <span style={{ color: a.level === 'critical' ? '#f43f5e' : '#f97316', fontSize: 13, fontWeight: 700 }}>{a.msg}</span>
+                </div>
+              ))}
+              {flagFields.length === 0 && vitalAlerts.length === 0 && (
+                <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic' }}>Aucune alerte active</div>
               )}
               {flagFields.map(f => (
                 <FieldRow key={f.id} field={f} accentColor="#f43f5e"
