@@ -1,10 +1,10 @@
 /**
  * RelèveView.jsx — Génération de la relève structurée
- * Lit tous les patients présents + données journalières → texte copiable/partageable.
+ * Données couvertes par le secret professionnel — affichage in-app uniquement.
+ * Pas de partage externe ; copie presse-papiers sur confirmation explicite.
  */
 
 import { useState, useMemo } from 'react';
-import { Share } from '@capacitor/share';
 import { T } from '../../theme.js';
 import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
@@ -47,13 +47,11 @@ function buildRelève(service, patients, dailyData) {
     if (pt.admissionReason) lines.push(`   Motif : ${pt.admissionReason}`);
     if (pt.atcd)            lines.push(`   ATCD  : ${pt.atcd}`);
 
-    // Alertes vitales
     const alerts = parseVitalAlerts(care);
     for (const a of alerts) {
       lines.push(`   ${a.level === 'critical' ? '🔴' : '🟠'} ${a.msg}`);
     }
 
-    // Soins réalisés
     const done = care.filter(e => e.done);
     if (done.length > 0) {
       const doneText = done.map(e => {
@@ -64,7 +62,6 @@ function buildRelève(service, patients, dailyData) {
       lines.push(`   Réalisés : ${doneText}`);
     }
 
-    // Soins en attente
     const pending = care.filter(e => !e.done);
     if (pending.length > 0) {
       const pendText = pending.map(e => {
@@ -74,7 +71,6 @@ function buildRelève(service, patients, dailyData) {
       lines.push(`   En attente : ${pendText}`);
     }
 
-    // Événements du jour
     if (events.length > 0) {
       for (const ev of events) {
         const who = ev.who ? ` — ${ev.who}` : '';
@@ -82,16 +78,42 @@ function buildRelève(service, patients, dailyData) {
       }
     }
 
-    // Observations libres
-    if (obs) {
-      lines.push(`   💬 ${obs}`);
-    }
-
+    if (obs) lines.push(`   💬 ${obs}`);
     lines.push('');
   }
 
   lines.push(`╚═══════════════════════════╝`);
   return lines.join('\n');
+}
+
+// ─── Modal de confirmation avant copie ────────────────────────────────────────
+
+function CopyWarningModal({ onConfirm, onCancel }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: '0 24px' }}>
+      <div style={{ background: T.surface, borderRadius: 14, padding: '24px 20px', width: '100%', maxWidth: 380 }}>
+        <div style={{ fontSize: 28, textAlign: 'center', marginBottom: 12 }}>⚠️</div>
+        <div style={{ color: T.text, fontSize: 15, fontWeight: 700, textAlign: 'center', marginBottom: 10 }}>
+          Données couvertes par le secret professionnel
+        </div>
+        <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, textAlign: 'center' }}>
+          Le presse-papiers est accessible à d'autres applications installées sur cet appareil.
+          Ne copiez cette relève que sur un équipement professionnel sécurisé,
+          dans le cadre d'une transmission interne uniquement.
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onCancel}
+            style={{ flex: 1, padding: '12px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            Annuler
+          </button>
+          <button onClick={onConfirm}
+            style={{ flex: 1, padding: '12px', background: '#f9731622', border: '1px solid #f9731644', borderRadius: 10, color: '#f97316', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            Copier quand même
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -102,22 +124,16 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
     [service, patients, dailyData]
   );
 
-  const [copied, setCopied] = useState(false);
+  const [copied,      setCopied]      = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
-  async function handleCopy() {
+  async function doCopy() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback sélection manuelle
-    }
-  }
-
-  async function handleShare() {
-    try {
-      await Share.share({ title: `Relève ${service.name}`, text });
-    } catch {}
+      setTimeout(() => setCopied(false), 3000);
+    } catch { /* navigateur sans accès clipboard */ }
+    setShowWarning(false);
   }
 
   return (
@@ -132,6 +148,15 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
         </div>
       </div>
 
+      {/* Bandeau confidentialité */}
+      <div style={{ background: '#f9731614', borderBottom: '1px solid #f9731633', padding: '8px 16px', display: 'flex', alignItems: 'flex-start', gap: 8, flexShrink: 0 }}>
+        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🔒</span>
+        <span style={{ color: '#f97316', fontSize: 12, lineHeight: 1.5 }}>
+          <strong>Secret professionnel</strong> — Consultation in-app uniquement.
+          Ne transmettez pas cette relève par messagerie externe ou SMS.
+        </span>
+      </div>
+
       {/* Texte */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
         <pre style={{
@@ -144,15 +169,28 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
         </pre>
       </div>
 
-      {/* Actions */}
-      <div style={{ padding: '12px 16px 36px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
-        <button onClick={handleCopy} style={{ flex: 1, padding: '13px', background: copied ? '#22c55e22' : T.surface, border: `1px solid ${copied ? '#22c55e' : T.border}`, borderRadius: 12, color: copied ? '#22c55e' : T.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-          {copied ? '✓ Copié !' : '📋 Copier'}
-        </button>
-        <button onClick={handleShare} style={{ flex: 1, padding: '13px', background: '#6366f122', border: '1px solid #6366f144', borderRadius: 12, color: '#6366f1', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-          🔗 Partager
+      {/* Action : copie uniquement, avec confirmation */}
+      <div style={{ padding: '12px 16px 36px', borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
+        <button
+          onClick={() => copied ? null : setShowWarning(true)}
+          style={{
+            width: '100%', padding: '13px',
+            background: copied ? '#22c55e22' : T.surface,
+            border: `1px solid ${copied ? '#22c55e' : T.border}`,
+            borderRadius: 12,
+            color: copied ? '#22c55e' : T.text,
+            fontSize: 14, fontWeight: 700, cursor: copied ? 'default' : 'pointer',
+          }}>
+          {copied ? '✓ Copié dans le presse-papiers' : '📋 Copier (usage interne uniquement)'}
         </button>
       </div>
+
+      {showWarning && (
+        <CopyWarningModal
+          onConfirm={doCopy}
+          onCancel={() => setShowWarning(false)}
+        />
+      )}
     </div>
   );
 }
