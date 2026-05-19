@@ -1,10 +1,9 @@
 /**
  * RelèveView.jsx — Génération de la relève structurée
- * Données couvertes par le secret professionnel — affichage in-app uniquement.
- * Pas de partage externe ; copie presse-papiers sur confirmation explicite.
+ * Affichage in-app uniquement — aucun export (secret professionnel).
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { T } from '../../theme.js';
 import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
@@ -86,36 +85,6 @@ function buildRelève(service, patients, dailyData) {
   return lines.join('\n');
 }
 
-// ─── Modal de confirmation avant copie ────────────────────────────────────────
-
-function CopyWarningModal({ onConfirm, onCancel }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: '0 24px' }}>
-      <div style={{ background: T.surface, borderRadius: 14, padding: '24px 20px', width: '100%', maxWidth: 380 }}>
-        <div style={{ fontSize: 28, textAlign: 'center', marginBottom: 12 }}>⚠️</div>
-        <div style={{ color: T.text, fontSize: 15, fontWeight: 700, textAlign: 'center', marginBottom: 10 }}>
-          Données couvertes par le secret professionnel
-        </div>
-        <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, textAlign: 'center' }}>
-          Le presse-papiers est accessible à d'autres applications installées sur cet appareil.
-          Ne copiez cette relève que sur un équipement professionnel sécurisé,
-          dans le cadre d'une transmission interne uniquement.
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel}
-            style={{ flex: 1, padding: '12px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            Annuler
-          </button>
-          <button onClick={onConfirm}
-            style={{ flex: 1, padding: '12px', background: '#f9731622', border: '1px solid #f9731644', borderRadius: 10, color: '#f97316', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            Copier quand même
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 export default function RelèveView({ service, patients, dailyData, onClose }) {
@@ -123,18 +92,6 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
     () => buildRelève(service, patients.filter(p => p.present), dailyData),
     [service, patients, dailyData]
   );
-
-  const [copied,      setCopied]      = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
-
-  async function doCopy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch { /* navigateur sans accès clipboard */ }
-    setShowWarning(false);
-  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: T.bg, zIndex: 200, display: 'flex', flexDirection: 'column' }}>
@@ -148,17 +105,8 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
         </div>
       </div>
 
-      {/* Bandeau confidentialité */}
-      <div style={{ background: '#f9731614', borderBottom: '1px solid #f9731633', padding: '8px 16px', display: 'flex', alignItems: 'flex-start', gap: 8, flexShrink: 0 }}>
-        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🔒</span>
-        <span style={{ color: '#f97316', fontSize: 12, lineHeight: 1.5 }}>
-          <strong>Secret professionnel</strong> — Consultation in-app uniquement.
-          Ne transmettez pas cette relève par messagerie externe ou SMS.
-        </span>
-      </div>
-
       {/* Texte */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 32px' }}>
         <pre style={{
           fontFamily: 'monospace', fontSize: 13, lineHeight: 1.7,
           color: T.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
@@ -168,29 +116,6 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
           {text}
         </pre>
       </div>
-
-      {/* Action : copie uniquement, avec confirmation */}
-      <div style={{ padding: '12px 16px 36px', borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-        <button
-          onClick={() => copied ? null : setShowWarning(true)}
-          style={{
-            width: '100%', padding: '13px',
-            background: copied ? '#22c55e22' : T.surface,
-            border: `1px solid ${copied ? '#22c55e' : T.border}`,
-            borderRadius: 12,
-            color: copied ? '#22c55e' : T.text,
-            fontSize: 14, fontWeight: 700, cursor: copied ? 'default' : 'pointer',
-          }}>
-          {copied ? '✓ Copié dans le presse-papiers' : '📋 Copier (usage interne uniquement)'}
-        </button>
-      </div>
-
-      {showWarning && (
-        <CopyWarningModal
-          onConfirm={doCopy}
-          onCancel={() => setShowWarning(false)}
-        />
-      )}
     </div>
   );
 }
