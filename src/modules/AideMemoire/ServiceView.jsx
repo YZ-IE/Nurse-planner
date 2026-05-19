@@ -12,6 +12,7 @@ import { getSpecialty } from './templates.js';
 import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel, parseVitalAlerts } from './utils.jsx';
 import ImportFromPhoto from './ImportFromPhoto.jsx';
 import RelèveView from './RelèveView.jsx';
+import GanttView from './GanttView.jsx';
 
 const SURVEILLANCE_TYPES = new Set(['constantes_vitales','hgt','bilan','diurese','ecg','poids']);
 
@@ -168,6 +169,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [showMenu,     setShowMenu]     = useState(false);
   const [showImport,   setShowImport]   = useState(false);
   const [showRelève,   setShowRelève]   = useState(false);
+  const [showGantt,    setShowGantt]    = useState(false);
   const [sortMode,     setSortMode]     = useState('bed'); // 'bed' | 'next_care' | 'priority'
 
   const today        = todayStr();
@@ -279,6 +281,10 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                 <button onClick={() => { setShowRelève(true); setShowMenu(false); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span>🗒️</span><span>Générer la relève</span>
+                </button>
+                <button onClick={() => { setShowGantt(true); setShowMenu(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <span>📅</span><span>Vue Gantt</span>
                 </button>
                 {!readOnly && (
                   <button onClick={() => { setShowImport(true); setShowMenu(false); }}
@@ -524,6 +530,15 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           patients={patients}
           dailyData={dailyData}
           onClose={() => setShowRelève(false)}
+        />
+      )}
+
+      {showGantt && (
+        <GanttView
+          service={service}
+          patients={patients}
+          dailyData={dailyData}
+          onClose={() => setShowGantt(false)}
         />
       )}
     </div>
