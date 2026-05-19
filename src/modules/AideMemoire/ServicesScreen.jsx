@@ -3,13 +3,14 @@
  * + Suppression d'un service (avec confirmation)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty, isTournee } from './templates.js';
 import { formatDateFR } from './utils.jsx';
+import { computeSlots } from './ServiceView.jsx';
 
-export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService, onImport }) {
+export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService, onImport, onSearchNavigate }) {
   const C = accentColor;
 
   const [services,       setServices]       = useState([]);
@@ -17,7 +18,49 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
   const [view,           setView]           = useState('list');
   const [form,           setForm]           = useState({ name: '', specialty: 'traumato', bedCount: 20 });
   const [saving,         setSaving]         = useState(false);
-  const [confirmDelete,  setConfirmDelete]  = useState(null); // id du service à supprimer
+  const [confirmDelete,  setConfirmDelete]  = useState(null);
+
+  // ── Recherche globale ────────────────────────────────────────────────────
+  const [showSearch,   setShowSearch]   = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState('');
+  const [allPatients,  setAllPatients]  = useState(null); // null = not loaded yet
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchInputRef = useRef(null);
+
+  async function openSearch() {
+    setShowSearch(true);
+    setSearchQuery('');
+    setTimeout(() => searchInputRef.current?.focus(), 80);
+    if (allPatients !== null) return;
+    setSearchLoading(true);
+    try {
+      const svcs = await secureGet('services', cryptoKey) || [];
+      const results = await Promise.all(
+        svcs.map(async sv => {
+          const pts = await secureGet(`patients_${sv.id}`, cryptoKey) || [];
+          const slots = computeSlots(sv);
+          const bedLabel = Object.fromEntries(slots.map(sl => [sl.slotIndex, sl.roomLabel]));
+          return pts.filter(p => p.present).map(p => ({
+            service: sv,
+            patient: p,
+            bedLabel: bedLabel[p.bedNumber] ?? String(p.bedNumber),
+          }));
+        })
+      );
+      setAllPatients(results.flat());
+    } finally { setSearchLoading(false); }
+  }
+
+  const searchResults = (() => {
+    if (!allPatients || !searchQuery.trim()) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return allPatients.filter(({ patient, bedLabel }) =>
+      patient.initials.toLowerCase().includes(q) ||
+      bedLabel.toLowerCase().includes(q) ||
+      (patient.admissionReason || '').toLowerCase().includes(q) ||
+      (patient.atcd || '').toLowerCase().includes(q)
+    ).slice(0, 20);
+  })();
 
   useEffect(() => {
     secureGet('services', cryptoKey).then(data => setServices(data || [])).finally(() => setLoading(false));
@@ -140,10 +183,15 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
             <div style={{ color: T.muted, fontSize: 11 }}>🔒 Données chiffrées · Secret professionnel</div>
           </div>
         </div>
-        <button onClick={() => setView('create')}
-          style={{ ...s.btn(C), width: 40, height: 40, padding: 0, fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-        <button onClick={onImport}
-          style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 10, color: '#6366f1', padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>📥 Import</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={openSearch}
+            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, padding: '8px 12px', fontSize: 15, cursor: 'pointer' }}
+            title="Rechercher un patient">🔍</button>
+          <button onClick={() => setView('create')}
+            style={{ ...s.btn(C), width: 40, height: 40, padding: 0, fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+          <button onClick={onImport}
+            style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 10, color: '#6366f1', padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>📥</button>
+        </div>
       </div>
 
       <div style={{ ...s.card, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -216,6 +264,91 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Overlay recherche globale ── */}
+      {showSearch && (
+        <div style={{ position: 'fixed', inset: 0, background: T.bg, zIndex: 200, display: 'flex', flexDirection: 'column' }}>
+
+          {/* Header recherche */}
+          <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: T.bg }}>
+            <button onClick={() => { setShowSearch(false); setSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
+            <input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Initiales, chambre, motif…"
+              style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 15 }}
+            />
+            {searchQuery.length > 0 && (
+              <button onClick={() => setSearchQuery('')}
+                style={{ background: 'none', border: 'none', color: T.muted, fontSize: 20, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+            )}
+          </div>
+
+          {/* Résultats */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px 40px' }}>
+
+            {searchLoading && (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: T.muted, fontSize: 13 }}>Chargement des patients…</div>
+            )}
+
+            {!searchLoading && !searchQuery.trim() && (
+              <div style={{ textAlign: 'center', padding: '48px 16px', color: T.muted }}>
+                <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>🔍</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Rechercher un patient</div>
+                <div style={{ fontSize: 12, marginTop: 6, opacity: 0.7 }}>Par initiales, numéro de lit ou motif d'admission</div>
+              </div>
+            )}
+
+            {!searchLoading && searchQuery.trim() && searchResults.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '32px 16px', color: T.muted, fontSize: 13 }}>
+                Aucun patient trouvé pour « {searchQuery.trim()} »
+              </div>
+            )}
+
+            {searchResults.map(({ service, patient, bedLabel: bed }) => {
+              const sp = getSpecialty(service.specialty);
+              return (
+                <div
+                  key={`${service.id}_${patient.id}`}
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchQuery('');
+                    if (onSearchNavigate) {
+                      onSearchNavigate(service, patient.id);
+                    } else {
+                      onSelectService(service);
+                    }
+                  }}
+                  style={{
+                    background: T.surface,
+                    border: `1px solid ${T.border}`,
+                    borderLeft: `3px solid ${sp.color}`,
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    marginBottom: 8,
+                    cursor: 'pointer',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <span style={{ color: T.muted, fontSize: 11, fontWeight: 700, minWidth: 60 }}>🛏 {bed}</span>
+                    <span style={{ color: T.text, fontSize: 15, fontWeight: 800 }}>{patient.initials}</span>
+                    <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
+                    <span style={{ marginLeft: 'auto', color: sp.color, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{service.name}</span>
+                  </div>
+                  {patient.admissionReason && (
+                    <div style={{ color: T.muted, fontSize: 12, marginLeft: 68 }}>
+                      {patient.admissionReason.length > 60 ? patient.admissionReason.slice(0, 60) + '…' : patient.admissionReason}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

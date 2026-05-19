@@ -223,7 +223,11 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <>{TimeoutBanner}
       <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
         onSelectService={service => goTo('service', { service, patientId: null })}
-        onImport={() => goTo('transfer', { service: '__import__' })} />
+        onImport={() => goTo('transfer', { service: '__import__' })}
+        onSearchNavigate={(service, patientId) => {
+          setSlideDir('forward');
+          setNav(prev => ({ ...prev, screen: 'patient', service, patientId, selectedDate: dateStrOffset(0) }));
+        }} />
     </>
   );
 
