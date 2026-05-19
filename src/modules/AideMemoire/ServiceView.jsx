@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
-import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel, parseVitalAlerts } from './utils.jsx';
 import ImportFromPhoto from './ImportFromPhoto.jsx';
 import RelèveView from './RelèveView.jsx';
 
@@ -168,6 +168,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [showMenu,     setShowMenu]     = useState(false);
   const [showImport,   setShowImport]   = useState(false);
   const [showRelève,   setShowRelève]   = useState(false);
+  const [sortMode,     setSortMode]     = useState('bed'); // 'bed' | 'next_care' | 'priority'
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -222,6 +223,25 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
 
   const slots      = computeSlots(service);
   const presentPts = patients.filter(p => p.present);
+  const slotByIndex = Object.fromEntries(slots.map(s => [s.slotIndex, s]));
+
+  function nextPendingTime(daily) {
+    const pending = (daily?.careEntries || []).filter(e => !e.done && e.plannedTime);
+    return pending.length ? pending.map(e => e.plannedTime).sort()[0] : '99:99';
+  }
+
+  const sortedPresentPts = [...presentPts].sort((a, b) => {
+    if (sortMode === 'next_care') {
+      return nextPendingTime(dailyData[a.id]).localeCompare(nextPendingTime(dailyData[b.id]));
+    }
+    if (sortMode === 'priority') {
+      const aA = parseVitalAlerts(dailyData[a.id]?.careEntries || []);
+      const bA = parseVitalAlerts(dailyData[b.id]?.careEntries || []);
+      const score = x => -(x.filter(v => v.level === 'critical').length * 100 + x.filter(v => v.level === 'warning').length * 10);
+      return score(aA) - score(bA);
+    }
+    return 0;
+  });
 
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}
@@ -275,7 +295,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 }}>
           {/* Sélecteur J / J-1 / J-2 */}
           <div style={{ display: 'flex', gap: 4 }}>
             {[0, -1, -2].map(offset => {
@@ -299,81 +319,144 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
             </div>
           )}
         </div>
+        {/* Tri */}
+        <div style={{ display: 'flex', gap: 4, paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
+          {[['bed', '🛏 Lit'], ['next_care', '⏰ Prochain soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
+            <button key={mode} onClick={() => setSortMode(mode)}
+              style={{ background: sortMode === mode ? C + '22' : 'none', border: `1px solid ${sortMode === mode ? C : T.border}`, borderRadius: 8, color: sortMode === mode ? C : T.muted, fontSize: 11, fontWeight: sortMode === mode ? 700 : 400, padding: '4px 8px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Liste des lits */}
       <div style={{ padding: '8px 16px 60px' }}>
-        {slots.map(slot => {
-          const patient = presentPts.find(p => p.bedNumber === slot.slotIndex);
-          const ico     = slotIcon(slot.icon);
-          const lbl     = slotLabel(slot);
 
-          if (!patient) return (
-            <div key={slot.slotIndex} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, opacity: 0.55 }}>
-              <span style={{ color: T.muted, fontSize: 13, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
-              <span style={{ color: T.muted, fontSize: 13, flex: 1 }}>Libre</span>
-              <button onClick={() => setAddBed(slot.slotIndex)}
-                style={{ background: C + '22', border: `1px solid ${C}44`, borderRadius: 6, color: C, fontSize: 18, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-            </div>
-          );
+        {sortMode === 'bed' ? (
+          /* ── Vue par lit (slots) ── */
+          <>
+            {slots.map(slot => {
+              const patient = presentPts.find(p => p.bedNumber === slot.slotIndex);
+              const ico     = slotIcon(slot.icon);
+              const lbl     = slotLabel(slot);
 
-          const daily       = dailyData[patient.id] || {};
-          const allFields   = [...(service.fields || []), ...(patient.customFields || [])];
-          const flagEmoji   = activeFlagsEmoji(allFields, patient.fieldValues || {}, daily.fieldValues || {});
-          const pendingCare = (daily.careEntries || []).filter(e => !e.done).length;
-          const keyFields   = (service.fields || []).filter(f => f.category === 'info' && f.persistent).slice(0, 2);
+              if (!patient) return (
+                <div key={slot.slotIndex} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, opacity: 0.55 }}>
+                  <span style={{ color: T.muted, fontSize: 13, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
+                  <span style={{ color: T.muted, fontSize: 13, flex: 1 }}>Libre</span>
+                  <button onClick={() => setAddBed(slot.slotIndex)}
+                    style={{ background: C + '22', border: `1px solid ${C}44`, borderRadius: 6, color: C, fontSize: 18, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                </div>
+              );
 
-          return (
-            <div key={slot.slotIndex} onClick={() => !readOnly && onSelectPatient(patient.id)}
-              style={{ padding: '11px 14px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderLeft: `3px solid ${sp.color}`, borderRadius: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: T.muted, fontSize: 12, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
-                <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>{patient.initials}</span>
-                <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
-                  {pendingCare > 0 && <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>💊×{pendingCare}</span>}
-                  {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
-                </div>
-              </div>
-              {patient.admissionReason && (
-                <div style={{ color: T.muted, fontSize: 12, marginTop: 3, marginLeft: 80 }}>
-                  {patient.admissionReason.length > 50 ? patient.admissionReason.slice(0, 50) + '…' : patient.admissionReason}
-                </div>
-              )}
-              {keyFields.some(f => (patient.fieldValues || {})[f.id]) && (
-                <div style={{ display: 'flex', gap: 6, marginTop: 4, marginLeft: 80, flexWrap: 'wrap' }}>
-                  {keyFields.map(f => { const v = (patient.fieldValues || {})[f.id]; if (!v && v !== true) return null; return <span key={f.id} style={{ color: C, fontSize: 11, background: C + '11', borderRadius: 4, padding: '1px 6px' }}>{f.label}: {String(v)}</span>; })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              const daily       = dailyData[patient.id] || {};
+              const allFields   = [...(service.fields || []), ...(patient.customFields || [])];
+              const flagEmoji   = activeFlagsEmoji(allFields, patient.fieldValues || {}, daily.fieldValues || {});
+              const pendingCare = (daily.careEntries || []).filter(e => !e.done).length;
+              const keyFields   = (service.fields || []).filter(f => f.category === 'info' && f.persistent).slice(0, 2);
 
-        {/* Patients sans lit valide — slots supprimés / renumérotés */}
-        {(() => {
-          const validSlotIndexes = new Set(slots.map(s => s.slotIndex));
-          const orphans = presentPts.filter(p => !validSlotIndexes.has(p.bedNumber));
-          if (orphans.length === 0) return null;
-          return (
-            <div style={{ marginTop: 16, padding: '12px 14px', background: '#f9731611', border: '1px solid #f9731633', borderRadius: 10 }}>
-              <div style={{ color: '#f97316', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-                ⚠️ Patients sans lit attribué
-              </div>
-              {orphans.map(p => (
-                <div key={p.id} onClick={() => !readOnly && onSelectPatient(p.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: '1px solid #f9731633', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-                  <span style={{ color: '#f97316', fontSize: 12, fontWeight: 700, minWidth: 60 }}>Lit #{p.bedNumber}</span>
-                  <span style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>{p.initials}</span>
-                  <span style={{ color: T.muted, fontSize: 12 }}>{p.gender} {p.age}a</span>
-                  <span style={{ marginLeft: 'auto', color: T.muted, fontSize: 18 }}>›</span>
+              return (
+                <div key={slot.slotIndex} onClick={() => !readOnly && onSelectPatient(patient.id)}
+                  style={{ padding: '11px 14px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderLeft: `3px solid ${sp.color}`, borderRadius: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: T.muted, fontSize: 12, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
+                    <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>{patient.initials}</span>
+                    <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+                      {pendingCare > 0 && <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>💊×{pendingCare}</span>}
+                      {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
+                    </div>
+                  </div>
+                  {patient.admissionReason && (
+                    <div style={{ color: T.muted, fontSize: 12, marginTop: 3, marginLeft: 80 }}>
+                      {patient.admissionReason.length > 50 ? patient.admissionReason.slice(0, 50) + '…' : patient.admissionReason}
+                    </div>
+                  )}
+                  {keyFields.some(f => (patient.fieldValues || {})[f.id]) && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, marginLeft: 80, flexWrap: 'wrap' }}>
+                      {keyFields.map(f => { const v = (patient.fieldValues || {})[f.id]; if (!v && v !== true) return null; return <span key={f.id} style={{ color: C, fontSize: 11, background: C + '11', borderRadius: 4, padding: '1px 6px' }}>{f.label}: {String(v)}</span>; })}
+                    </div>
+                  )}
                 </div>
-              ))}
-              <div style={{ color: T.muted, fontSize: 11, marginTop: 6 }}>
-                La configuration des chambres a changé. Ouvrez la fiche pour déplacer ou sortir ces patients.
-              </div>
-            </div>
-          );
-        })()}
+              );
+            })}
+
+            {/* Patients sans lit valide */}
+            {(() => {
+              const validSlotIndexes = new Set(slots.map(s => s.slotIndex));
+              const orphans = presentPts.filter(p => !validSlotIndexes.has(p.bedNumber));
+              if (orphans.length === 0) return null;
+              return (
+                <div style={{ marginTop: 16, padding: '12px 14px', background: '#f9731611', border: '1px solid #f9731633', borderRadius: 10 }}>
+                  <div style={{ color: '#f97316', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                    ⚠️ Patients sans lit attribué
+                  </div>
+                  {orphans.map(p => (
+                    <div key={p.id} onClick={() => !readOnly && onSelectPatient(p.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: '1px solid #f9731633', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                      <span style={{ color: '#f97316', fontSize: 12, fontWeight: 700, minWidth: 60 }}>Lit #{p.bedNumber}</span>
+                      <span style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>{p.initials}</span>
+                      <span style={{ color: T.muted, fontSize: 12 }}>{p.gender} {p.age}a</span>
+                      <span style={{ marginLeft: 'auto', color: T.muted, fontSize: 18 }}>›</span>
+                    </div>
+                  ))}
+                  <div style={{ color: T.muted, fontSize: 11, marginTop: 6 }}>
+                    La configuration des chambres a changé. Ouvrez la fiche pour déplacer ou sortir ces patients.
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        ) : (
+          /* ── Vue triée (prochain soin / urgence) — lits libres masqués ── */
+          <>
+            {sortedPresentPts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '32px 16px', color: T.muted, fontSize: 14 }}>Aucun patient présent</div>
+            )}
+            {sortedPresentPts.map(patient => {
+              const slot        = slotByIndex[patient.bedNumber];
+              const ico         = slotIcon(slot?.icon ?? null);
+              const lbl         = slot ? slotLabel(slot) : `?${patient.bedNumber}`;
+              const daily       = dailyData[patient.id] || {};
+              const allFields   = [...(service.fields || []), ...(patient.customFields || [])];
+              const flagEmoji   = activeFlagsEmoji(allFields, patient.fieldValues || {}, daily.fieldValues || {});
+              const pendingCare = (daily.careEntries || []).filter(e => !e.done);
+              const keyFields   = (service.fields || []).filter(f => f.category === 'info' && f.persistent).slice(0, 2);
+              const nextTime    = nextPendingTime(daily);
+
+              return (
+                <div key={patient.id} onClick={() => !readOnly && onSelectPatient(patient.id)}
+                  style={{ padding: '11px 14px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderLeft: `3px solid ${sp.color}`, borderRadius: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: T.muted, fontSize: 12, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
+                    <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>{patient.initials}</span>
+                    <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+                      {sortMode === 'next_care' && nextTime !== '99:99' && (
+                        <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>⏰ {nextTime}</span>
+                      )}
+                      {sortMode === 'next_care' && pendingCare.length > 0 && (
+                        <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>💊×{pendingCare.length}</span>
+                      )}
+                      {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
+                    </div>
+                  </div>
+                  {patient.admissionReason && (
+                    <div style={{ color: T.muted, fontSize: 12, marginTop: 3, marginLeft: 80 }}>
+                      {patient.admissionReason.length > 50 ? patient.admissionReason.slice(0, 50) + '…' : patient.admissionReason}
+                    </div>
+                  )}
+                  {keyFields.some(f => (patient.fieldValues || {})[f.id]) && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, marginLeft: 80, flexWrap: 'wrap' }}>
+                      {keyFields.map(f => { const v = (patient.fieldValues || {})[f.id]; if (!v && v !== true) return null; return <span key={f.id} style={{ color: C, fontSize: 11, background: C + '11', borderRadius: 4, padding: '1px 6px' }}>{f.label}: {String(v)}</span>; })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       {/* Modal ajout patient */}

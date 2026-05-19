@@ -219,6 +219,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   const [addCareFor,       setAddCareFor]       = useState(null);
   const [addRdvFor,        setAddRdvFor]        = useState(null);
   const [centreInteretFor, setCentreInteretFor] = useState(null);
+  const [sortMode,         setSortMode]         = useState('bed'); // 'bed' | 'next_care' | 'priority'
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -331,7 +332,22 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   const constFields = service.fields.filter(f => f.category === 'constante');
   const slots = computeSlots(service);
   const bedLabel = Object.fromEntries(slots.map(sl => [sl.slotIndex, sl.roomLabel]));
+
+  function nextPendingTime(daily) {
+    const pending = (daily?.careEntries || []).filter(e => !e.done && e.plannedTime);
+    return pending.length ? pending.map(e => e.plannedTime).sort()[0] : '99:99';
+  }
+
   const sortedPatients = [...patients].sort((a, b) => {
+    if (sortMode === 'next_care') {
+      return nextPendingTime(dailyData[a.id]).localeCompare(nextPendingTime(dailyData[b.id]));
+    }
+    if (sortMode === 'priority') {
+      const aA = parseVitalAlerts(dailyData[a.id]?.careEntries || []);
+      const bA = parseVitalAlerts(dailyData[b.id]?.careEntries || []);
+      const score = x => -(x.filter(v => v.level === 'critical').length * 100 + x.filter(v => v.level === 'warning').length * 10);
+      return score(aA) - score(bA);
+    }
     const la = bedLabel[a.bedNumber] ?? String(a.bedNumber);
     const lb = bedLabel[b.bedNumber] ?? String(b.bedNumber);
     return la.localeCompare(lb, 'fr', { numeric: true });
@@ -351,6 +367,16 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Tri ── */}
+      <div style={{ display: 'flex', gap: 4, padding: '8px 16px 8px', borderBottom: `1px solid ${T.border}`, background: T.bg }}>
+        {[['bed', '🛏 Lit'], ['next_care', '⏰ Prochain soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
+          <button key={mode} onClick={() => setSortMode(mode)}
+            style={{ background: sortMode === mode ? C + '22' : 'none', border: `1px solid ${sortMode === mode ? C : T.border}`, borderRadius: 8, color: sortMode === mode ? C : T.muted, fontSize: 11, fontWeight: sortMode === mode ? 700 : 400, padding: '4px 8px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* ── Bandeau lecture seule ── */}
