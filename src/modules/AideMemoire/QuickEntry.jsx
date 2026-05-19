@@ -11,6 +11,10 @@ import { getSpecialty, getAllFieldsAlpha } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel, EmptyState, parseVitalAlerts } from './utils.jsx';
 import { computeSlots } from './ServiceView.jsx';
 import { CARE_TYPES, getCareType } from './careTypes.js';
+import { scheduleCareNotif, cancelCareNotif, createNotifChannel } from './notifications.js';
+
+const NOTIF_DELAY_KEY = 'nplanr_notif_delay';
+const NOTIF_DELAYS    = [5, 10, 15, 30];
 
 // ─── Modal ajout soin ─────────────────────────────────────────────────────────
 
@@ -220,12 +224,18 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
   const [addRdvFor,        setAddRdvFor]        = useState(null);
   const [centreInteretFor, setCentreInteretFor] = useState(null);
   const [sortMode,         setSortMode]         = useState('bed'); // 'bed' | 'next_care' | 'priority'
+  const [notifDelay,       setNotifDelay]       = useState(() => {
+    const saved = parseInt(localStorage.getItem(NOTIF_DELAY_KEY), 10);
+    return NOTIF_DELAYS.includes(saved) ? saved : 15;
+  });
 
   const today        = todayStr();
   const selectedDate = selDate || today;
   const readOnly     = isReadOnly(selectedDate);
 
   // ─── Chargement ─────────────────────────────────────────────────────────
+
+  useEffect(() => { createNotifChannel(); }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -275,7 +285,22 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
     const next   = { ...entry, careEntries: [...(entry.careEntries || []), newCare] };
     const nextAll = { ...dailyData, [patient.id]: next };
     setDailyData(nextAll);
-    if (!readOnly) await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
+    if (!readOnly) {
+      await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
+      if (careData.plannedTime) {
+        const ct      = getCareType(careData.type);
+        const bedLbl  = bedLabel[patient.bedNumber] ?? String(patient.bedNumber);
+        scheduleCareNotif({
+          careId:          newCare.id,
+          label:           careData.label,
+          emoji:           ct.emoji,
+          patientInitials: patient.initials,
+          bedLabel:        bedLbl,
+          plannedTime:     careData.plannedTime,
+          minutesBefore:   notifDelay,
+        });
+      }
+    }
   }
 
   async function savePatientPersistent(patientId, updater) {
@@ -369,14 +394,28 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
         </div>
       </div>
 
-      {/* ── Tri ── */}
-      <div style={{ display: 'flex', gap: 4, padding: '8px 16px 8px', borderBottom: `1px solid ${T.border}`, background: T.bg }}>
-        {[['bed', '🛏 Lit'], ['next_care', '⏰ Prochain soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
+      {/* ── Tri + délai notif ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 16px 8px', borderBottom: `1px solid ${T.border}`, background: T.bg, flexWrap: 'wrap' }}>
+        {[['bed', '🛏 Lit'], ['next_care', '⏰ Soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
           <button key={mode} onClick={() => setSortMode(mode)}
             style={{ background: sortMode === mode ? C + '22' : 'none', border: `1px solid ${sortMode === mode ? C : T.border}`, borderRadius: 8, color: sortMode === mode ? C : T.muted, fontSize: 11, fontWeight: sortMode === mode ? 700 : 400, padding: '4px 8px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
             {label}
           </button>
         ))}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: T.muted, fontSize: 10 }}>🔔</span>
+          <button
+            onClick={() => {
+              const next = NOTIF_DELAYS[(NOTIF_DELAYS.indexOf(notifDelay) + 1) % NOTIF_DELAYS.length];
+              setNotifDelay(next);
+              localStorage.setItem(NOTIF_DELAY_KEY, String(next));
+            }}
+            style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 10, padding: '4px 7px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+            title="Délai de rappel avant soin"
+          >
+            −{notifDelay}min
+          </button>
+        </div>
       </div>
 
       {/* ── Bandeau lecture seule ── */}
