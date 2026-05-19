@@ -37,6 +37,45 @@ function compressImage(base64, format = 'jpeg', maxPx = 600, quality = 0.7) {
   });
 }
 
+// ── Horodatage brûlé dans l'image ─────────────────────────────────────────────
+function stampImage(base64) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const now   = new Date();
+      const stamp = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                  + '  '
+                  + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      const fs  = Math.max(14, Math.round(img.width * 0.038));
+      ctx.font  = `bold ${fs}px monospace`;
+      const tw  = ctx.measureText(stamp).width;
+      const th  = fs * 1.3;
+      const pad = Math.round(fs * 0.45);
+      const rx  = img.width  - tw - pad * 3;
+      const ry  = img.height - th - pad * 2.5;
+
+      // Fond semi-transparent
+      ctx.fillStyle = 'rgba(0,0,0,0.60)';
+      ctx.fillRect(rx - pad, ry - pad, tw + pad * 2, th + pad * 1.5);
+
+      // Texte jaune (contraste sur toutes couleurs de fond)
+      ctx.fillStyle = '#ffe600';
+      ctx.fillText(stamp, rx, ry + fs);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+    };
+    img.onerror = () => resolve(base64); // fallback sans stamp
+    img.src = `data:image/jpeg;base64,${base64}`;
+  });
+}
+
 // ── Crypto ────────────────────────────────────────────────────────────────────
 async function encryptB64(plainB64, cryptoKey) {
   // Convertir base64 → ArrayBuffer directement (évite les gros Uint8Array intermédiaires)
@@ -270,16 +309,21 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
   // ── Sauvegarde ───────────────────────────────────────────────────────────────
   async function handleSave() {
     setShowLabel(false);
-    const photoB64 = pendingRef.current || '';
+    const rawB64 = pendingRef.current || '';
     pendingRef.current = null;
     setPendingB64(null);
-    setError('Étape 1: chiffrement…');
+    setError('Horodatage…');
+    const photoB64 = await stampImage(rawB64);
+    const now = new Date();
+    const fullDatetime = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                       + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    setError('Chiffrement…');
     try {
       const enc = await encryptB64(photoB64, cryptoKey);
       const ts  = Date.now();
       localStorage.setItem('am_wound_' + service.id + '_' + patient.id + '_' + ts, enc);
       const idx = loadIdx(service.id, patient.id);
-      idx.push({ ts, label: label.trim() || 'Photo', time: timeStr() });
+      idx.push({ ts, label: label.trim() || 'Photo', time: fullDatetime });
       saveIdx(service.id, patient.id, idx);
       setError('');
       await loadPhotos();
@@ -289,16 +333,14 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
     }
     try {
       if (!cryptoKey) { setError('Erreur: clé crypto manquante'); return; }
-      setError('Étape 2: chiffrement…');
+      setError('Chiffrement (fallback)…');
       const ts  = Date.now();
       const enc = await encryptB64(photoB64, cryptoKey);
-      setError('Étape 3: écriture fichier…');
       try { await Filesystem.mkdir({ path: WOUND_DIR, directory: Directory.Cache, recursive: true }); } catch {}
       const path = filename(service.id, patient.id, ts);
       await Filesystem.writeFile({ path, data: enc, directory: Directory.Cache });
-      setError('Étape 4: index…');
       const idx = loadIdx(service.id, patient.id);
-      idx.push({ ts, path, label: label.trim() || 'Photo sans libellé', time: timeStr() });
+      idx.push({ ts, path, label: label.trim() || 'Photo sans libellé', time: fullDatetime });
       saveIdx(service.id, patient.id, idx);
       setError('');
       setSaving(true);
