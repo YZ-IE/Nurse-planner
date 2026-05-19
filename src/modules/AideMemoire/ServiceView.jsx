@@ -11,6 +11,7 @@ import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
 import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
 import ImportFromPhoto from './ImportFromPhoto.jsx';
+import RelèveView from './RelèveView.jsx';
 
 const SURVEILLANCE_TYPES = new Set(['constantes_vitales','hgt','bilan','diurese','ecg','poids']);
 
@@ -166,6 +167,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [showBedsCfg,  setShowBedsCfg]  = useState(false);
   const [showMenu,     setShowMenu]     = useState(false);
   const [showImport,   setShowImport]   = useState(false);
+  const [showRelève,   setShowRelève]   = useState(false);
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -253,6 +255,10 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                 <button onClick={onDayOverview}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
                   <span>📋</span><span>Vue du jour</span>
+                </button>
+                <button onClick={() => { setShowRelève(true); setShowMenu(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <span>🗒️</span><span>Générer la relève</span>
                 </button>
                 {!readOnly && (
                   <button onClick={() => { setShowImport(true); setShowMenu(false); }}
@@ -426,6 +432,15 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           existingPatients={patients}
           onImport={async newPts => { await savePatients([...patients, ...newPts]); }}
           onClose={() => setShowImport(false)}
+        />
+      )}
+
+      {showRelève && (
+        <RelèveView
+          service={service}
+          patients={patients}
+          dailyData={dailyData}
+          onClose={() => setShowRelève(false)}
         />
       )}
     </div>
