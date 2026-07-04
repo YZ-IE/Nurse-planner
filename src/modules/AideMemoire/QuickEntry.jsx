@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, IconBtn, Chip, Field, Input, Banner, Sheet, toast } from '../../ui/index.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty, getAllFieldsAlpha } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel, EmptyState, parseVitalAlerts } from './utils.jsx';
@@ -26,51 +27,43 @@ function AddCareModal({ patient, onAdd, onClose }) {
   const ct = getCareType(type);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>💊 Planifier un soin</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{patient.initials}</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto', marginBottom: 12 }}>
-          {CARE_TYPES.map(ct => {
-            const active = type === ct.id;
-            return (
-              <button key={ct.id} onClick={() => { setType(ct.id); setLabel(''); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, background: active ? ct.color + '22' : T.bg, border: `1px solid ${active ? ct.color : T.border}`, borderLeft: `3px solid ${active ? ct.color : 'transparent'}`, borderRadius: 8, color: active ? ct.color : T.text, fontSize: 14, fontWeight: active ? 700 : 400, padding: '8px 12px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
-                <span style={{ fontSize: 18 }}>{ct.emoji}</span>
-                <span>{ct.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Heure planifiée</div>
-          <input type="time" value={plannedTime} onChange={e => setPlannedTime(e.target.value)}
-            style={{ ...s.input, width: 130, boxSizing: 'border-box' }} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Libellé (optionnel)</div>
-          <input value={label} onChange={e => setLabel(e.target.value)} placeholder={ct.label}
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Note (optionnel)</div>
-          <input value={note} onChange={e => setNote(e.target.value)} placeholder="Contexte…"
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-        </div>
-
-        <button onClick={() => { onAdd({ type, label: label.trim() || ct.label, plannedTime, note: note.trim() }); onClose(); }}
-          style={{ width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, background: ct.color, border: 'none', borderRadius: 10, color: '#fff', cursor: 'pointer' }}>
-          {ct.emoji} Planifier
-        </button>
+    <Sheet
+      title="Planifier un soin"
+      icon="💊"
+      subtitle={patient.initials}
+      onClose={onClose}
+      zIndex={200}
+      footer={
+        <Btn color={ct.color} size="lg" full icon={ct.emoji}
+          onClick={() => { onAdd({ type, label: label.trim() || ct.label, plannedTime, note: note.trim() }); onClose(); }}>
+          Planifier
+        </Btn>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 230, overflowY: 'auto', marginBottom: 14 }}>
+        {CARE_TYPES.map(ct => {
+          const active = type === ct.id;
+          return (
+            <button key={ct.id} onClick={() => { setType(ct.id); setLabel(''); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: tk.touch.min, background: active ? ct.color + '22' : T.bg, border: `1px solid ${active ? ct.color : T.border}`, borderLeft: `3px solid ${active ? ct.color : 'transparent'}`, borderRadius: tk.radius.sm, color: active ? ct.color : T.text, fontSize: tk.font.base, fontWeight: active ? 700 : 400, padding: '8px 14px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
+              <span style={{ fontSize: 19 }}>{ct.emoji}</span>
+              <span>{ct.label}</span>
+            </button>
+          );
+        })}
       </div>
-    </div>
+
+      <Field label="Heure planifiée">
+        <input type="time" value={plannedTime} onChange={e => setPlannedTime(e.target.value)}
+          style={{ ...s.input, width: 140, boxSizing: 'border-box', height: tk.touch.input, fontSize: tk.font.base }} />
+      </Field>
+      <Field label="Libellé (optionnel)">
+        <Input value={label} onChange={e => setLabel(e.target.value)} placeholder={ct.label} />
+      </Field>
+      <Field label="Note (optionnel)">
+        <Input value={note} onChange={e => setNote(e.target.value)} placeholder="Contexte…" />
+      </Field>
+    </Sheet>
   );
 }
 
@@ -83,41 +76,34 @@ function AddRdvModal({ patient, infoFields, onAdd, onClose }) {
   if (!infoFields.length) return null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>📅 RDV / Information</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{patient.initials}</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
+    <Sheet
+      title="RDV / Information"
+      icon="📅"
+      subtitle={patient.initials}
+      onClose={onClose}
+      zIndex={200}
+      footer={
+        <Btn color={T.info} size="lg" full icon="📅" disabled={!fieldId || !value.trim()}
+          onClick={() => { if (fieldId && value.trim()) { onAdd(fieldId, value.trim()); onClose(); } }}>
+          Enregistrer
+        </Btn>
+      }
+    >
+      <Field label="Champ">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {infoFields.map(f => (
+            <button key={f.id} onClick={() => setFieldId(f.id)}
+              style={{ background: fieldId === f.id ? T.infoDim : T.bg, border: `1.5px solid ${fieldId === f.id ? T.info : T.border}`, borderRadius: tk.radius.sm, color: fieldId === f.id ? T.info : T.text, fontSize: tk.font.base, fontWeight: fieldId === f.id ? 700 : 400, minHeight: tk.touch.min, padding: '8px 14px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
+              {f.label}
+            </button>
+          ))}
         </div>
+      </Field>
 
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Champ</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {infoFields.map(f => (
-              <button key={f.id} onClick={() => setFieldId(f.id)}
-                style={{ background: fieldId === f.id ? '#6366f122' : T.bg, border: `1px solid ${fieldId === f.id ? '#6366f1' : T.border}`, borderRadius: 8, color: fieldId === f.id ? '#6366f1' : T.text, fontSize: 14, fontWeight: fieldId === f.id ? 700 : 400, padding: '8px 12px', cursor: 'pointer', textAlign: 'left' }}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Valeur</div>
-          <input value={value} onChange={e => setValue(e.target.value)} placeholder="Ex: Scanner 14h, Kiné J3…"
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-        </div>
-
-        <button onClick={() => { if (fieldId && value.trim()) { onAdd(fieldId, value.trim()); onClose(); } }}
-          disabled={!fieldId || !value.trim()}
-          style={{ ...s.btn('#6366f1'), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: (fieldId && value.trim()) ? 1 : 0.4 }}>
-          📅 Enregistrer
-        </button>
-      </div>
-    </div>
+      <Field label="Valeur">
+        <Input value={value} onChange={e => setValue(e.target.value)} placeholder="Ex: Scanner 14h, Kiné J3…" />
+      </Field>
+    </Sheet>
   );
 }
 
@@ -141,74 +127,69 @@ function CentreInteretModal({ patient, service, dailyData, onFieldChange, onAddF
       : allFields;
 
     function catColor(f) {
-      if (f.category === 'flag')        return '#f43f5e';
-      if (f.category === 'info')        return '#6366f1';
+      if (f.category === 'flag')        return T.danger;
+      if (f.category === 'info')        return T.info;
       if (f.category === 'observation') return '#06b6d4';
-      if (f.category === 'constante')   return '#22c55e';
+      if (f.category === 'constante')   return T.success;
       return T.muted;
     }
 
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-        <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <button onClick={() => { setView('list'); setSearch(''); }} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer' }}>←</button>
-            <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>➕ Ajouter un centre d'intérêt</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
-          </div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box', marginBottom: 12 }} />
-          {filtered.length === 0 && (
-            <div style={{ color: T.muted, fontSize: 13, textAlign: 'center', marginTop: 16 }}>Aucun champ disponible</div>
-          )}
-          {filtered.map(f => (
-            <button key={f.id} onClick={() => { onAddField(f); setView('list'); setSearch(''); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 7, background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${catColor(f)}`, borderRadius: 10, color: T.text, padding: '11px 14px', textAlign: 'left', fontSize: 14, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-              <span>{f.label}</span>
-              <span style={{ color: T.muted, fontSize: 11, flexShrink: 0, marginLeft: 8 }}>{f.persistent ? '📌 séjour' : '🔄 journalier'}</span>
-            </button>
-          ))}
+      <Sheet
+        title="Ajouter un centre d'intérêt"
+        icon="➕"
+        onClose={onClose}
+        zIndex={200}
+      >
+        <div style={{ marginBottom: 4 }}>
+          <IconBtn label="Retour à la liste" onClick={() => { setView('list'); setSearch(''); }} fontSize={20} size={44}>←</IconBtn>
         </div>
-      </div>
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" style={{ marginBottom: 12 }} />
+        {filtered.length === 0 && (
+          <div style={{ color: T.muted, fontSize: tk.font.sm, textAlign: 'center', marginTop: 16 }}>Aucun champ disponible</div>
+        )}
+        {filtered.map(f => (
+          <button key={f.id} onClick={() => { onAddField(f); setView('list'); setSearch(''); }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minHeight: tk.touch.min, marginBottom: 7, background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${catColor(f)}`, borderRadius: tk.radius.md, color: T.text, padding: '10px 14px', textAlign: 'left', fontSize: tk.font.base, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+            <span>{f.label}</span>
+            <span style={{ color: T.muted, fontSize: tk.font.xs, flexShrink: 0, marginLeft: 8 }}>{f.persistent ? '📌 séjour' : '🔄 journalier'}</span>
+          </button>
+        ))}
+      </Sheet>
     );
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
-      <div onTouchMove={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div>
-            <div style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>🎯 Centres d'intérêt</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{patient.initials}</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
+    <Sheet
+      title="Centres d'intérêt"
+      icon="🎯"
+      subtitle={patient.initials}
+      onClose={onClose}
+      zIndex={200}
+    >
+      {customFields.length === 0 && (
+        <div style={{ color: T.muted, fontSize: tk.font.sm, fontStyle: 'italic', marginBottom: 14, textAlign: 'center' }}>
+          Aucun centre d'intérêt — ajoutez-en ci-dessous
         </div>
+      )}
 
-        {customFields.length === 0 && (
-          <div style={{ color: T.muted, fontSize: 13, fontStyle: 'italic', marginBottom: 14, textAlign: 'center' }}>
-            Aucun centre d'intérêt — ajoutez-en ci-dessous
-          </div>
-        )}
+      {customFields.map(f => (
+        <Field key={f.id} label={f.label}>
+          <FieldInput
+            field={f}
+            value={f.persistent ? (patient.fieldValues || {})[f.id] : daily.fieldValues[f.id]}
+            onChange={v => onFieldChange(patient, f.id, v)}
+            accentColor="#a78bfa"
+          />
+        </Field>
+      ))}
 
-        {customFields.map(f => (
-          <div key={f.id} style={{ marginBottom: 14 }}>
-            <div style={{ color: T.muted, fontSize: 11, marginBottom: 5 }}>{f.label}</div>
-            <FieldInput
-              field={f}
-              value={f.persistent ? (patient.fieldValues || {})[f.id] : daily.fieldValues[f.id]}
-              onChange={v => onFieldChange(patient, f.id, v)}
-              accentColor="#a78bfa"
-            />
-          </div>
-        ))}
-
-        <button onClick={() => setView('add')}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bg, border: '1px dashed rgba(167,139,250,0.5)', borderRadius: 12, color: '#a78bfa', fontSize: 14, padding: '11px 14px', cursor: 'pointer', width: '100%', WebkitTapHighlightColor: 'transparent' }}>
-          <span style={{ fontSize: 18 }}>+</span>
-          <span>Ajouter un centre d'intérêt</span>
-        </button>
-      </div>
-    </div>
+      <button onClick={() => setView('add')}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: T.bg, border: '1.5px dashed rgba(167,139,250,0.5)', borderRadius: tk.radius.md, color: '#a78bfa', fontSize: tk.font.base, fontWeight: 600, minHeight: tk.touch.min, padding: '10px 14px', cursor: 'pointer', width: '100%', WebkitTapHighlightColor: 'transparent' }}>
+        <span style={{ fontSize: 19 }}>+</span>
+        <span>Ajouter un centre d'intérêt</span>
+      </button>
+    </Sheet>
   );
 }
 
@@ -287,6 +268,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
     setDailyData(nextAll);
     if (!readOnly) {
       await secureSet(`daily_${service.id}_${selectedDate}`, nextAll, cryptoKey);
+      toast(`Soin planifié à ${careData.plannedTime || '—'}`);
       if (careData.plannedTime) {
         const ct      = getCareType(careData.type);
         const bedLbl  = bedLabel[patient.bedNumber] ?? String(patient.bedNumber);
@@ -382,12 +364,12 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '14px 16px 12px', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
+      <div style={{ padding: '10px 16px 10px 8px', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <IconBtn label="Retour" onClick={onBack} fontSize={22}>←</IconBtn>
           <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>⚡ Saisie rapide — {formatDateLabel(selectedDate)}{readOnly ? ' 👁' : ''}</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>
+            <div style={{ color: T.text, fontSize: tk.font.md, fontWeight: 700 }}>⚡ Saisie rapide — {formatDateLabel(selectedDate)}{readOnly ? ' 👁' : ''}</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs }}>
               {service.name} · {sortedPatients.length} patients · {new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}
             </div>
           </div>
@@ -395,35 +377,30 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
       </div>
 
       {/* ── Tri + délai notif ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 16px 8px', borderBottom: `1px solid ${T.border}`, background: T.bg, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.bg, flexWrap: 'wrap' }}>
         {[['bed', '🛏 Lit'], ['next_care', '⏰ Soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
-          <button key={mode} onClick={() => setSortMode(mode)}
-            style={{ background: sortMode === mode ? C + '22' : 'none', border: `1px solid ${sortMode === mode ? C : T.border}`, borderRadius: 8, color: sortMode === mode ? C : T.muted, fontSize: 11, fontWeight: sortMode === mode ? 700 : 400, padding: '4px 8px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+          <Chip key={mode} color={C} active={sortMode === mode} onClick={() => setSortMode(mode)}>
             {label}
-          </button>
+          </Chip>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ color: T.muted, fontSize: 10 }}>🔔</span>
-          <button
-            onClick={() => {
-              const next = NOTIF_DELAYS[(NOTIF_DELAYS.indexOf(notifDelay) + 1) % NOTIF_DELAYS.length];
-              setNotifDelay(next);
-              localStorage.setItem(NOTIF_DELAY_KEY, String(next));
-            }}
-            style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 10, padding: '4px 7px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-            title="Délai de rappel avant soin"
-          >
-            −{notifDelay}min
-          </button>
-        </div>
+        <Chip
+          color={T.muted}
+          onClick={() => {
+            const next = NOTIF_DELAYS[(NOTIF_DELAYS.indexOf(notifDelay) + 1) % NOTIF_DELAYS.length];
+            setNotifDelay(next);
+            localStorage.setItem(NOTIF_DELAY_KEY, String(next));
+          }}
+          style={{ marginLeft: 'auto' }}
+        >
+          🔔 −{notifDelay} min
+        </Chip>
       </div>
 
       {/* ── Bandeau lecture seule ── */}
       {readOnly && (
-        <div style={{ background: '#6366f122', borderBottom: `1px solid #6366f133`, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 14 }}>🔒</span>
-          <span style={{ color: '#818cf8', fontSize: 12, fontWeight: 600 }}>Consultation uniquement — les modifications sont désactivées pour cette date</span>
-        </div>
+        <Banner kind="info" icon="🔒" style={{ margin: '8px 16px 0', marginBottom: 0 }}>
+          Consultation uniquement — modifications désactivées pour cette date
+        </Banner>
       )}
 
       {/* ── Patients ── */}
@@ -443,41 +420,39 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
           return (
             <div key={patient.id} style={{
               background: T.surface,
-              border: `1px solid ${hasCritical ? '#f43f5e88' : vitalAlerts.length > 0 ? '#f9731688' : T.border}`,
-              borderLeft: `3px solid ${hasCritical ? '#f43f5e' : vitalAlerts.length > 0 ? '#f97316' : readOnly ? T.border : sp.color}`,
-              borderRadius: 12, padding: '14px 14px 12px',
+              border: `1px solid ${hasCritical ? T.danger + '88' : vitalAlerts.length > 0 ? T.warning + '88' : T.border}`,
+              borderLeft: `3px solid ${hasCritical ? T.danger : vitalAlerts.length > 0 ? T.warning : readOnly ? T.border : sp.color}`,
+              borderRadius: tk.radius.lg, padding: '14px 14px 12px',
               marginBottom: 12,
               opacity: readOnly ? 0.72 : 1,
             }}>
 
               {/* ─ En-tête patient ─ */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: vitalAlerts.length > 0 ? 6 : 10 }}>
-                <span style={{ color: bedLabel[patient.bedNumber] == null ? '#f97316' : T.muted, fontSize: 12, fontWeight: 700, minWidth: 46 }}>
+                <span style={{ color: bedLabel[patient.bedNumber] == null ? T.warning : T.muted, fontSize: tk.font.sm, fontWeight: 700, minWidth: 46 }}>
                   🛏 {bedLabel[patient.bedNumber] ?? `⚠️${patient.bedNumber}`}
                 </span>
-                <span style={{ color: T.text, fontSize: 15, fontWeight: 800 }}>{patient.initials}</span>
-                <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
+                <span style={{ color: T.text, fontSize: tk.font.md, fontWeight: 800 }}>{patient.initials}</span>
+                <span style={{ color: T.muted, fontSize: tk.font.sm }}>{patient.gender} {patient.age}a</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 3, alignItems: 'center' }}>
-                  {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
+                  {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 16 }}>{e}</span>)}
                   {onNavigate && (
-                    <button onClick={() => onNavigate(patient.id)}
-                      style={{ background: 'none', border: 'none', color: T.muted, fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
-                      title="Ouvrir la fiche patient">›</button>
+                    <IconBtn label="Ouvrir la fiche patient" onClick={() => onNavigate(patient.id)} fontSize={20} size={44} style={{ margin: '-10px -10px -10px 0' }}>›</IconBtn>
                   )}
                 </div>
               </div>
 
               {/* ─ Alertes constantes ─ */}
               {vitalAlerts.map((a, i) => (
-                <div key={i} style={{ background: a.level === 'critical' ? '#f43f5e18' : '#f9731618', border: `1px solid ${a.level === 'critical' ? '#f43f5e55' : '#f9731655'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 13 }}>{a.level === 'critical' ? '🔴' : '🟠'}</span>
-                  <span style={{ color: a.level === 'critical' ? '#f43f5e' : '#f97316', fontSize: 12, fontWeight: 700 }}>{a.msg}</span>
+                <div key={i} style={{ background: a.level === 'critical' ? T.dangerDim : T.warningDim, border: `1px solid ${a.level === 'critical' ? T.danger : T.warning}55`, borderRadius: tk.radius.sm, padding: '6px 10px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>{a.level === 'critical' ? '🔴' : '🟠'}</span>
+                  <span style={{ color: a.level === 'critical' ? T.danger : T.warning, fontSize: tk.font.sm, fontWeight: 700 }}>{a.msg}</span>
                 </div>
               ))}
 
               {/* Motif abrégé */}
               {patient.admissionReason && (
-                <div style={{ color: T.muted, fontSize: 11, marginBottom: 10, marginLeft: 54, fontStyle: 'italic' }}>
+                <div style={{ color: T.muted, fontSize: tk.font.xs, marginBottom: 10, marginLeft: 54, fontStyle: 'italic' }}>
                   {patient.admissionReason.length > 60 ? patient.admissionReason.slice(0, 60) + '…' : patient.admissionReason}
                 </div>
               )}
@@ -485,11 +460,11 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
               {/* ─ Constantes (champs journaliers) ─ */}
               {constFields.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
-                  <div style={{ color: T.muted, fontSize: 11, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Constantes</div>
+                  <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 600, marginBottom: 6 }}>Constantes</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                     {constFields.map(f => (
                       <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ color: T.muted, fontSize: 11 }}>{f.label}:</span>
+                        <span style={{ color: T.muted, fontSize: tk.font.xs }}>{f.label}:</span>
                         <FieldInput
                           field={f}
                           value={f.persistent ? patient.fieldValues[f.id] : daily.fieldValues[f.id]}
@@ -507,9 +482,9 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
               {events.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
                   {events.map(ev => (
-                    <div key={ev.id} style={{ display: 'flex', gap: 6, marginBottom: 3 }}>
-                      <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700, minWidth: 38 }}>{ev.time}</span>
-                      <span style={{ color: T.text, fontSize: 12 }}>{ev.text}</span>
+                    <div key={ev.id} style={{ display: 'flex', gap: 8, marginBottom: 3 }}>
+                      <span style={{ color: T.success, fontSize: tk.font.xs, fontWeight: 700, minWidth: 38 }}>{ev.time}</span>
+                      <span style={{ color: T.text, fontSize: tk.font.sm }}>{ev.text}</span>
                     </div>
                   ))}
                 </div>
@@ -522,37 +497,39 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
                   onChange={e => setEventInputs(prev => ({ ...prev, [patient.id]: e.target.value }))}
                   onKeyDown={e => { if (e.key === 'Enter') addQuickEvent(patient.id); }}
                   placeholder="Événement rapide…"
-                  style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 13 }}
+                  style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: tk.font.sm, height: tk.touch.min }}
                 />
                 <button
                   onClick={() => addQuickEvent(patient.id)}
                   disabled={!(eventInputs[patient.id] || '').trim()}
+                  aria-label="Ajouter l'événement"
                   style={{
-                    background:    '#22c55e33', border: '1px solid #22c55e44',
-                    borderRadius:  8, color: '#22c55e', fontSize: 18,
-                    width: 36, height: 36, cursor: 'pointer',
+                    background:    T.successDim, border: `1px solid ${T.success}44`,
+                    borderRadius:  tk.radius.md, color: T.success, fontSize: 22,
+                    width: tk.touch.min, height: tk.touch.min, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                     opacity: (eventInputs[patient.id] || '').trim() ? 1 : 0.35,
+                    WebkitTapHighlightColor: 'transparent',
                   }}
                 >+</button>
               </div>
 
               {/* ─ Boutons planifier soin / RDV / Centre d'intérêt ─ */}
               {!readOnly && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button onClick={() => setAddCareFor(patient)}
-                    style={{ flex: 1, background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 8, color: '#f43f5e', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                    style={{ flex: 1, background: T.dangerDim, border: `1px solid ${T.danger}33`, borderRadius: tk.radius.md, color: T.danger, fontSize: tk.font.sm, fontWeight: 600, minHeight: 44, padding: '6px 4px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
                     💊 Soin
                   </button>
                   {service.fields.some(f => f.category === 'info') && (
                     <button onClick={() => setAddRdvFor(patient)}
-                      style={{ flex: 1, background: '#6366f111', border: '1px solid #6366f133', borderRadius: 8, color: '#6366f1', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                      style={{ flex: 1, background: T.infoDim, border: `1px solid ${T.info}33`, borderRadius: tk.radius.md, color: T.info, fontSize: tk.font.sm, fontWeight: 600, minHeight: 44, padding: '6px 4px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
                       📅 RDV / Info
                     </button>
                   )}
                   <button onClick={() => setCentreInteretFor(patient)}
-                    style={{ flex: 1, background: '#a78bfa11', border: '1px solid #a78bfa33', borderRadius: 8, color: '#a78bfa', fontSize: 12, fontWeight: 600, padding: '7px 4px', cursor: 'pointer' }}>
+                    style={{ flex: 1, background: '#a78bfa15', border: '1px solid #a78bfa33', borderRadius: tk.radius.md, color: '#a78bfa', fontSize: tk.font.sm, fontWeight: 600, minHeight: 44, padding: '6px 4px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
                     🎯 Centres
                   </button>
                 </div>
