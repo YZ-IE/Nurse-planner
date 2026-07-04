@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { getTheme, loadDarkPref, saveDarkPref } from './theme.js';
 import { loadFavs, toggleFav } from './favorites.js';
 import SplashOverlay from './modules/shared/SplashOverlay.jsx';
+import ToastHost from './ui/ToastHost.jsx';
 
 const Urgences     = lazy(() => import('./modules/Urgences/index.jsx'));
 const Soins        = lazy(() => import('./modules/Soins/index.jsx'));
@@ -289,6 +290,7 @@ export default function App() {
           {renderModule()}
         </Suspense>
       </div>
+      <ToastHost/>
     </div>
   );
 
@@ -484,6 +486,7 @@ export default function App() {
 
         <AppBottomNav tab={tab} onTab={changeTab} TH={TH} isDark={isDark}/>
       </div>
+      <ToastHost/>
     </div>
   );
 }
