@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { T, s, loadDarkPref } from '../../../theme.js';
+import { T, s, tk, SOLID, loadDarkPref } from '../../../theme.js';
+import { Btn, IconBtn, Card, Chip, Field, Input, Textarea, Banner, toast } from '../../../ui/index.js';
 import { secureGet, secureSet } from '../crypto.js';
 import { timeStr, genId } from '../utils.jsx';
 import { ACTES, MAJORATIONS, LETTER_VALUES, CATS, actePrice, calcVisitTotal } from './ngap.js';
@@ -57,13 +58,11 @@ function NGAPSelector({ selected, majorations, onChangeActes, onChangeMaj, C }) 
 
   return (
     <div>
-      <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
         {[null, ...CATS].map(c => (
-          <button key={c ?? '__all'} onClick={() => setCat(c)}
-            style={{ background:cat===c?C+'33':'none', border:`1px solid ${cat===c?C:T.border}`,
-              borderRadius:7, color:cat===c?C:T.muted, padding:'3px 9px', fontSize:11, cursor:'pointer' }}>
+          <Chip key={c ?? '__all'} color={C} active={cat===c} onClick={() => setCat(c)}>
             {c ?? 'Tous'}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -74,21 +73,22 @@ function NGAPSelector({ selected, majorations, onChangeActes, onChangeMaj, C }) 
           <div key={acte.id} onClick={() =>
             onChangeActes(sel ? selected.filter(x=>x.id!==acte.id) : [...selected, { ...acte, qty:1 }])
           } style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-            padding:'8px 11px', marginBottom:3, borderRadius:8, cursor:'pointer',
+            minHeight:tk.touch.min, boxSizing:'border-box', padding:'8px 12px', marginBottom:4,
+            borderRadius:tk.radius.md, cursor:'pointer', WebkitTapHighlightColor:'transparent',
             background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}` }}>
             <div>
-              <div style={{ color:sel?C:T.text, fontSize:13, fontWeight:sel?600:400 }}>{acte.label}</div>
-              <div style={{ color:T.muted, fontSize:11 }}>
+              <div style={{ color:sel?C:T.text, fontSize:tk.font.base, fontWeight:sel?tk.weight.semi:tk.weight.reg }}>{acte.label}</div>
+              <div style={{ color:T.muted, fontSize:tk.font.xs, fontVariantNumeric:'tabular-nums' }}>
                 {acte.flat ? `Forfait ${prix}€` : `${acte.code} ×${acte.coeff} = ${prix}€`}
               </div>
             </div>
-            {sel && <span style={{ color:C, fontSize:15 }}>✓</span>}
+            {sel && <span style={{ color:C, fontSize:tk.font.md }}>✓</span>}
           </div>
         );
       })}
 
       <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${T.border}` }}>
-        <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1.5, marginBottom:8 }}>MAJORATIONS</div>
+        <div style={{ color:T.muted, fontSize:tk.font.xs, fontWeight:tk.weight.semi, letterSpacing:0.2, marginBottom:8 }}>Majorations</div>
         {MAJORATIONS.map(m => {
           const sel = majorations.find(x => x.id === m.id);
           return (
@@ -96,26 +96,28 @@ function NGAPSelector({ selected, majorations, onChangeActes, onChangeMaj, C }) 
               <div onClick={() =>
                 onChangeMaj(sel ? majorations.filter(x=>x.id!==m.id) : [...majorations, { ...m, km: m.perKm ? 0 : undefined }])
               } style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                padding:'8px 11px', marginBottom: (sel && m.perKm) ? 0 : 3, borderRadius: sel&&m.perKm?'8px 8px 0 0':8,
-                cursor:'pointer', background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}` }}>
-                <div style={{ color:sel?C:T.text, fontSize:13 }}>{m.label}</div>
+                minHeight:tk.touch.min, boxSizing:'border-box', padding:'8px 12px', marginBottom: (sel && m.perKm) ? 0 : 4,
+                borderRadius: sel&&m.perKm?`${tk.radius.md}px ${tk.radius.md}px 0 0`:tk.radius.md,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                background:sel?C+'15':T.surface, border:`1px solid ${sel?C:T.border}` }}>
+                <div style={{ color:sel?C:T.text, fontSize:tk.font.base }}>{m.label}</div>
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                  <span style={{ color:T.muted, fontSize:11 }}>
+                  <span style={{ color:T.muted, fontSize:tk.font.xs, fontVariantNumeric:'tabular-nums' }}>
                     {m.flat ? `+${m.flat.toFixed(2)}€` : m.factor ? `×${m.factor}` : `${m.perKm}€/km`}
                   </span>
-                  {sel && <span style={{ color:C, fontSize:13 }}>✓</span>}
+                  {sel && <span style={{ color:C, fontSize:tk.font.sm }}>✓</span>}
                 </div>
               </div>
               {sel && m.perKm && (
-                <div style={{ background:C+'10', border:`1px solid ${C}`, borderTop:'none', borderRadius:'0 0 8px 8px', padding:'6px 11px 8px', marginBottom:3 }}>
+                <div style={{ background:C+'10', border:`1px solid ${C}`, borderTop:'none', borderRadius:`0 0 ${tk.radius.md}px ${tk.radius.md}px`, padding:'8px 12px 10px', marginBottom:4 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ color:T.muted, fontSize:12 }}>Km :</span>
+                    <span style={{ color:T.muted, fontSize:tk.font.sm }}>Km :</span>
                     <input type="number" min={0} value={sel.km ?? 0}
                       onChange={e => onChangeMaj(majorations.map(x =>
                         x.id === 'ik' ? { ...x, km: Number(e.target.value) } : x
                       ))}
-                      style={{ ...s.input, width:70, textAlign:'center', fontSize:13 }} />
-                    <span style={{ color:C, fontSize:12, fontWeight:700 }}>
+                      style={{ ...s.input, height:tk.touch.input, fontSize:tk.font.base, width:84, textAlign:'center', fontVariantNumeric:'tabular-nums' }} />
+                    <span style={{ color:C, fontSize:tk.font.sm, fontWeight:tk.weight.bold, fontVariantNumeric:'tabular-nums' }}>
                       = {((sel.km||0) * m.perKm).toFixed(2)}€
                     </span>
                   </div>
@@ -250,27 +252,26 @@ function ScheduleEditor({ schedule, onChange, C }) {
         const slots = schedule.filter(s => s.dow === dow).sort((a,b) => a.heure.localeCompare(b.heure));
         return (
           <div key={dow} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:8 }}>
-            <div style={{ width:34, paddingTop:8, color:T.muted, fontSize:12, fontWeight:700, flexShrink:0 }}>{day}</div>
+            <div style={{ width:38, paddingTop:12, color:T.muted, fontSize:tk.font.sm, fontWeight:tk.weight.bold, flexShrink:0 }}>{day}</div>
             <div style={{ flex:1, display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
               {slots.map(sl => (
-                <div key={sl.id} style={{ display:'flex', alignItems:'center', gap:4, background:C+'20', border:`1px solid ${C}44`, borderRadius:8, padding:'4px 8px' }}>
-                  <span style={{ color:C, fontSize:13, fontWeight:600 }}>{sl.heure}</span>
-                  <button onClick={() => removeSlot(sl.id)}
-                    style={{ background:'none', border:'none', color:C+'99', fontSize:15, cursor:'pointer', padding:'0 2px', lineHeight:1 }}>×</button>
+                <div key={sl.id} style={{ display:'flex', alignItems:'center', gap:2, background:C+'20', border:`1px solid ${C}44`, borderRadius:tk.radius.md, padding:'0 2px 0 12px', minHeight:tk.touch.compact }}>
+                  <span style={{ color:C, fontSize:tk.font.sm, fontWeight:tk.weight.semi, fontVariantNumeric:'tabular-nums' }}>{sl.heure}</span>
+                  <IconBtn label="Retirer ce créneau" onClick={() => removeSlot(sl.id)} color={C+'99'} size={38} fontSize={17}>×</IconBtn>
                 </div>
               ))}
               {addingDow === dow ? (
                 <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                  <input type="time" value={newHeure} onChange={e=>setNewHeure(e.target.value)}
-                    style={{ ...s.input, width:105, fontSize:13, padding:'4px 8px' }} />
-                  <button onClick={addSlot}
-                    style={{ background:C, border:'none', borderRadius:7, color:'#fff', padding:'5px 10px', fontSize:13, cursor:'pointer' }}>OK</button>
-                  <button onClick={() => setAddingDow(null)}
-                    style={{ background:'none', border:'none', color:T.muted, fontSize:18, cursor:'pointer' }}>×</button>
+                  <Input type="time" value={newHeure} onChange={e=>setNewHeure(e.target.value)}
+                    style={{ width:110, fontVariantNumeric:'tabular-nums' }} />
+                  <Btn color={C} size="sm" onClick={addSlot}>OK</Btn>
+                  <IconBtn label="Annuler" onClick={() => setAddingDow(null)} size={tk.touch.compact} fontSize={20}>×</IconBtn>
                 </div>
               ) : (
                 <button onClick={() => setAddingDow(dow)}
-                  style={{ background:'none', border:`1px dashed ${C}55`, borderRadius:7, color:C, padding:'4px 8px', fontSize:12, cursor:'pointer' }}>+</button>
+                  style={{ background:'none', border:`1px dashed ${C}55`, borderRadius:tk.radius.md, color:C,
+                    minWidth:tk.touch.compact, minHeight:tk.touch.compact, fontSize:tk.font.md, cursor:'pointer',
+                    fontFamily:'inherit', WebkitTapHighlightColor:'transparent' }}>+</button>
               )}
             </div>
           </div>
@@ -307,31 +308,31 @@ function PatientHistory({ patient, serviceId, cryptoKey, C }) {
     return () => { cancelled = true; };
   }, [patient.id, serviceId, cryptoKey]); // eslint-disable-line
 
-  if (entries === null) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:13 }}>Chargement…</div>;
-  if (entries.length === 0) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:13 }}>Aucune visite enregistrée</div>;
+  if (entries === null) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:tk.font.sm }}>Chargement…</div>;
+  if (entries.length === 0) return <div style={{ padding:'20px 0', textAlign:'center', color:T.muted, fontSize:tk.font.sm }}>Aucune visite enregistrée</div>;
 
   return (
     <div>
       {entries.map((e, i) => (
-        <div key={i} style={{ background:T.surface, border:`1px solid ${T.border}`, borderLeft:`3px solid ${C}`, borderRadius:10, padding:'10px 14px', marginBottom:8 }}>
+        <Card key={i} accent={C} pad="sm" style={{ padding:'12px 14px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-            <div style={{ color:T.text, fontSize:13, fontWeight:700 }}>{dateLabel(e.date)}</div>
-            <div style={{ color:C, fontSize:13, fontWeight:700 }}>{e.total?.toFixed(2)} €</div>
+            <div style={{ color:T.text, fontSize:tk.font.base, fontWeight:tk.weight.bold }}>{dateLabel(e.date)}</div>
+            <div style={{ color:C, fontSize:tk.font.base, fontWeight:tk.weight.bold, fontVariantNumeric:'tabular-nums' }}>{e.total?.toFixed(2)} €</div>
           </div>
-          <div style={{ color:T.muted, fontSize:12, marginBottom: e.actesFaits?.length ? 5 : 0 }}>
+          <div style={{ color:T.muted, fontSize:tk.font.sm, fontVariantNumeric:'tabular-nums', marginBottom: e.actesFaits?.length ? 5 : 0 }}>
             {e.heureDebut} → {e.heureFin}
           </div>
           {e.actesFaits?.length > 0 && (
             <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
               {e.actesFaits.map(a => (
-                <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:5, color:C, fontSize:10, padding:'2px 6px' }}>
+                <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:tk.radius.sm, color:C, fontSize:tk.font.xs, padding:'2px 8px' }}>
                   {a.label.split('—')[0].trim()}
                 </span>
               ))}
             </div>
           )}
-          {e.notes ? <div style={{ color:T.muted, fontSize:11, marginTop:5, fontStyle:'italic' }}>{e.notes}</div> : null}
-        </div>
+          {e.notes ? <div style={{ color:T.muted, fontSize:tk.font.xs, marginTop:5, fontStyle:'italic' }}>{e.notes}</div> : null}
+        </Card>
       ))}
     </div>
   );
@@ -537,8 +538,8 @@ function PatientsTab({ patients, serviceId, cryptoKey, C, onAdd, onEdit, onDelet
       {patients.length === 0 ? (
         <div style={{ textAlign:'center', padding:'48px 0', color:T.muted }}>
           <div style={{ fontSize:44, marginBottom:10 }}>👤</div>
-          <div style={{ color:T.text, fontSize:15, fontWeight:600, marginBottom:5 }}>Aucun patient enregistré</div>
-          <div style={{ fontSize:13 }}>Ajoutez vos patients avec le bouton +</div>
+          <div style={{ color:T.text, fontSize:tk.font.md, fontWeight:tk.weight.semi, marginBottom:5 }}>Aucun patient enregistré</div>
+          <div style={{ fontSize:tk.font.sm }}>Ajoutez vos patients avec le bouton +</div>
         </div>
       ) : patients.map(p => {
         const nextSlot = (() => {
@@ -682,38 +683,34 @@ function HADPlaceholder({ service, onBack }) {
   ];
   return (
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
-      <div style={{ padding:'16px 16px 12px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:10 }}>
-        <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
+      <div style={{ padding:'10px 16px 10px 8px', borderBottom:`1px solid ${T.border}`, display:'flex', alignItems:'center', gap:6 }}>
+        <IconBtn label="Retour" onClick={onBack} fontSize={22}>←</IconBtn>
         <div>
-          <div style={{ color:T.text, fontWeight:700, fontSize:17 }}>{service.name}</div>
-          <div style={{ color:T.muted, fontSize:11 }}>Hospitalisation à Domicile</div>
+          <div style={{ color:T.text, fontWeight:tk.weight.bold, fontSize:tk.font.lg }}>{service.name}</div>
+          <div style={{ color:T.muted, fontSize:tk.font.xs }}>Hospitalisation à Domicile</div>
         </div>
       </div>
       <div style={{ flex:1, overflowY:'auto', padding:'28px 20px 40px', display:'flex', flexDirection:'column', alignItems:'center', gap:20 }}>
         <div style={{ fontSize:52 }}>🏠</div>
         <div style={{ textAlign:'center' }}>
-          <div style={{ color:T.text, fontWeight:700, fontSize:18, marginBottom:6 }}>Module HAD</div>
-          <span style={{ background:'#f9731622', color:'#f97316', fontSize:11, fontWeight:700, borderRadius:6, padding:'2px 8px', letterSpacing:0.5 }}>EN DÉVELOPPEMENT</span>
+          <div style={{ color:T.text, fontWeight:tk.weight.bold, fontSize:tk.font.lg, marginBottom:6 }}>Module HAD</div>
+          <span style={{ background:T.warningDim, color:T.warning, fontSize:tk.font.xs, fontWeight:tk.weight.bold, borderRadius:tk.radius.sm, padding:'3px 10px', letterSpacing:0.5 }}>EN DÉVELOPPEMENT</span>
         </div>
-        <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:'14px 16px', width:'100%', maxWidth:360 }}>
-          <div style={{ color:T.muted, fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Fonctionnalités prévues</div>
+        <Card style={{ width:'100%', maxWidth:360, marginBottom:0, boxSizing:'border-box' }}>
+          <div style={{ color:T.muted, fontSize:tk.font.xs, fontWeight:tk.weight.semi, letterSpacing:0.2, marginBottom:10 }}>Fonctionnalités prévues</div>
           {PLANNED.map((f, i) => (
             <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:8 }}>
-              <span style={{ color:'#8b5cf6', fontSize:14, flexShrink:0 }}>◦</span>
-              <span style={{ color:T.muted, fontSize:13, lineHeight:1.5 }}>{f}</span>
+              <span style={{ color:'#8b5cf6', fontSize:tk.font.base, flexShrink:0 }}>◦</span>
+              <span style={{ color:T.muted, fontSize:tk.font.sm, lineHeight:1.5 }}>{f}</span>
             </div>
           ))}
-        </div>
-        <div style={{ background:'#06b6d422', border:'1px solid #06b6d444', borderRadius:10, padding:'12px 14px', width:'100%', maxWidth:360 }}>
-          <div style={{ color:'#06b6d4', fontSize:12, fontWeight:700, marginBottom:4 }}>💡 En attendant</div>
-          <div style={{ color:T.muted, fontSize:13, lineHeight:1.6 }}>
-            Le mode <strong style={{ color:T.text }}>Tournée Libérale</strong> couvre déjà la majorité des besoins HAD : organisation des visites, transmissions et soins journaliers. Supprimez ce service et recréez-le en type "Libéral" pour l'utiliser dès maintenant.
-          </div>
-        </div>
-        <button onClick={onBack}
-          style={{ background:C_HAD, border:'none', borderRadius:12, color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', padding:'13px 32px', width:'100%', maxWidth:360 }}>
+        </Card>
+        <Banner kind="info" icon="💡" title="En attendant" style={{ width:'100%', maxWidth:360, marginBottom:0, boxSizing:'border-box' }}>
+          Le mode <strong style={{ color:T.text }}>Tournée Libérale</strong> couvre déjà la majorité des besoins HAD : organisation des visites, transmissions et soins journaliers. Supprimez ce service et recréez-le en type "Libéral" pour l'utiliser dès maintenant.
+        </Banner>
+        <Btn color={C_HAD} size="lg" full onClick={onBack} style={{ maxWidth:360 }}>
           ← Retour aux services
-        </button>
+        </Btn>
       </div>
     </div>
   );
@@ -791,7 +788,7 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
 
   if (loading) return (
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <span style={{ color:T.muted, fontSize:14 }}>Chargement…</span>
+      <span style={{ color:T.muted, fontSize:tk.font.base }}>Chargement…</span>
     </div>
   );
 
@@ -799,19 +796,17 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
     <div style={{ background:T.bg, position:'absolute', inset:0, display:'flex', flexDirection:'column' }}>
 
       {/* Header */}
-      <div style={{ padding:'14px 16px 0', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-          <button onClick={onBack} style={{ background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', padding:4 }}>←</button>
+      <div style={{ padding:'10px 12px 0 8px', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+          <IconBtn label="Retour" onClick={onBack} fontSize={22}>←</IconBtn>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:T.text, fontWeight:700, fontSize:17, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{service.name}</div>
-            <div style={{ color:T.muted, fontSize:11 }}>
+            <div style={{ color:T.text, fontWeight:tk.weight.bold, fontSize:tk.font.lg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{service.name}</div>
+            <div style={{ color:T.muted, fontSize:tk.font.xs }}>
               {new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long' })}
             </div>
           </div>
           {tab === 'patients' && (
-            <button onClick={() => setAddEdit(true)}
-              style={{ background:C+'22', border:`1px solid ${C}44`, borderRadius:8, color:C, width:36, height:36,
-                fontSize:22, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>+</button>
+            <IconBtn label="Ajouter un patient" onClick={() => setAddEdit(true)} color={C} variant="soft" fontSize={24}>+</IconBtn>
           )}
         </div>
         {/* Tabs */}
@@ -819,7 +814,8 @@ export default function TourneeView({ service, cryptoKey, onBack }) {
           {[['jour','🗓 Tournée du jour'],['patients','👤 Patients']].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ flex:1, background:'none', border:'none', borderBottom:`2px solid ${tab===id?C:'transparent'}`,
-                color:tab===id?C:T.muted, padding:'8px 4px', fontSize:13, fontWeight:tab===id?700:400, cursor:'pointer' }}>
+                color:tab===id?C:T.muted, padding:'12px 4px', minHeight:44, fontSize:tk.font.sm,
+                fontWeight:tab===id?tk.weight.bold:tk.weight.med, cursor:'pointer', fontFamily:'inherit', WebkitTapHighlightColor:'transparent' }}>
               {label}
             </button>
           ))}
