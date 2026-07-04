@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
 
 // ─── Date / heure ────────────────────────────────────────────────────────────
 
@@ -59,26 +59,26 @@ function ListFieldInput({ value, onChange, accentColor }) {
   return (
     <div>
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-          <span style={{ flex: 1, color: T.text, fontSize: 13, background: T.bg, borderRadius: 7, padding: '6px 10px', border: `1px solid ${T.border}` }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span style={{ flex: 1, color: T.text, fontSize: tk.font.sm, background: T.bg, borderRadius: 8, padding: '9px 12px', border: `1px solid ${T.border}` }}>
             {item}
           </span>
-          <button onClick={() => remove(i)}
-            style={{ background: 'none', border: 'none', color: T.muted, fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>
+          <button onClick={() => remove(i)} aria-label="Retirer"
+            style={{ background: 'none', border: 'none', color: T.muted, fontSize: 20, cursor: 'pointer', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}>
             ×
           </button>
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
         <input
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder="Ajouter…"
-          style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 13 }}
+          style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: tk.font.sm, height: tk.touch.min }}
         />
         <button onClick={add} disabled={!draft.trim()}
-          style={{ background: C + '33', border: `1px solid ${C}44`, borderRadius: 8, color: C, fontSize: 20, width: 34, flexShrink: 0, cursor: 'pointer', opacity: draft.trim() ? 1 : 0.4 }}>
+          style={{ background: C + '33', border: `1px solid ${C}44`, borderRadius: tk.radius.md, color: C, fontSize: 22, width: tk.touch.min, height: tk.touch.min, flexShrink: 0, cursor: 'pointer', opacity: draft.trim() ? 1 : 0.4, WebkitTapHighlightColor: 'transparent' }}>
           +
         </button>
       </div>
@@ -106,11 +106,12 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
         style={{
           background:  active ? C + '33' : T.surface,
           border:      `1px solid ${active ? C : T.border}`,
-          borderRadius: 8,
+          borderRadius: tk.radius.sm,
           color:       active ? C : T.muted,
-          fontSize:    compact ? 12 : 14,
+          fontSize:    compact ? tk.font.sm : tk.font.base,
           fontWeight:  active ? 700 : 400,
-          padding:     compact ? '4px 10px' : '7px 14px',
+          height:      compact ? tk.touch.compact : tk.touch.min,
+          padding:     compact ? '0 12px' : '0 16px',
           cursor:      'pointer',
           transition:  'all 0.15s',
           WebkitTapHighlightColor: 'transparent',
@@ -136,10 +137,11 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
           style={{
             background:    val ? C + '22' : T.surface,
             border:        `1px solid ${val ? C : T.border}`,
-            borderRadius:  7,
+            borderRadius:  tk.radius.sm,
             color:         val ? C : T.muted,
-            fontSize:      12,
-            padding:       '4px 8px',
+            fontSize:      tk.font.sm,
+            height:        tk.touch.compact,
+            padding:       '0 10px',
             cursor:        'pointer',
             maxWidth:      140,
             overflow:      'hidden',
@@ -165,11 +167,12 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
               style={{
                 background:  active ? C + '33' : T.surface,
                 border:      `1px solid ${active ? C : T.border}`,
-                borderRadius: 8,
+                borderRadius: tk.radius.sm,
                 color:       active ? C : T.text,
-                fontSize:    13,
+                fontSize:    tk.font.base,
                 fontWeight:  active ? 700 : 400,
-                padding:     '6px 12px',
+                minHeight:   tk.touch.min,
+                padding:     '0 16px',
                 cursor:      'pointer',
                 transition:  'all 0.15s',
                 WebkitTapHighlightColor: 'transparent',
@@ -196,7 +199,7 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
         onChange={e => onChange(e.target.value)}
         placeholder="—"
         rows={3}
-        style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: compact ? 13 : 14, minHeight: 68 }}
+        style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: compact ? tk.font.sm : tk.font.base, minHeight: 80, lineHeight: 1.5 }}
       />
     );
   }
@@ -212,9 +215,10 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
         style={{
           ...s.input,
           width:     compact ? 70 : 110,
+          height:    compact ? tk.touch.compact : tk.touch.input,
           boxSizing: 'border-box',
           textAlign: 'center',
-          fontSize:  compact ? 13 : 15,
+          fontSize:  compact ? tk.font.sm : tk.font.base,
         }}
       />
     );
@@ -230,8 +234,9 @@ export function FieldInput({ field, value, onChange, accentColor, compact = fals
       style={{
         ...s.input,
         width:     compact ? 140 : '100%',
+        height:    compact ? tk.touch.compact : tk.touch.input,
         boxSizing: 'border-box',
-        fontSize:  compact ? 13 : 15,
+        fontSize:  compact ? tk.font.sm : tk.font.base,
       }}
     />
   );
@@ -376,10 +381,10 @@ export function formatDateLabel(dateStr) {
 // ─── Empty state ─────────────────────────────────────────────────────────────
 export function EmptyState({ icon = '📭', text, sub }) {
   return (
-    <div style={{ textAlign: 'center', padding: '32px 16px', color: T.muted }}>
-      <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.6 }}>{icon}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: T.muted }}>{text}</div>
-      {sub && <div style={{ fontSize: 12, marginTop: 4, opacity: 0.7 }}>{sub}</div>}
+    <div style={{ textAlign: 'center', padding: '36px 16px', color: T.muted }}>
+      <div style={{ fontSize: 36, marginBottom: 10, opacity: 0.6 }}>{icon}</div>
+      <div style={{ fontSize: tk.font.base, fontWeight: 600, color: T.muted }}>{text}</div>
+      {sub && <div style={{ fontSize: tk.font.sm, marginTop: 4, opacity: 0.7 }}>{sub}</div>}
     </div>
   );
 }
