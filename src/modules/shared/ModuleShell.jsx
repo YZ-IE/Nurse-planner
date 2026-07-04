@@ -138,17 +138,17 @@ export default function ModuleShell({
             <button
               className="ms-back"
               onClick={onBack}
+              aria-label="Retour"
               style={{
                 background: 'none', border: `1px solid ${color}44`,
-                borderRadius: 100, width: 38, height: 38,
-                color, fontSize: 18, cursor: 'pointer',
+                borderRadius: 100, width: 48, height: 48, flexShrink: 0,
+                color, fontSize: 22, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >‹</button>
-            <div style={{ fontSize: 26 }}>{icon}</div>
+            <div style={{ fontSize: 28 }}>{icon}</div>
             <div>
-              <div style={{ color, fontFamily: 'monospace', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 1 }}>MODULE</div>
-              <div style={{ color: T.text, fontWeight: 800, fontSize: 18, letterSpacing: '-0.3px' }}>{title}</div>
+              <div style={{ color: T.text, fontWeight: 800, fontSize: 20, letterSpacing: '-0.3px' }}>{title}</div>
             </div>
           </div>
 
@@ -161,7 +161,7 @@ export default function ModuleShell({
                 border: `1px solid ${color}30`,
                 borderRadius: 12, padding: '10px 14px', marginBottom: 14,
               }}>
-                <div style={{ color, fontWeight: 700, fontSize: 12 }}>{subtitle}</div>
+                <div style={{ color, fontWeight: 700, fontSize: 13 }}>{subtitle}</div>
               </div>
             )}
             {headerExtra}
@@ -191,15 +191,16 @@ export default function ModuleShell({
             <button
               className="ms-back"
               onClick={closeTool}
+              aria-label="Retour"
               style={{
                 background: 'none', border: `1px solid ${color}44`,
-                borderRadius: 100, width: 36, height: 36,
-                color, fontSize: 18, cursor: 'pointer',
+                borderRadius: 100, width: 48, height: 48, flexShrink: 0,
+                color, fontSize: 22, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >‹</button>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: T.text, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ color: T.text, fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {items.find(it => it.id === tool)?.icon} {items.find(it => it.id === tool)?.label}
               </div>
             </div>
