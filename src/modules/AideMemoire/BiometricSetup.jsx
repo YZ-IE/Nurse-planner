@@ -5,7 +5,8 @@
  *   - standalone  : appelé depuis l'écran de déverrouillage (demande le PIN)
  */
 import { useState, useEffect } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, Banner, Field } from '../../ui/index.js';
 import { savePinForBiometric, verifyPin } from './crypto.js';
 
 const ACCENT = '#6366f1';
@@ -83,15 +84,15 @@ export default function BiometricSetup({ pin: pinProp, onDone }) {
       <div style={{ color:T.muted, fontSize:13, textAlign:'center', lineHeight:1.6, maxWidth:280 }}>
         Votre appareil ne dispose pas de capteur biométrique configuré.
       </div>
-      <button onClick={onDone} style={{ background:C, border:'none', color:'#fff', borderRadius:12, padding:'13px 32px', fontSize:15, fontWeight:700, cursor:'pointer', width:'100%', maxWidth:280 }}>
+      <Btn color={C} size="lg" full onClick={onDone} style={{ maxWidth: 280 }}>
         Continuer
-      </button>
+      </Btn>
     </div>
   );
 
   return (
     <div style={{ background:T.bg, position:'absolute', inset:0, overflowY:'auto', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:28, gap:16, boxSizing:'border-box' }}>
-      <button onClick={onDone} style={{ position:'absolute', top:20, left:16, background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer' }}>←</button>
+      <button onClick={onDone} style={{ position:'absolute', top:14, left:8, background:'none', border:'none', color:T.muted, fontSize:22, cursor:'pointer', width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', WebkitTapHighlightColor:'transparent' }}>←</button>
 
       <div style={{ fontSize:52 }}>👆</div>
       <div style={{ color:T.text, fontWeight:700, fontSize:20, textAlign:'center' }}>Activer la biométrie</div>
@@ -108,33 +109,32 @@ export default function BiometricSetup({ pin: pinProp, onDone }) {
 
       {standalone && (
         <div style={{ width:'100%', maxWidth:300 }}>
-          <label style={s.label}>Confirmer votre mot de passe</label>
-          <div style={{ position:'relative' }}>
-            <input
-              type={showPwd ? 'text' : 'password'}
-              value={pin}
-              onChange={e => setPin(e.target.value)}
-              placeholder="Votre mot de passe"
-              style={{ ...s.input, paddingRight:40 }}
-            />
-            <button onClick={() => setShowPwd(v=>!v)} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:T.muted }}>
-              {showPwd ? '🙈' : '👁'}
-            </button>
-          </div>
+          <Field label="Confirmer votre mot de passe">
+            <div style={{ position:'relative' }}>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={pin}
+                onChange={e => setPin(e.target.value)}
+                placeholder="Votre mot de passe"
+                style={{ ...s.input, paddingRight:52, height:tk.touch.input, fontSize:tk.font.base }}
+              />
+              <button onClick={() => setShowPwd(v=>!v)} aria-label="Afficher le mot de passe" style={{ position:'absolute', right:0, top:0, bottom:0, width:48, background:'none', border:'none', cursor:'pointer', fontSize:16, color:T.muted, WebkitTapHighlightColor:'transparent' }}>
+                {showPwd ? '🙈' : '👁'}
+              </button>
+            </div>
+          </Field>
         </div>
       )}
 
-      {error && <div style={{ color:'#ef4444', fontSize:13, textAlign:'center' }}>{error}</div>}
+      {error && <Banner kind="danger" icon="⚠️" style={{ maxWidth: 300, width: '100%' }}>{error}</Banner>}
 
       <div style={{ display:'flex', flexDirection:'column', gap:10, width:'100%', maxWidth:300 }}>
-        <button onClick={handleEnable} disabled={status==='loading'}
-          style={{ background:C, border:'none', color:'#fff', borderRadius:12, padding:'14px', fontSize:15, fontWeight:700, cursor:'pointer' }}>
+        <Btn color={C} size="lg" full disabled={status==='loading'} onClick={handleEnable}>
           {status === 'loading' ? 'Activation…' : '👆 Activer'}
-        </button>
-        <button onClick={onDone}
-          style={{ background:'none', border:`1px solid ${T.border}`, color:T.muted, borderRadius:12, padding:'13px', fontSize:14, cursor:'pointer' }}>
+        </Btn>
+        <Btn color={T.muted} variant="outline" full onClick={onDone}>
           Plus tard
-        </button>
+        </Btn>
       </div>
     </div>
   );

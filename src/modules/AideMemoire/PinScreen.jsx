@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, Banner } from '../../ui/index.js';
 import {
   createPin, verifyPin,
   isLockedOut, getLockoutRemaining,
@@ -28,7 +29,7 @@ function assessPassword(pwd) {
   ];
   const score  = checks.filter(c => c.ok).length;
   const labels = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort', 'Excellent'];
-  const colors = ['#ef4444', '#ef4444', '#f97316', '#f97316', '#22c55e', '#22c55e'];
+  const colors = [T.danger, T.danger, T.warning, T.warning, T.success, T.success];
   return {
     checks, score,
     label: labels[score],
@@ -155,15 +156,15 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
     const sec = String(countdown % 60).padStart(2, '0');
     return (
       <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
-        <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
+        <button onClick={onBack} style={{ position: 'absolute', top: 14, left: 8, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>←</button>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-        <div style={{ color: '#f43f5e', fontSize: 18, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Application verrouillée</div>
-        <div style={{ color: T.muted, fontSize: 13, marginBottom: 24, textAlign: 'center' }}>{failures} tentatives incorrectes</div>
-        <div style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 12, padding: '18px 32px', textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ color: T.muted, fontSize: 12, marginBottom: 6 }}>Déverrouillage dans</div>
-          <div style={{ color: '#f43f5e', fontSize: 36, fontWeight: 700, fontFamily: 'monospace' }}>{min}:{sec}</div>
+        <div style={{ color: T.danger, fontSize: tk.font.lg, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Application verrouillée</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 24, textAlign: 'center' }}>{failures} tentatives incorrectes</div>
+        <div style={{ background: T.dangerDim, border: `1px solid ${T.danger}44`, borderRadius: 12, padding: '18px 32px', textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 6 }}>Déverrouillage dans</div>
+          <div style={{ color: T.danger, fontSize: 36, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{min}:{sec}</div>
         </div>
-        <div style={{ color: T.muted, fontSize: 11, textAlign: 'center', background: T.surface, borderRadius: 8, padding: '10px 16px', maxWidth: 280 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, textAlign: 'center', background: T.surface, borderRadius: 8, padding: '10px 16px', maxWidth: 280 }}>
           ⚠️ Événement enregistré dans le journal d'accès.
         </div>
       </div>
@@ -173,7 +174,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   // ── Création ──────────────────────────────────────────────────────────────────
   if (step === 'create') return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
-      <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
+      <button onClick={onBack} style={{ position: 'absolute', top: 14, left: 8, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>←</button>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
       <div style={{ color: T.text, fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>Créer votre mot de passe</div>
       <div style={{ color: T.muted, fontSize: 13, marginBottom: 28, textAlign: 'center' }}>Protège vos données patients · Minimum 12 caractères (ANSSI)</div>
@@ -188,10 +189,10 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
             onChange={e => { setPassword(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="Votre mot de passe"
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 44, fontSize: 15 }}
+            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 52, fontSize: 15, height: tk.touch.input }}
           />
-          <button onClick={() => setShowPwd(v => !v)}
-            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18 }}>
+          <button onClick={() => setShowPwd(v => !v)} aria-label="Afficher le mot de passe"
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18, WebkitTapHighlightColor: 'transparent' }}>
             {showPwd ? '🙈' : '👁'}
           </button>
         </div>
@@ -204,10 +205,10 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
                 <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= strength.score ? strength.color : T.border, transition: 'background 0.3s' }} />
               ))}
             </div>
-            <div style={{ color: strength.color, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{strength.label}</div>
+            <div style={{ color: strength.color, fontSize: tk.font.sm, fontWeight: 600, marginBottom: 8 }}>{strength.label}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {strength.checks.map(c => (
-                <span key={c.label} style={{ color: c.ok ? '#22c55e' : T.muted, fontSize: 11, background: c.ok ? '#22c55e11' : T.surface, borderRadius: 6, padding: '2px 8px' }}>
+                <span key={c.label} style={{ color: c.ok ? T.success : T.muted, fontSize: tk.font.xs, background: c.ok ? T.successDim : T.surface, borderRadius: 6, padding: '3px 9px' }}>
                   {c.ok ? '✓' : '○'} {c.label}
                 </span>
               ))}
@@ -215,12 +216,11 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
           </div>
         )}
 
-        {error && <div style={{ color: '#f43f5e', fontSize: 13, marginBottom: 14, background: '#f43f5e22', borderRadius: 8, padding: '8px 12px' }}>{error}</div>}
+        {error && <Banner kind="danger" icon="⚠️">{error}</Banner>}
 
-        <button onClick={handleSubmit} disabled={loading || !strength.ok}
-          style={{ ...s.btn(C), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: (strength.ok && !loading) ? 1 : 0.4 }}>
+        <Btn color={C} size="lg" full disabled={loading || !strength.ok} onClick={handleSubmit}>
           {loading ? 'Chiffrement…' : 'Continuer →'}
-        </button>
+        </Btn>
       </div>
 
       <div style={{ color: T.muted, fontSize: 11, marginTop: 32, textAlign: 'center', lineHeight: 1.6 }}>
@@ -233,7 +233,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   if (step === 'confirm') return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
       <button onClick={() => { setStep('create'); setPassword(''); setConfirm(''); setFirstPassword(''); setError(''); }}
-        style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
+        style={{ position: 'absolute', top: 14, left: 8, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>←</button>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
       <div style={{ color: T.text, fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>Confirmer le mot de passe</div>
       <div style={{ color: T.muted, fontSize: 13, marginBottom: 28, textAlign: 'center' }}>Saisissez à nouveau votre mot de passe</div>
@@ -247,21 +247,20 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
             onChange={e => { setPassword(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="Répétez le mot de passe"
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 44, fontSize: 15, borderColor: password && password !== firstPassword ? '#f43f5e' : undefined }}
+            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 52, fontSize: 15, height: tk.touch.input, borderColor: password && password !== firstPassword ? T.danger : undefined }}
           />
-          <button onClick={() => setShowPwd(v => !v)}
-            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18 }}>
+          <button onClick={() => setShowPwd(v => !v)} aria-label="Afficher le mot de passe"
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18, WebkitTapHighlightColor: 'transparent' }}>
             {showPwd ? '🙈' : '👁'}
           </button>
         </div>
         {password && password !== firstPassword && (
-          <div style={{ color: '#f43f5e', fontSize: 12, marginBottom: 12 }}>Les mots de passe ne correspondent pas</div>
+          <div style={{ color: T.danger, fontSize: tk.font.sm, marginBottom: 12 }}>Les mots de passe ne correspondent pas</div>
         )}
-        {error && <div style={{ color: '#f43f5e', fontSize: 13, marginBottom: 14, background: '#f43f5e22', borderRadius: 8, padding: '8px 12px' }}>{error}</div>}
-        <button onClick={handleSubmit} disabled={loading || !password || password !== firstPassword}
-          style={{ ...s.btn(C), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: (password && password === firstPassword && !loading) ? 1 : 0.4 }}>
+        {error && <Banner kind="danger" icon="⚠️">{error}</Banner>}
+        <Btn color={C} size="lg" full disabled={loading || !password || password !== firstPassword} onClick={handleSubmit}>
           {loading ? 'Création…' : 'Créer le mot de passe'}
-        </button>
+        </Btn>
       </div>
     </div>
   );
@@ -269,7 +268,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
   // ── Vérification ──────────────────────────────────────────────────────────────
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
-      <button onClick={onBack} style={{ position: 'absolute', top: 20, left: 16, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer' }}>←</button>
+      <button onClick={onBack} style={{ position: 'absolute', top: 14, left: 8, background: 'none', border: 'none', color: T.muted, fontSize: 24, cursor: 'pointer', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>←</button>
 
       {bioBusy && (
         <div style={{ position: 'absolute', inset: 0, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, zIndex: 10 }}>
@@ -288,7 +287,7 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
       <div style={{ color: T.muted, fontSize: 13, marginBottom: failures > 0 ? 12 : 28, textAlign: 'center' }}>Saisir votre mot de passe</div>
 
       {failures > 0 && (
-        <div style={{ background: '#f9731622', border: '1px solid #f9731644', borderRadius: 8, padding: '7px 16px', marginBottom: 18, fontSize: 12, color: '#f97316', textAlign: 'center', maxWidth: 320 }}>
+        <div style={{ background: T.warningDim, border: `1px solid ${T.warning}44`, borderRadius: 8, padding: '8px 16px', marginBottom: 18, fontSize: tk.font.sm, color: T.warning, textAlign: 'center', maxWidth: 320, fontWeight: 600 }}>
           ⚠️ {failures} tentative{failures > 1 ? 's' : ''} incorrecte{failures > 1 ? 's' : ''} — verrouillage après {5 - failures} de plus
         </div>
       )}
@@ -303,40 +302,34 @@ export default function PinScreen({ pinExists, accentColor, onUnlocked, onBack }
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="Votre mot de passe"
             autoFocus
-            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 44, fontSize: 15 }}
+            style={{ ...s.input, width: '100%', boxSizing: 'border-box', paddingRight: 52, fontSize: 15, height: tk.touch.input }}
           />
-          <button onClick={() => setShowPwd(v => !v)}
-            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18 }}>
+          <button onClick={() => setShowPwd(v => !v)} aria-label="Afficher le mot de passe"
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18, WebkitTapHighlightColor: 'transparent' }}>
             {showPwd ? '🙈' : '👁'}
           </button>
         </div>
 
-        {error && <div style={{ color: '#f43f5e', fontSize: 13, marginBottom: 14, background: '#f43f5e22', borderRadius: 8, padding: '8px 12px' }}>{error}</div>}
+        {error && <Banner kind="danger" icon="⚠️">{error}</Banner>}
 
-        <button onClick={handleSubmit} disabled={loading || !password}
-          style={{ ...s.btn(C), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: (password && !loading) ? 1 : 0.4 }}>
+        <Btn color={C} size="lg" full disabled={loading || !password} onClick={handleSubmit}>
           {loading ? 'Vérification…' : 'Déverrouiller'}
-        </button>
+        </Btn>
 
-        <div style={{ color: T.muted, fontSize: 11, marginTop: 20, textAlign: 'center' }}>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 20, textAlign: 'center' }}>
           Mot de passe oublié ? Désinstallez et réinstallez l'application.
         </div>
 
         {!isBiometricEnabled() && (
-          <button
-            onClick={() => setShowBioSetup(true)}
-            style={{ marginTop: 12, background: 'none', border: `1px solid ${C}44`, borderRadius: 10, color: C, fontSize: 13, cursor: 'pointer', padding: '10px 20px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            👆 Activer la biométrie
-          </button>
+          <Btn color={C} variant="outline" full icon="👆" onClick={() => setShowBioSetup(true)} style={{ marginTop: 12 }}>
+            Activer la biométrie
+          </Btn>
         )}
 
         {isBiometricEnabled() && (
-          <button
-            onClick={tryBiometric}
-            disabled={bioBusy}
-            style={{ marginTop: 12, background: 'none', border: `1px solid ${C}44`, borderRadius: 10, color: C, fontSize: 13, cursor: 'pointer', padding: '10px 20px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            👆 {bioBusy ? 'Vérification…' : 'Utiliser la biométrie'}
-          </button>
+          <Btn color={C} variant="outline" full icon="👆" disabled={bioBusy} onClick={tryBiometric} style={{ marginTop: 12 }}>
+            {bioBusy ? 'Vérification…' : 'Utiliser la biométrie'}
+          </Btn>
         )}
       </div>
 

@@ -9,7 +9,8 @@
  */
 
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Btn } from '../../ui/index.js';
 
 export const CONSENT_KEY = 'am_consent_v2';
 
@@ -98,15 +99,15 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
   }
 
   return (
-    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
       {/* Header */}
-      <div style={{ background: T.surface2, padding: '20px 16px 16px', borderBottom: '1px solid #1e3a5f' }}>
+      <div style={{ background: T.surface2, padding: '20px 16px 16px', borderBottom: `1px solid ${T.border}` }}>
         <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 10 }}>📋</div>
-        <div style={{ color: T.text, fontSize: 18, fontWeight: 700, textAlign: 'center', marginBottom: 4 }}>
+        <div style={{ color: T.text, fontSize: tk.font.xl, fontWeight: 700, textAlign: 'center', marginBottom: 4 }}>
           Informations légales
         </div>
-        <div style={{ color: T.muted, fontSize: 12, textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, textAlign: 'center', lineHeight: 1.5 }}>
           À lire avant d'utiliser InfirmierPro · RGPD art. 13
         </div>
       </div>
@@ -114,11 +115,11 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
       <div style={{ padding: '16px 16px 120px' }}>
 
         {/* Bandeau intro */}
-        <div style={{ background: T.border, border: '1px solid #2563eb44', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-          <div style={{ color: '#60a5fa', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+        <div style={{ background: T.infoDim, border: `1px solid ${T.info}44`, borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+          <div style={{ color: T.info, fontSize: tk.font.base, fontWeight: 700, marginBottom: 6 }}>
             Notice d'information — Traitement de données de santé
           </div>
-          <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.6 }}>
             InfirmierPro traite des données de santé à caractère personnel. Conformément au RGPD (art. 13), vous devez être informé des conditions de ce traitement avant toute utilisation.
           </div>
         </div>
@@ -128,14 +129,14 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
           <div key={i} style={{ background: T.surface, border: `1px solid ${expanded === i ? ACCENT + '66' : T.border}`, borderRadius: 10, marginBottom: 8, overflow: 'hidden' }}>
             <button
               onClick={() => setExpanded(expanded === i ? null : i)}
-              style={{ width: '100%', background: 'none', border: 'none', padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+              style={{ width: '100%', background: 'none', border: 'none', minHeight: tk.touch.min, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
             >
               <span style={{ fontSize: 18, flexShrink: 0 }}>{sec.icon}</span>
-              <span style={{ color: T.text, fontSize: 13, fontWeight: 600, flex: 1, textAlign: 'left' }}>{sec.title}</span>
+              <span style={{ color: T.text, fontSize: tk.font.base, fontWeight: 600, flex: 1, textAlign: 'left' }}>{sec.title}</span>
               <span style={{ color: T.muted, fontSize: 16, flexShrink: 0 }}>{expanded === i ? '▲' : '▼'}</span>
             </button>
             {expanded === i && (
-              <div style={{ padding: '0 14px 14px 42px', color: T.muted, fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ padding: '0 14px 14px 42px', color: T.muted, fontSize: tk.font.sm, lineHeight: 1.6 }}>
                 {sec.content}
               </div>
             )}
@@ -143,8 +144,8 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
         ))}
 
         {/* Références légales */}
-        <div style={{ background: T.bg, border: '1px solid #1e293b', borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
-          <div style={{ color: T.muted, fontSize: 11, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 6 }}>RÉFÉRENCES LÉGALES</div>
+        <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
+          <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 6 }}>Références légales</div>
           {[
             'RGPD (UE) 2016/679 — art. 6, 9, 13, 15-17, 20, 25, 32, 33-34, 77',
             'Loi Informatique et Libertés n°78-17',
@@ -153,7 +154,7 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
             'Recommandation CNIL applications mobiles — 8 avril 2025',
             'PGSSI-S — Politique Générale de Sécurité des SI de Santé',
           ].map((ref, i) => (
-            <div key={i} style={{ color: '#475569', fontSize: 11, marginBottom: 3 }}>· {ref}</div>
+            <div key={i} style={{ color: T.muted, fontSize: tk.font.xs, marginBottom: 3, opacity: 0.8 }}>· {ref}</div>
           ))}
         </div>
 
@@ -177,49 +178,36 @@ export default function ConsentScreen({ onAccepted, onDeclined }) {
               text: "Je reconnais être responsable des données saisies sur mon appareil et m'engage à les supprimer à l'issue de la prise en charge de chaque patient.",
             },
           ].map(({ key, checked, set, text }) => (
-            <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, cursor: 'pointer' }}>
-              <div
-                onClick={() => set(v => !v)}
+            <button key={key} onClick={() => set(v => !v)}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10, cursor: 'pointer', width: '100%', background: checked ? ACCENT + '0d' : 'none', border: `1.5px solid ${checked ? ACCENT + '55' : T.border}`, borderRadius: tk.radius.md, padding: '12px 14px', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
+              <span
                 style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                   background: checked ? ACCENT : 'transparent',
-                  border: `2px solid ${checked ? ACCENT : T.border}`,
+                  border: `2px solid ${checked ? ACCENT : T.border2}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.15s',
+                  transition: 'all 0.15s',
                 }}
               >
-                {checked && <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✓</span>}
-              </div>
-              <span style={{ color: T.muted, fontSize: 13, lineHeight: 1.5 }}>{text}</span>
-            </label>
+                {checked && <span style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>✓</span>}
+              </span>
+              <span style={{ color: checked ? T.text : T.muted, fontSize: tk.font.sm, lineHeight: 1.5 }}>{text}</span>
+            </button>
           ))}
         </div>
 
         {/* Bouton */}
-        <button
-          onClick={handleAccept}
-          disabled={!canProceed}
-          style={{
-            ...s.btn(canProceed ? ACCENT : T.border),
-            width: '100%', padding: '14px',
-            fontSize: 15, fontWeight: 700,
-            opacity: canProceed ? 1 : 0.45,
-            transition: 'all 0.2s',
-          }}
-        >
+        <Btn color={ACCENT} size="lg" full disabled={!canProceed} onClick={handleAccept}>
           {canProceed ? '✅ Accepter et continuer' : 'Cochez les 3 cases pour continuer'}
-        </button>
+        </Btn>
 
         {onDeclined && (
-          <button
-            onClick={onDeclined}
-            style={{ width: '100%', padding: '12px', marginTop: 10, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 13, cursor: 'pointer' }}
-          >
+          <Btn color={T.muted} variant="outline" full onClick={onDeclined} style={{ marginTop: 10 }}>
             Refuser — quitter l'application
-          </button>
+          </Btn>
         )}
 
-        <div style={{ color: T.border, fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, textAlign: 'center', marginTop: 12, lineHeight: 1.5, opacity: 0.7 }}>
           Ce consentement est enregistré localement sur votre appareil.{'\n'}
           Version 2 · {new Date().toLocaleDateString('fr-FR')}
         </div>
