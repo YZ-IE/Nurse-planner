@@ -99,8 +99,8 @@ const makeCSS = (dark) => `
   .fav-card:active { transform:scale(.97); }
   .srow { display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;transition:background .1s; }
   .srow:active { background:${dark?'#1C2333':'#F0F3F8'}; }
-  .pill-badge { position:absolute;top:12px;right:12px;background:#0D1117;color:#FFF;font-size:8.5px;font-weight:700;letter-spacing:.8px;padding:3px 8px;border-radius:100px;font-family:monospace;text-transform:uppercase; }
-  .nav-btn { display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:6px 14px;border-radius:14px;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;flex:1; }
+  .pill-badge { position:absolute;top:12px;right:12px;background:#0D1117;color:#FFF;font-size:9.5px;font-weight:700;letter-spacing:.6px;padding:3px 9px;border-radius:100px;text-transform:uppercase; }
+  .nav-btn { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:600;min-height:52px;padding:6px 14px;border-radius:14px;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;flex:1; }
   .nav-btn.on { background:${dark?'#232D3F':'#EAF6FF'}; }
   .nav-btn:active { transform:scale(.92); }
   .toggle-anim { animation:themePulse .35s ease; }
@@ -122,7 +122,7 @@ function AppHeader({ isDark, TH, tab, search, onSearchChange, onSearchFocus, onC
     }}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:(tab==='home'||tab==='search')?12:0}}>
         <div>
-          <div style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2.5,textTransform:'uppercase',marginBottom:2}}>N-Planr</div>
+          <div style={{fontSize:12,color:TH.muted,fontWeight:600,letterSpacing:0.4,marginBottom:2}}>N-Planr</div>
           <div style={{fontSize:22,fontWeight:800,color:TH.text,letterSpacing:'-.5px',display:'flex',alignItems:'center',gap:6}}>
             {tab==='home'     && <>Soins Généraux <span style={{display:'inline-block',width:7,height:7,borderRadius:'50%',background:'#38B6FF'}}/></>}
             {tab==='search'   && 'Recherche'}
@@ -152,8 +152,8 @@ function AppHeader({ isDark, TH, tab, search, onSearchChange, onSearchFocus, onC
               width:'100%',
               background:isDark?'#1C2333':'#F0F3F8',
               border:`1.5px solid ${search.length>=2?'#38B6FF':'transparent'}`,
-              borderRadius:100, padding:'11px 40px 11px 40px',
-              color:TH.text, fontSize:14, outline:'none',
+              borderRadius:100, padding:'13px 40px 13px 40px',
+              color:TH.text, fontSize:15, outline:'none',
               boxSizing:'border-box', fontFamily:'inherit', fontWeight:500,
               transition:'border-color .2s,background .3s',
             }}
@@ -324,8 +324,8 @@ export default function App() {
               {favs.length>0 && (
                 <div style={{marginBottom:20}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                    <span style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2,textTransform:'uppercase',fontWeight:600}}>⭐ Favoris</span>
-                    <span style={{fontSize:11,color:TH.muted}}>{favs.length} épinglé{favs.length>1?'s':''}</span>
+                    <span style={{fontSize:13,color:TH.muted,fontWeight:700}}>⭐ Favoris</span>
+                    <span style={{fontSize:12,color:TH.muted}}>{favs.length} épinglé{favs.length>1?'s':''}</span>
                   </div>
                   {favs.map((fav,i)=>{
                     const mod=MODULES.find(m=>m.id===fav.mod);
@@ -334,10 +334,10 @@ export default function App() {
                         <div style={{width:4,height:36,borderRadius:4,background:fav.color,flexShrink:0}}/>
                         <div style={{width:38,height:38,borderRadius:10,background:mod?modBg(mod):fav.color+'22',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{fav.icon}</div>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontWeight:700,fontSize:13,color:TH.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{fav.label}</div>
-                          <div style={{color:TH.muted,fontSize:11,marginTop:1}}>{mod?.label}</div>
+                          <div style={{fontWeight:700,fontSize:14,color:TH.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{fav.label}</div>
+                          <div style={{color:TH.muted,fontSize:12,marginTop:1}}>{mod?.label}</div>
                         </div>
-                        <button onClick={e=>{e.stopPropagation();setFavs(toggleFav(fav));}} style={{background:'none',border:'none',color:'#FBBF24',fontSize:17,cursor:'pointer',padding:4,flexShrink:0}}>⭐</button>
+                        <button onClick={e=>{e.stopPropagation();setFavs(toggleFav(fav));}} style={{background:'none',border:'none',color:'#FBBF24',fontSize:18,cursor:'pointer',padding:12,margin:-8,flexShrink:0,WebkitTapHighlightColor:'transparent'}}>⭐</button>
                       </div>
                     );
                   })}
@@ -345,23 +345,23 @@ export default function App() {
                 </div>
               )}
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-                <span style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2,textTransform:'uppercase',fontWeight:600}}>Modules</span>
-                <span style={{fontSize:11,color:TH.muted}}>{MODULES.length} disponibles</span>
+                <span style={{fontSize:13,color:TH.muted,fontWeight:700}}>Modules</span>
+                <span style={{fontSize:12,color:TH.muted}}>{MODULES.length} disponibles</span>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
                 {MODULES.map((m,idx)=>(
                   <div key={m.id} className="mod-card" onClick={()=>openModule(m.id)} style={{animationDelay:`${idx*.06}s`}}>
                     {m.badge&&<span className="pill-badge">{m.badge}</span>}
                     <div style={{width:44,height:44,borderRadius:12,background:modBg(m),display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,marginBottom:12}}>{m.icon}</div>
-                    <div style={{fontWeight:800,fontSize:14.5,color:TH.text,letterSpacing:'-.3px',lineHeight:1.2,marginBottom:5}}>{m.label}</div>
-                    <div style={{color:TH.muted,fontSize:11,lineHeight:1.55}}>{m.desc}</div>
+                    <div style={{fontWeight:800,fontSize:15.5,color:TH.text,letterSpacing:'-.3px',lineHeight:1.2,marginBottom:5}}>{m.label}</div>
+                    <div style={{color:TH.muted,fontSize:12,lineHeight:1.55}}>{m.desc}</div>
                     <div style={{marginTop:14,height:3,borderRadius:100,background:`linear-gradient(90deg,${m.color}55,${m.color}11)`}}/>
                   </div>
                 ))}
               </div>
               <div style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:14,padding:'12px 16px',display:'flex',alignItems:'center',gap:10}}>
                 <span style={{fontSize:18}}>⚕️</span>
-                <div style={{fontSize:11,color:TH.muted,lineHeight:1.5}}>
+                <div style={{fontSize:12,color:TH.muted,lineHeight:1.5}}>
                   <strong style={{color:TH.text,fontWeight:700}}>Usage professionnel</strong>{' '}· Toujours vérifier avec le prescripteur
                 </div>
               </div>
@@ -378,7 +378,7 @@ export default function App() {
                     <div style={{color:TH.muted,fontSize:14,textAlign:'center',lineHeight:1.6}}>Tapez au moins 2 caractères<br/>pour rechercher dans tous les modules</div>
                     <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginTop:4}}>
                       {['RCP','Morphine','Pansement','SBAR','Sepsis','Insuline'].map(s=>(
-                        <button key={s} onClick={()=>setSearch(s)} style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:100,padding:'6px 14px',fontSize:12,fontWeight:600,color:TH.text,cursor:'pointer',fontFamily:'inherit'}}>
+                        <button key={s} onClick={()=>setSearch(s)} style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:100,height:40,padding:'0 16px',fontSize:13,fontWeight:600,color:TH.text,cursor:'pointer',fontFamily:'inherit',WebkitTapHighlightColor:'transparent'}}>
                           {s}
                         </button>
                       ))}
@@ -395,8 +395,8 @@ export default function App() {
                           <div key={i} className="srow" onClick={()=>{openModule(r.mod);setSearch('');setTab('home');}} style={{borderBottom:i<results.length-1?`1px solid ${TH.border}`:'none'}}>
                             <div style={{width:40,height:40,borderRadius:11,background:modBg(mod),display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{mod?.icon}</div>
                             <div style={{flex:1,minWidth:0}}>
-                              <div style={{color:mod?.color,fontWeight:700,fontSize:14}}>{r.label}</div>
-                              <div style={{color:TH.muted,fontSize:11,marginTop:1}}>{mod?.label}</div>
+                              <div style={{color:mod?.color,fontWeight:700,fontSize:15}}>{r.label}</div>
+                              <div style={{color:TH.muted,fontSize:12,marginTop:1}}>{mod?.label}</div>
                             </div>
                             <span style={{color:TH.border2,fontSize:20,fontWeight:300}}>›</span>
                           </div>
@@ -422,7 +422,7 @@ export default function App() {
                   </div>
                 )
                 : <>
-                    <div style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2,textTransform:'uppercase',fontWeight:600,marginBottom:12}}>
+                    <div style={{fontSize:13,color:TH.muted,fontWeight:700,marginBottom:12}}>
                       {favs.length} outil{favs.length>1?'s':''} épinglé{favs.length>1?'s':''}
                     </div>
                     {favs.map((fav,i)=>{
@@ -432,10 +432,10 @@ export default function App() {
                           <div style={{width:4,height:40,borderRadius:4,background:fav.color,flexShrink:0}}/>
                           <div style={{width:42,height:42,borderRadius:11,background:mod?modBg(mod):fav.color+'22',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{fav.icon}</div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:700,fontSize:14,color:TH.text}}>{fav.label}</div>
-                            <div style={{color:TH.muted,fontSize:11,marginTop:2}}>{mod?.label}</div>
+                            <div style={{fontWeight:700,fontSize:15,color:TH.text}}>{fav.label}</div>
+                            <div style={{color:TH.muted,fontSize:12,marginTop:2}}>{mod?.label}</div>
                           </div>
-                          <button onClick={e=>{e.stopPropagation();setFavs(toggleFav(fav));}} style={{background:'none',border:'none',color:'#FBBF24',fontSize:18,cursor:'pointer',padding:4,flexShrink:0}}>⭐</button>
+                          <button onClick={e=>{e.stopPropagation();setFavs(toggleFav(fav));}} style={{background:'none',border:'none',color:'#FBBF24',fontSize:19,cursor:'pointer',padding:12,margin:-8,flexShrink:0,WebkitTapHighlightColor:'transparent'}}>⭐</button>
                         </div>
                       );
                     })}
@@ -447,19 +447,19 @@ export default function App() {
           {/* SETTINGS */}
           {tab==='settings' && (
             <div style={{flex:1,overflowY:'auto',padding:'16px 14px'}}>
-              <div style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2,textTransform:'uppercase',fontWeight:600,marginBottom:10}}>Apparence</div>
+              <div style={{fontSize:13,color:TH.muted,fontWeight:700,marginBottom:10}}>Apparence</div>
               <div style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:16,overflow:'hidden',marginBottom:20,boxShadow:isDark?'none':'0 2px 10px rgba(0,0,0,.04)'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px'}}>
                   <div>
-                    <div style={{fontWeight:700,fontSize:14,color:TH.text}}>Mode nuit</div>
-                    <div style={{color:TH.muted,fontSize:12,marginTop:2}}>Fond sombre · Économie batterie OLED</div>
+                    <div style={{fontWeight:700,fontSize:15,color:TH.text}}>Mode nuit</div>
+                    <div style={{color:TH.muted,fontSize:13,marginTop:2}}>Fond sombre · Économie batterie OLED</div>
                   </div>
                   <div className="swt" onClick={toggleDark} style={{background:isDark?'#38B6FF':'#E4E9F2'}}>
                     <div className="swt-dot" style={{transform:isDark?'translateX(22px)':'translateX(0)'}}/>
                   </div>
                 </div>
               </div>
-              <div style={{fontSize:10,color:TH.muted,fontFamily:'monospace',letterSpacing:2,textTransform:'uppercase',fontWeight:600,marginBottom:10}}>Application</div>
+              <div style={{fontSize:13,color:TH.muted,fontWeight:700,marginBottom:10}}>Application</div>
               <div style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:16,overflow:'hidden',marginBottom:20}}>
                 {[
                   {label:'Version',    value:'1.0.0'},
@@ -468,14 +468,14 @@ export default function App() {
                   {label:'Plateforme', value:'Android (Capacitor)'},
                 ].map((row,i,arr)=>(
                   <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:i<arr.length-1?`1px solid ${TH.border}`:'none'}}>
-                    <span style={{color:TH.text,fontSize:13,fontWeight:500}}>{row.label}</span>
-                    <span style={{color:TH.muted,fontSize:13,fontFamily:'monospace'}}>{row.value}</span>
+                    <span style={{color:TH.text,fontSize:14,fontWeight:500}}>{row.label}</span>
+                    <span style={{color:TH.muted,fontSize:13}}>{row.value}</span>
                   </div>
                 ))}
               </div>
               <div style={{background:TH.surface,border:`1px solid ${TH.border}`,borderRadius:16,padding:'14px 16px',display:'flex',gap:12,alignItems:'flex-start'}}>
                 <span style={{fontSize:22}}>⚕️</span>
-                <div style={{fontSize:12,color:TH.muted,lineHeight:1.6}}>
+                <div style={{fontSize:13,color:TH.muted,lineHeight:1.6}}>
                   <strong style={{color:TH.text,fontWeight:700}}>Avertissement médical</strong><br/>
                   Cette application est un outil d'aide à la pratique infirmière. Elle ne remplace pas le jugement clinique ni les prescriptions médicales.
                 </div>
