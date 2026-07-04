@@ -4,7 +4,8 @@
  */
 
 import { useMemo } from 'react';
-import { T } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { IconBtn } from '../../ui/index.js';
 import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
 import { parseVitalAlerts } from './utils.jsx';
@@ -97,21 +98,21 @@ export default function RelèveView({ service, patients, dailyData, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: T.bg, zIndex: 200, display: 'flex', flexDirection: 'column' }}>
 
       {/* Header */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
+      <div style={{ padding: '12px 16px 12px 8px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <IconBtn label="Retour" onClick={onClose} fontSize={22}>←</IconBtn>
         <div style={{ flex: 1 }}>
-          <div style={{ color: T.text, fontWeight: 700, fontSize: 16 }}>📋 Relève structurée</div>
-          <div style={{ color: T.muted, fontSize: 12 }}>{service.name} · {patients.filter(p => p.present).length} patients</div>
+          <div style={{ color: T.text, fontWeight: tk.weight.bold, fontSize: tk.font.lg }}>📋 Relève structurée</div>
+          <div style={{ color: T.muted, fontSize: tk.font.sm }}>{service.name} · {patients.filter(p => p.present).length} patients</div>
         </div>
       </div>
 
-      {/* Texte */}
+      {/* Texte — document formaté : monospace conservé volontairement */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 32px' }}>
         <pre style={{
-          fontFamily: 'monospace', fontSize: 13, lineHeight: 1.7,
+          fontFamily: 'monospace', fontSize: 13.5, lineHeight: 1.7,
           color: T.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
           background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 10, padding: '14px 14px', margin: 0,
+          borderRadius: tk.radius.md, padding: '14px 14px', margin: 0,
         }}>
           {text}
         </pre>
