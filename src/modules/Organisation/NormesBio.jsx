@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card, Chip, Input } from '../../ui/index.js';
 const C = T.orga;
 const NORMES = {
   'Hématologie':[
@@ -59,20 +60,20 @@ export default function NormesBio() {
   const filtered=search.trim()?Object.values(NORMES).flat().filter(n=>n.param.toLowerCase().includes(search.toLowerCase())):NORMES[cat];
   return (
     <div style={{padding:'14px'}}>
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un paramètre..." style={{...s.input,marginBottom:12}}/>
+      <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un paramètre…" style={{marginBottom:12}}/>
       {!search.trim()&&(
-        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:12}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:12}}>
           {Object.keys(NORMES).map(k=>(
-            <button key={k} onClick={()=>setCat(k)} style={{...s.btn(cat===k?C:T.muted),fontSize:11,padding:'7px 12px',background:cat===k?C+'22':T.surface,borderColor:cat===k?C:T.border,color:cat===k?C:T.muted}}>{k}</button>
+            <Chip key={k} color={C} active={cat===k} onClick={()=>setCat(k)}>{k}</Chip>
           ))}
         </div>
       )}
       {filtered.map((n,i)=>(
-        <div key={i} style={{...s.card,marginBottom:8}}>
-          <div style={{color:C,fontWeight:700,fontSize:13,marginBottom:5}}>{n.param}</div>
-          <div style={{color:T.text,fontSize:13,marginBottom:n.alerte?5:0,fontFamily:'monospace'}}>{n.norme}</div>
-          {n.alerte&&<div style={{color:'#f97316',fontSize:12}}>⚠️ {n.alerte}</div>}
-        </div>
+        <Card key={i} pad="sm" style={{marginBottom:8}}>
+          <div style={{color:C,fontWeight:tk.weight.bold,fontSize:tk.font.base,marginBottom:5}}>{n.param}</div>
+          <div style={{color:T.text,fontSize:tk.font.base,marginBottom:n.alerte?5:0,fontWeight:tk.weight.med}}>{n.norme}</div>
+          {n.alerte&&<div style={{color:T.warning,fontSize:tk.font.sm,lineHeight:1.5}}>⚠️ {n.alerte}</div>}
+        </Card>
       ))}
     </div>
   );

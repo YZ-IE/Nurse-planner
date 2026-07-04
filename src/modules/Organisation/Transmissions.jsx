@@ -4,7 +4,8 @@
  * La clé n'est jamais persistée — données inaccessibles après fermeture = by design.
  */
 import { useState, useEffect, useRef } from 'react';
-import { T, s } from '../../theme.js';
+import { T, SOLID, tk } from '../../theme.js';
+import { Btn, IconBtn, Card, Field, Input, Textarea, Banner, toast } from '../../ui/index.js';
 const C = T.orga;
 
 const STORAGE_KEY = 'transmissions_v2';
@@ -46,12 +47,13 @@ function fmt(h) {
   return lines.join('\n');
 }
 
+const DLA_COLORS = { donnee: C, lien: SOLID.success, action: '#F59E0B' };
+
 export default function Transmissions() {
   const keyRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [v, setV] = useState({ patient: '', donnee: '', lien: '', action: '' });
   const [hist, setHist] = useState([]);
-  const [copied, setCopied] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -72,6 +74,7 @@ export default function Transmissions() {
     const next = [entry, ...hist]; setHist(next);
     saveBlobs(await Promise.all(next.map(e => enc(keyRef.current, e))));
     setV(p => ({ ...p, donnee: '', lien: '', action: '' }));
+    toast('Transmission enregistrée');
   };
 
   const del = async (i) => {
@@ -79,68 +82,62 @@ export default function Transmissions() {
     saveBlobs(await Promise.all(next.map(e => enc(keyRef.current, e))));
   };
 
-  const copy = async (text, key) => {
-    try { await navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 2000); } catch {}
+  const copy = async (text, msg) => {
+    try { await navigator.clipboard.writeText(text); toast(msg); } catch {}
   };
 
-  if (!ready) return <div style={{ padding: 14, color: T.muted, fontSize: 13 }}>Initialisation…</div>;
+  if (!ready) return <div style={{ padding: 14, color: T.muted, fontSize: tk.font.base }}>Initialisation…</div>;
 
   return (
     <div style={{ padding: '14px' }}>
-      <div style={{ background: '#0c2210', border: '1px solid #22c55e44', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
-        <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 12, marginBottom: 3 }}>🔒 Chiffré AES-256-GCM — clé de session</div>
-        <div style={{ color: '#86efac', fontSize: 11, lineHeight: 1.5 }}>Données inaccessibles après fermeture · Utiliser initiales ou n° de chambre</div>
-      </div>
-      <div style={{ ...s.card, background: '#052e16' }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 4 }}>Transmissions ciblées — Modèle DLA</div>
-        <div style={{ color: T.muted, fontSize: 12 }}>Donnée → Lien → Action</div>
-        <div style={{ color: '#475569', fontSize: 11, marginTop: 4 }}>📦 24h · 🔒 AES-256-GCM · Local</div>
-      </div>
-      <div style={s.card}>
-        <div style={{ marginBottom: 10 }}>
-          <label style={s.label}>PATIENT (initiales / chambre)</label>
-          <input value={v.patient} onChange={e => set('patient', e.target.value)} placeholder="Ex : Chambre 12 · M.D." style={s.input} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ ...s.label, color: C }}>D — DONNÉE</label>
-          <textarea value={v.donnee} onChange={e => set('donnee', e.target.value)} placeholder="Ex: SpO₂ 88% sous 2L O₂. FR 28/min." style={{ ...s.input, minHeight: 80, resize: 'vertical' }} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ ...s.label, color: '#22c55e' }}>L — LIEN</label>
-          <textarea value={v.lien} onChange={e => set('lien', e.target.value)} placeholder="Ex: Détresse respiratoire aiguë." style={{ ...s.input, minHeight: 60, resize: 'vertical' }} />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ ...s.label, color: '#f59e0b' }}>A — ACTION</label>
-          <textarea value={v.action} onChange={e => set('action', e.target.value)} placeholder="Ex: O₂ porté à 6L/min. Médecin prévenu." style={{ ...s.input, minHeight: 60, resize: 'vertical' }} />
-        </div>
-        <button onClick={save} style={{ ...s.btn(C), width: '100%', padding: '11px' }}>ENREGISTRER</button>
-      </div>
+      <Banner kind="success" icon="🔒" title="Chiffré AES-256-GCM — clé de session">
+        Données inaccessibles après fermeture · Utiliser initiales ou n° de chambre
+      </Banner>
+
+      <Card dim={T.orgaDim} style={{ border: `1px solid ${C}30` }}>
+        <div style={{ color: C, fontWeight: tk.weight.bold, fontSize: tk.font.md, marginBottom: 4 }}>Transmissions ciblées — Modèle DLA</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm }}>Donnée → Lien → Action</div>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 4, opacity: 0.8 }}>📦 24h · 🔒 AES-256-GCM · Local</div>
+      </Card>
+
+      <Card>
+        <Field label="Patient (initiales / chambre)">
+          <Input value={v.patient} onChange={e => set('patient', e.target.value)} placeholder="Ex : Chambre 12 · M.D." />
+        </Field>
+        <div style={{ color: DLA_COLORS.donnee, fontSize: tk.font.sm, fontWeight: tk.weight.bold, marginBottom: 6 }}>D — Donnée</div>
+        <Textarea value={v.donnee} onChange={e => set('donnee', e.target.value)} placeholder="Ex: SpO₂ 88% sous 2L O₂. FR 28/min." style={{ minHeight: 84, marginBottom: 12 }} />
+        <div style={{ color: DLA_COLORS.lien, fontSize: tk.font.sm, fontWeight: tk.weight.bold, marginBottom: 6 }}>L — Lien</div>
+        <Textarea value={v.lien} onChange={e => set('lien', e.target.value)} placeholder="Ex: Détresse respiratoire aiguë." style={{ minHeight: 64, marginBottom: 12 }} />
+        <div style={{ color: DLA_COLORS.action, fontSize: tk.font.sm, fontWeight: tk.weight.bold, marginBottom: 6 }}>A — Action</div>
+        <Textarea value={v.action} onChange={e => set('action', e.target.value)} placeholder="Ex: O₂ porté à 6L/min. Médecin prévenu." style={{ minHeight: 64, marginBottom: 14 }} />
+        <Btn color={C} size="lg" full disabled={!v.donnee.trim()} onClick={save}>Enregistrer</Btn>
+      </Card>
+
       {hist.length > 0 && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 0 8px' }}>
-            <div style={{ color: C, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2 }}>TRANSMISSIONS ({hist.length})</div>
-            <button onClick={() => copy(hist.map(fmt).join('\n\n---\n\n'), 'all')}
-              style={{ ...s.btn(copied === 'all' ? '#22c55e' : C), padding: '6px 12px', fontSize: 11 }}>
-              {copied === 'all' ? '✓ Copié !' : '📋 Tout copier'}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '16px 0 10px' }}>
+            <div style={{ color: T.muted, fontSize: tk.font.sm, fontWeight: tk.weight.bold }}>Transmissions ({hist.length})</div>
+            <Btn color={C} variant="soft" size="sm" onClick={() => copy(hist.map(fmt).join('\n\n---\n\n'), 'Toutes les transmissions copiées')}>
+              📋 Tout copier
+            </Btn>
           </div>
           {hist.map((h, i) => {
             const heuresRest = Math.max(0, Math.ceil((TTL_MS - (Date.now() - h.timestamp)) / 3600000));
             return (
-              <div key={i} style={{ ...s.card, borderLeft: `3px solid ${C}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ color: C, fontWeight: 700, fontSize: 13 }}>{h.patient || 'Patient'}</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <span style={{ color: T.muted, fontFamily: 'monospace', fontSize: 12 }}>{h.heure}</span>
-                    <button onClick={() => copy(fmt(h), `one_${i}`)} style={{ ...s.btn(copied===`one_${i}`?'#22c55e':'#64748b'), padding: '3px 8px', fontSize: 11 }}>{copied===`one_${i}`?'✓':'📋'}</button>
-                    <button onClick={() => del(i)} style={{ background:'none', border:'1px solid #334155', color:'#64748b', borderRadius:6, padding:'3px 8px', fontSize:11, cursor:'pointer' }}>✕</button>
+              <Card key={i} accent={C}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ color: C, fontWeight: tk.weight.bold, fontSize: tk.font.base }}>{h.patient || 'Patient'}</span>
+                  <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <span style={{ color: T.muted, fontSize: tk.font.sm, marginRight: 4 }}>{h.heure}</span>
+                    <IconBtn label="Copier" size={40} fontSize={15} onClick={() => copy(fmt(h), 'Transmission copiée')}>📋</IconBtn>
+                    <IconBtn label="Supprimer" size={40} fontSize={15} onClick={() => del(i)}>✕</IconBtn>
                   </div>
                 </div>
-                {h.donnee && <><span style={{ color:C, fontSize:11, fontFamily:'monospace' }}>DONNÉE </span><div style={{ color:T.text, fontSize:13, marginBottom:4 }}>{h.donnee}</div></>}
-                {h.lien   && <><span style={{ color:'#22c55e', fontSize:11, fontFamily:'monospace' }}>LIEN </span><div style={{ color:T.text, fontSize:13, marginBottom:4 }}>{h.lien}</div></>}
-                {h.action && <><span style={{ color:'#f59e0b', fontSize:11, fontFamily:'monospace' }}>ACTION </span><div style={{ color:T.text, fontSize:13 }}>{h.action}</div></>}
-                <div style={{ color:'#475569', fontSize:10, fontFamily:'monospace', marginTop:6 }}>🕐 ~{heuresRest}h · 🔒 Chiffré</div>
-              </div>
+                {h.donnee && <div style={{ marginBottom: 6 }}><span style={{ color: DLA_COLORS.donnee, fontSize: tk.font.xs, fontWeight: tk.weight.bold }}>DONNÉE</span><div style={{ color: T.text, fontSize: tk.font.base, lineHeight: 1.5 }}>{h.donnee}</div></div>}
+                {h.lien   && <div style={{ marginBottom: 6 }}><span style={{ color: DLA_COLORS.lien, fontSize: tk.font.xs, fontWeight: tk.weight.bold }}>LIEN</span><div style={{ color: T.text, fontSize: tk.font.base, lineHeight: 1.5 }}>{h.lien}</div></div>}
+                {h.action && <div><span style={{ color: DLA_COLORS.action, fontSize: tk.font.xs, fontWeight: tk.weight.bold }}>ACTION</span><div style={{ color: T.text, fontSize: tk.font.base, lineHeight: 1.5 }}>{h.action}</div></div>}
+                <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 8, opacity: 0.7 }}>🕐 ~{heuresRest}h · 🔒 Chiffré</div>
+              </Card>
             );
           })}
         </div>

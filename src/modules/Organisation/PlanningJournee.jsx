@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react';
-import { T, s } from '../../theme.js';
+import { useState } from 'react';
+import { T, SOLID, tk } from '../../theme.js';
+import { Btn, IconBtn, Card, Chip, Field, Input, Textarea, Sheet, toast } from '../../ui/index.js';
 const C = T.orga;
 
 const STORAGE_KEY = 'planning_journee_v1';
 const DATE_KEY = 'planning_date_v1';
 
 const CATEGORIES = [
-  { id: 'vital',  label: 'Constantes & Surveillance', color: '#ef4444', icon: '📊' },
-  { id: 'med',    label: 'Médicaments & Perfusions',  color: '#f59e0b', icon: '💊' },
-  { id: 'soin',   label: 'Soins techniques',           color: '#3b82f6', icon: '🩺' },
-  { id: 'nursing',label: 'Nursing & Confort',          color: '#22c55e', icon: '🛁' },
-  { id: 'admin',  label: 'Administratif & Liaison',   color: '#a78bfa', icon: '📋' },
-  { id: 'autre',  label: 'Autre',                     color: T.muted, icon: '📌' },
+  { id: 'vital',  label: 'Constantes & Surveillance', color: SOLID.danger,  icon: '📊' },
+  { id: 'med',    label: 'Médicaments & Perfusions',  color: '#F59E0B',     icon: '💊' },
+  { id: 'soin',   label: 'Soins techniques',           color: '#3B82F6',     icon: '🩺' },
+  { id: 'nursing',label: 'Nursing & Confort',          color: SOLID.success, icon: '🛁' },
+  { id: 'admin',  label: 'Administratif & Liaison',   color: '#A78BFA',     icon: '📋' },
+  { id: 'autre',  label: 'Autre',                     color: '#8D97A8',     icon: '📌' },
 ];
 
 const HEURES = ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00'];
@@ -62,11 +63,14 @@ export default function PlanningJournee() {
     setTaches(next); save(next);
     setForm(p => ({ ...p, patient: '', action: '', priorite: false }));
     setShowForm(false);
+    toast('Tâche ajoutée au planning');
   };
 
   const toggle = (id) => {
-    const next = taches.map(t => t.id === id ? { ...t, done: !t.done } : t);
+    const t = taches.find(x => x.id === id);
+    const next = taches.map(x => x.id === id ? { ...x, done: !x.done } : x);
     setTaches(next); save(next);
+    if (t && !t.done) toast('Tâche validée');
   };
 
   const suppr = (id) => {
@@ -85,95 +89,46 @@ export default function PlanningJournee() {
   const catOf = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
 
   return (
-    <div style={{ padding: '14px' }}>
-      {/* En-tête */}
-      <div style={{ ...s.card, background: T.orgaDim }}>
+    <div style={{ padding: '14px 14px 110px' }}>
+      {/* En-tête progression */}
+      <Card dim={T.orgaDim} style={{ border: `1px solid ${C}30` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ color: C, fontWeight: 700, marginBottom: 2 }}>Planning de la journée</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>
+            <div style={{ color: C, fontWeight: tk.weight.bold, fontSize: tk.font.md, marginBottom: 2 }}>Planning de la journée</div>
+            <div style={{ color: T.muted, fontSize: tk.font.sm }}>
               {new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
               {' · '}Il est {heureActuelle}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ color: C, fontWeight: 700, fontSize: 22 }}>{pct}%</div>
-            <div style={{ color: T.muted, fontSize: 11 }}>{nbFait}/{taches.length} fait</div>
+            <div style={{ color: C, fontWeight: tk.weight.bold, fontSize: 24 }}>{pct}%</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs }}>{nbFait}/{taches.length} fait</div>
           </div>
         </div>
         {taches.length > 0 && (
-          <div style={{ marginTop: 10, background: T.bg, borderRadius: 6, height: 6, overflow: 'hidden' }}>
+          <div style={{ marginTop: 12, background: T.bg, borderRadius: 6, height: 8, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, background: C, borderRadius: 6, transition: 'width 0.4s' }} />
           </div>
         )}
-      </div>
-
-      {/* Bouton ajouter */}
-      <button onClick={() => setShowForm(p => !p)}
-        style={{ ...s.btn(C), width: '100%', padding: '11px', marginBottom: 12, fontSize: 14 }}>
-        {showForm ? '✕ Annuler' : '+ Ajouter une tâche'}
-      </button>
-
-      {/* Formulaire */}
-      {showForm && (
-        <div style={{ ...s.card, borderLeft: `3px solid ${C}` }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <div style={{ flex: 1 }}>
-              <label style={s.label}>Heure</label>
-              <select value={form.heure} onChange={e => set('heure', e.target.value)}
-                style={{ ...s.input, padding: '8px' }}>
-                {HEURES.map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 2 }}>
-              <label style={s.label}>Catégorie</label>
-              <select value={form.cat} onChange={e => set('cat', e.target.value)}
-                style={{ ...s.input, padding: '8px' }}>
-                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label style={s.label}>Patient (initiales / chambre — anonymisé)</label>
-            <input value={form.patient} onChange={e => set('patient', e.target.value)}
-              placeholder="Ex: Ch.12 · M.D." style={s.input} />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <label style={s.label}>Tâche / Soin</label>
-            <textarea value={form.action} onChange={e => set('action', e.target.value)}
-              placeholder="Ex: Pansement plaie abdominale, refaire perfusion G5%, prélever NFS..."
-              style={{ ...s.input, minHeight: 70, resize: 'vertical' }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: T.text, fontSize: 13 }}>
-              <input type="checkbox" checked={form.priorite} onChange={e => set('priorite', e.target.checked)}
-                style={{ accentColor: '#ef4444', width: 16, height: 16 }} />
-              <span style={{ color: form.priorite ? '#ef4444' : T.muted }}>🔴 Prioritaire</span>
-            </label>
-          </div>
-          <button onClick={ajouter} style={{ ...s.btn(C), width: '100%', padding: '11px' }}>
-            Ajouter au planning
-          </button>
-        </div>
-      )}
+      </Card>
 
       {/* Filtres */}
       {taches.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 10 }}>
           {[{ id:'tous', label:'Toutes' }, { id:'reste', label:'À faire' }, { id:'fait', label:'Faites' },
-            ...CATEGORIES.map(c => ({ id: c.id, label: c.icon + ' ' + c.label.split(' ')[0] }))
+            ...CATEGORIES.map(c => ({ id: c.id, label: c.icon + ' ' + c.label.split(' ')[0], color: c.color }))
           ].map(f => (
-            <button key={f.id} onClick={() => setFiltre(f.id)}
-              style={{ ...s.btn(filtre === f.id ? C : T.border), padding: '5px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <Chip key={f.id} color={f.color || C} active={filtre === f.id} onClick={() => setFiltre(f.id)}
+              style={{ flexShrink: 0 }}>
               {f.label}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
 
       {/* Liste des tâches */}
       {tachesFiltrees.length === 0 && (
-        <div style={{ color: T.muted, textAlign: 'center', padding: '32px 0', fontSize: 13 }}>
+        <div style={{ color: T.muted, textAlign: 'center', padding: '40px 0', fontSize: tk.font.base }}>
           {taches.length === 0 ? 'Aucune tâche planifiée pour aujourd\'hui' : 'Aucune tâche dans ce filtre'}
         </div>
       )}
@@ -182,53 +137,117 @@ export default function PlanningJournee() {
         const cat = catOf(t.cat);
         const passee = t.heure < heureActuelle && !t.done;
         return (
-          <div key={t.id} style={{
-            ...s.card,
-            borderLeft: `3px solid ${t.done ? T.border : t.priorite ? '#ef4444' : cat.color}`,
-            opacity: t.done ? 0.55 : 1,
-            transition: 'opacity 0.2s',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <button onClick={() => toggle(t.id)} style={{
-                width: 22, height: 22, borderRadius: 6, border: `2px solid ${t.done ? '#22c55e' : cat.color}`,
-                background: t.done ? '#22c55e' : 'transparent', cursor: 'pointer', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
-              }}>
-                {t.done && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}
+          <Card key={t.id}
+            accent={t.done ? T.border : t.priorite ? T.danger : cat.color}
+            style={{ opacity: t.done ? 0.55 : 1, transition: 'opacity 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              {/* Case à cocher — zone tap 48px, visuel 28px */}
+              <button onClick={() => toggle(t.id)}
+                aria-label={t.done ? 'Marquer à faire' : 'Marquer fait'}
+                style={{
+                  width: 48, height: 48, margin: '-10px 0 -10px -10px',
+                  background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  WebkitTapHighlightColor: 'transparent',
+                }}>
+                <span style={{
+                  width: 28, height: 28, borderRadius: 8,
+                  border: `2px solid ${t.done ? T.success : cat.color}`,
+                  background: t.done ? T.success : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.15s',
+                }}>
+                  {t.done && <span style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>✓</span>}
+                </span>
               </button>
+
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
-                  <span style={{
-                    color: passee ? '#ef4444' : T.text,
-                    fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
-                  }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ color: passee ? T.danger : T.text, fontWeight: tk.weight.bold, fontSize: tk.font.base }}>
                     {t.heure}{passee && ' ⚠️'}
                   </span>
                   {t.patient && (
-                    <span style={{ color: T.muted, fontSize: 11, background: T.surface, padding: '1px 6px', borderRadius: 4 }}>
+                    <span style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: tk.weight.semi, background: T.bg, padding: '2px 8px', borderRadius: 6 }}>
                       {t.patient}
                     </span>
                   )}
-                  {t.priorite && <span style={{ color: '#ef4444', fontSize: 10 }}>🔴 PRIORITAIRE</span>}
-                  <span style={{ color: cat.color, fontSize: 10, fontFamily: 'monospace' }}>{cat.icon}</span>
+                  {t.priorite && <span style={{ color: T.danger, fontSize: tk.font.xs, fontWeight: tk.weight.bold }}>🔴 Prioritaire</span>}
                 </div>
-                <div style={{ color: t.done ? T.muted : T.text, fontSize: 13, lineHeight: 1.5, textDecoration: t.done ? 'line-through' : 'none' }}>
+                <div style={{ color: t.done ? T.muted : T.text, fontSize: tk.font.base, lineHeight: 1.5, textDecoration: t.done ? 'line-through' : 'none' }}>
                   {t.action}
                 </div>
-                <div style={{ color: T.muted, fontSize: 10, marginTop: 3 }}>{cat.label}</div>
+                <div style={{ color: cat.color, fontSize: tk.font.xs, marginTop: 4, fontWeight: tk.weight.semi }}>{cat.icon} {cat.label}</div>
               </div>
-              <button onClick={() => suppr(t.id)} style={{
-                background: 'none', border: '1px solid #334155', color: T.muted,
-                borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', flexShrink: 0,
-              }}>✕</button>
+
+              <IconBtn label="Supprimer" onClick={() => suppr(t.id)} fontSize={16} style={{ margin: '-10px -10px 0 0' }}>✕</IconBtn>
             </div>
-          </div>
+          </Card>
         );
       })}
 
-      <div style={{ color: T.border, fontSize: 10, textAlign: 'center', marginTop: 16 }}>
+      <div style={{ color: T.muted, fontSize: tk.font.xs, textAlign: 'center', marginTop: 16, opacity: 0.7 }}>
         Planning réinitialisé automatiquement chaque jour · Stockage local
       </div>
+
+      {/* Action principale — ancrée en zone pouce */}
+      <div style={{ position: 'fixed', left: 14, right: 14, bottom: 'max(20px, env(safe-area-inset-bottom))', zIndex: 50 }}>
+        <Btn color={C} size="lg" full icon="+" onClick={() => setShowForm(true)}
+          style={{ boxShadow: '0 6px 24px rgba(0,0,0,0.25)' }}>
+          Ajouter une tâche
+        </Btn>
+      </div>
+
+      {/* Formulaire — bottom sheet */}
+      {showForm && (
+        <Sheet
+          title="Nouvelle tâche"
+          icon="📋"
+          onClose={() => setShowForm(false)}
+          footer={
+            <Btn color={C} size="lg" full disabled={!form.action.trim()} onClick={ajouter}>
+              Ajouter au planning
+            </Btn>
+          }
+        >
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Field label="Heure" style={{ flex: 1 }}>
+              <select value={form.heure} onChange={e => set('heure', e.target.value)}
+                style={{ width: '100%', height: tk.touch.input, background: T.bg, border: `1px solid ${T.border}`, borderRadius: tk.radius.md, padding: '0 12px', color: T.text, fontSize: tk.font.base, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+                {HEURES.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </Field>
+            <Field label="Catégorie" style={{ flex: 2 }}>
+              <select value={form.cat} onChange={e => set('cat', e.target.value)}
+                style={{ width: '100%', height: tk.touch.input, background: T.bg, border: `1px solid ${T.border}`, borderRadius: tk.radius.md, padding: '0 12px', color: T.text, fontSize: tk.font.base, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Patient (initiales / chambre — anonymisé)">
+            <Input value={form.patient} onChange={e => set('patient', e.target.value)} placeholder="Ex : Ch.12 · M.D." />
+          </Field>
+          <Field label="Tâche / Soin">
+            <Textarea value={form.action} onChange={e => set('action', e.target.value)}
+              placeholder="Ex : Pansement plaie abdominale, refaire perfusion G5%, prélever NFS…" />
+          </Field>
+          {/* Toggle priorité — zone tap pleine largeur */}
+          <button onClick={() => set('priorite', !form.priorite)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              minHeight: tk.touch.min, padding: '0 14px',
+              background: form.priorite ? T.dangerDim : T.bg,
+              border: `1.5px solid ${form.priorite ? T.danger : T.border}`,
+              borderRadius: tk.radius.md, cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}>
+            <span style={{ fontSize: 16 }}>🔴</span>
+            <span style={{ color: form.priorite ? T.danger : T.muted, fontSize: tk.font.base, fontWeight: form.priorite ? tk.weight.bold : tk.weight.reg }}>
+              Prioritaire
+            </span>
+            {form.priorite && <span style={{ marginLeft: 'auto', color: T.danger, fontWeight: 800 }}>✓</span>}
+          </button>
+        </Sheet>
+      )}
     </div>
   );
 }
