@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, IconBtn, Chip, Field, Input, Banner, Sheet, toast } from '../../ui/index.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
 import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel, parseVitalAlerts } from './utils.jsx';
@@ -102,7 +103,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
             <span style={{ color: T.muted, fontSize: 13 }}>à</span>
             <input type="number" value={toRoom} onChange={e => setToRoom(e.target.value)} inputMode="numeric" placeholder="115"
               style={{ ...s.input, width: 60, boxSizing: 'border-box', textAlign: 'center' }} />
-            <button onClick={applyRange} style={{ ...s.btn('#6366f1'), padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Générer</button>
+            <button onClick={applyRange} style={{ ...s.btn(T.info), padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Générer</button>
           </div>
           <div style={{ color: T.muted, fontSize: 11 }}>🚪 + 🪟 auto · Retirez une icône = lit A seul · Aucune icône = chambre seule</div>
         </div>
@@ -110,7 +111,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
         {rooms.map((room, idx) => {
           const isDouble = room.iconA || room.iconB;
           return (
-            <div key={room.id || idx} style={{ marginBottom: 10, background: T.bg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${isDouble ? '#6366f122' : T.border}` }}>
+            <div key={room.id || idx} style={{ marginBottom: 10, background: T.bg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${isDouble ? T.info + '22' : T.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ color: T.muted, fontSize: 11 }}>Ch.</span>
                 <input value={room.label} onChange={e => updateRoom(idx, 'label', e.target.value)} maxLength={8}
@@ -126,7 +127,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
                     const active = room[field] === icon;
                     return (
                       <button key={String(icon)} onClick={() => updateRoom(idx, field, icon)}
-                        style={{ background: active ? '#6366f133' : T.surface, border: `1px solid ${active ? '#6366f1' : T.border}`, borderRadius: 7, fontSize: 18, width: 38, height: 38, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                        style={{ background: active ? T.infoDim : T.surface, border: `1.5px solid ${active ? T.info : T.border}`, borderRadius: 8, fontSize: 19, width: 44, height: 44, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
                         {emoji}
                       </button>
                     );
@@ -144,7 +145,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
         </button>
 
         <button onClick={() => { onSave(rooms); onClose(); }}
-          style={{ ...s.btn('#6366f1'), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700 }}>
+          style={{ ...s.btn(T.info), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700 }}>
           Enregistrer ({totalSlots} lit{totalSlots > 1 ? 's' : ''})
         </button>
       </div>
@@ -213,6 +214,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
     try {
       const p = { id: genId(), serviceId: service.id, bedNumber: addBed, initials: addForm.initials.trim().toUpperCase(), age: Number(addForm.age), gender: addForm.gender, admissionReason: addForm.reason.trim(), atcd: addForm.atcd.trim(), fieldValues: {}, customFields: [], present: true, admittedAt: Date.now() };
       await savePatients([...patients, p]);
+      toast(`Patient ${p.initials} admis`);
       setAddBed(null); setAddForm({ initials: '', age: '', gender: 'M', reason: '', atcd: '' });
     } finally { setSaving(false); }
   }
@@ -250,50 +252,46 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
          onClick={() => showMenu && setShowMenu(false)}>
 
       {/* Header */}
-      <div style={{ padding: '14px 16px 0', background: T.bg, position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
+      <div style={{ padding: '10px 12px 0 6px', background: T.bg, position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          <IconBtn label="Retour" onClick={onBack} fontSize={22} size={44}>←</IconBtn>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: T.text, fontSize: 17, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ color: T.text, fontSize: tk.font.lg, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {service.name}
-              {readOnly && <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>👁 Lecture seule</span>}
+              {readOnly && <span style={{ fontSize: tk.font.xs, color: T.muted, fontWeight: 400, marginLeft: 8 }}>👁 Lecture seule</span>}
             </div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{sp.label} · {presentPts.length}/{slots.length} lits</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs }}>{sp.label} · {presentPts.length}/{slots.length} lits</div>
           </div>
           {/* Boutons principaux */}
-          <button onClick={() => setShowBedsCfg(true)} title="Config chambres"
-            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>⚙️</button>
-          <button onClick={readOnly ? undefined : onQuickEntry} title="Saisie rapide"
-            style={{ background: readOnly ? T.surface : C + '22', border: `1px solid ${readOnly ? T.border : C + '55'}`, borderRadius: 8, color: readOnly ? T.muted : C, fontSize: 16, padding: '6px 9px', cursor: readOnly ? 'default' : 'pointer', flexShrink: 0, opacity: readOnly ? 0.5 : 1 }}>⚡</button>
-          <button onClick={onTransfer} title="Transfert sécurisé"
-            style={{ background: '#6366f122', border: '1px solid #6366f144', borderRadius: 8, color: '#6366f1', fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>🔄</button>
+          <IconBtn label="Config chambres" variant="outline" onClick={() => setShowBedsCfg(true)} fontSize={17} size={44}>⚙️</IconBtn>
+          <IconBtn label="Saisie rapide" variant="soft" color={readOnly ? T.muted : C} onClick={readOnly ? undefined : onQuickEntry} fontSize={17} size={44} disabled={readOnly}>⚡</IconBtn>
+          <IconBtn label="Transfert sécurisé" variant="soft" color={T.info} onClick={onTransfer} fontSize={17} size={44}>🔄</IconBtn>
           {/* Menu "…" pour actions secondaires */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <button onClick={() => setShowMenu(m => !m)} title="Plus d'options"
-              style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 14, fontWeight: 700, padding: '6px 9px', cursor: 'pointer', letterSpacing: 1 }}>•••</button>
+            <IconBtn label="Plus d'options" variant="outline" onClick={() => setShowMenu(m => !m)} fontSize={15} size={44}>•••</IconBtn>
             {showMenu && (
-              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', zIndex: 50, minWidth: 180, overflow: 'hidden' }}
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: T.surface, border: `1px solid ${T.border}`, borderRadius: tk.radius.md, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', zIndex: 50, minWidth: 200, overflow: 'hidden' }}
                    onClick={() => setShowMenu(false)}>
                 <button onClick={onDayOverview}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: tk.touch.min, background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: tk.font.base, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
                   <span>📋</span><span>Vue du jour</span>
                 </button>
                 <button onClick={() => { setShowRelève(true); setShowMenu(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: tk.touch.min, background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: tk.font.base, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
                   <span>🗒️</span><span>Générer la relève</span>
                 </button>
                 <button onClick={() => { setShowGantt(true); setShowMenu(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: tk.touch.min, background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: tk.font.base, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
                   <span>📅</span><span>Vue Gantt</span>
                 </button>
                 {!readOnly && (
                   <button onClick={() => { setShowImport(true); setShowMenu(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: tk.touch.min, background: 'none', border: 'none', borderBottom: `1px solid ${T.border}`, color: T.text, fontSize: tk.font.base, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
                     <span>📷</span><span>Import depuis photo</span>
                   </button>
                 )}
                 <button onClick={onLog}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', color: T.text, fontSize: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: tk.touch.min, background: 'none', border: 'none', color: T.text, fontSize: tk.font.base, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
                   <span>🗒️</span><span>Journal d'accès</span>
                 </button>
               </div>
@@ -301,37 +299,34 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, gap: 6, flexWrap: 'wrap' }}>
           {/* Sélecteur J / J-1 / J-2 */}
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             {[0, -1, -2].map(offset => {
               const d = dateStrOffset(offset);
               const active = d === selectedDate;
               return (
-                <button key={offset} onClick={() => onDateChange?.(d)}
-                  style={{ background: active ? C + '22' : 'none', border: `1px solid ${active ? C : T.border}`, borderRadius: 8, color: active ? C : T.muted, fontSize: 11, fontWeight: active ? 700 : 400, padding: '4px 8px', cursor: 'pointer' }}>
-                  {formatDateLabel(d)}
-                  {isReadOnly(d) && ' 👁'}
-                </button>
+                <Chip key={offset} color={C} active={active} onClick={() => onDateChange?.(d)}>
+                  {formatDateLabel(d)}{isReadOnly(d) && ' 👁'}
+                </Chip>
               );
             })}
           </div>
           {!readOnly && !confirmReset ? (
-            <button onClick={() => setConfirmReset(true)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 12, cursor: 'pointer' }}>🔄 Reset soins</button>
+            <button onClick={() => setConfirmReset(true)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: tk.font.sm, cursor: 'pointer', minHeight: 40, padding: '0 8px', WebkitTapHighlightColor: 'transparent' }}>🔄 Reset soins</button>
           ) : (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button onClick={() => setConfirmReset(false)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 12, cursor: 'pointer' }}>Annuler</button>
-              <button onClick={handleDailyReset} style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 6, color: '#f43f5e', fontSize: 12, padding: '3px 8px', cursor: 'pointer' }}>Confirmer</button>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={() => setConfirmReset(false)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: tk.font.sm, cursor: 'pointer', minHeight: 40, padding: '0 8px', WebkitTapHighlightColor: 'transparent' }}>Annuler</button>
+              <button onClick={handleDailyReset} style={{ background: T.dangerDim, border: `1px solid ${T.danger}44`, borderRadius: tk.radius.sm, color: T.danger, fontSize: tk.font.sm, fontWeight: 700, minHeight: 40, padding: '0 12px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>Confirmer</button>
             </div>
           )}
         </div>
         {/* Tri */}
-        <div style={{ display: 'flex', gap: 4, paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
+        <div style={{ display: 'flex', gap: 6, paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
           {[['bed', '🛏 Lit'], ['next_care', '⏰ Prochain soin'], ['priority', '🔴 Urgence']].map(([mode, label]) => (
-            <button key={mode} onClick={() => setSortMode(mode)}
-              style={{ background: sortMode === mode ? C + '22' : 'none', border: `1px solid ${sortMode === mode ? C : T.border}`, borderRadius: 8, color: sortMode === mode ? C : T.muted, fontSize: 11, fontWeight: sortMode === mode ? 700 : 400, padding: '4px 8px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+            <Chip key={mode} color={C} active={sortMode === mode} onClick={() => setSortMode(mode)}>
               {label}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -351,8 +346,8 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                 <div key={slot.slotIndex} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, opacity: 0.55 }}>
                   <span style={{ color: T.muted, fontSize: 13, minWidth: 72, fontWeight: 600 }}>{ico} {lbl}</span>
                   <span style={{ color: T.muted, fontSize: 13, flex: 1 }}>Libre</span>
-                  <button onClick={() => setAddBed(slot.slotIndex)}
-                    style={{ background: C + '22', border: `1px solid ${C}44`, borderRadius: 6, color: C, fontSize: 18, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                  <button onClick={() => setAddBed(slot.slotIndex)} aria-label="Admettre un patient"
+                    style={{ background: C + '22', border: `1px solid ${C}44`, borderRadius: tk.radius.sm, color: C, fontSize: 22, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}>+</button>
                 </div>
               );
 
@@ -370,7 +365,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                     <span style={{ color: T.text, fontSize: 15, fontWeight: 700 }}>{patient.initials}</span>
                     <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
-                      {pendingCare > 0 && <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>💊×{pendingCare}</span>}
+                      {pendingCare > 0 && <span style={{ background: T.warningDim, color: T.warning, fontSize: tk.font.xs, borderRadius: 10, padding: '2px 8px', fontWeight: 700 }}>💊×{pendingCare}</span>}
                       {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
                     </div>
                   </div>
@@ -394,14 +389,14 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
               const orphans = presentPts.filter(p => !validSlotIndexes.has(p.bedNumber));
               if (orphans.length === 0) return null;
               return (
-                <div style={{ marginTop: 16, padding: '12px 14px', background: '#f9731611', border: '1px solid #f9731633', borderRadius: 10 }}>
-                  <div style={{ color: '#f97316', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                <div style={{ marginTop: 16, padding: '12px 14px', background: T.warningDim, border: `1px solid ${T.warning}33`, borderRadius: 10 }}>
+                  <div style={{ color: T.warning, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 10 }}>
                     ⚠️ Patients sans lit attribué
                   </div>
                   {orphans.map(p => (
                     <div key={p.id} onClick={() => !readOnly && onSelectPatient(p.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: '1px solid #f9731633', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-                      <span style={{ color: '#f97316', fontSize: 12, fontWeight: 700, minWidth: 60 }}>Lit #{p.bedNumber}</span>
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: T.surface, border: `1px solid ${T.warning}33`, borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                      <span style={{ color: T.warning, fontSize: tk.font.sm, fontWeight: 700, minWidth: 60 }}>Lit #{p.bedNumber}</span>
                       <span style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>{p.initials}</span>
                       <span style={{ color: T.muted, fontSize: 12 }}>{p.gender} {p.age}a</span>
                       <span style={{ marginLeft: 'auto', color: T.muted, fontSize: 18 }}>›</span>
@@ -440,10 +435,10 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                     <span style={{ color: T.muted, fontSize: 12 }}>{patient.gender} {patient.age}a</span>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
                       {sortMode === 'next_care' && nextTime !== '99:99' && (
-                        <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>⏰ {nextTime}</span>
+                        <span style={{ background: T.warningDim, color: T.warning, fontSize: tk.font.xs, borderRadius: 10, padding: '2px 8px', fontWeight: 700 }}>⏰ {nextTime}</span>
                       )}
                       {sortMode === 'next_care' && pendingCare.length > 0 && (
-                        <span style={{ background: '#f9731622', color: '#f97316', fontSize: 10, borderRadius: 10, padding: '1px 6px', fontWeight: 700 }}>💊×{pendingCare.length}</span>
+                        <span style={{ background: T.warningDim, color: T.warning, fontSize: tk.font.xs, borderRadius: 10, padding: '2px 8px', fontWeight: 700 }}>💊×{pendingCare.length}</span>
                       )}
                       {flagEmoji.map((e, i) => <span key={i} style={{ fontSize: 15 }}>{e}</span>)}
                     </div>
@@ -470,46 +465,38 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
         const slot = computeSlots(service).find(sl => sl.slotIndex === addBed);
         const lbl  = slot ? slotLabel(slot) : String(addBed);
         return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'flex-end', zIndex: 100 }}>
-            <div style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '88vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <span style={{ color: T.text, fontSize: 17, fontWeight: 700 }}>Nouveau patient — {slotIcon(slot?.icon)} Ch.{lbl}</span>
-                <button onClick={() => setAddBed(null)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ ...s.label, color: T.muted, marginBottom: 6 }}>INITIALES</div>
-                    <input value={addForm.initials} onChange={e => setAddForm(f => ({ ...f, initials: e.target.value }))} placeholder="Ex : M.D" maxLength={5} style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-                  </div>
-                  <div>
-                    <div style={{ ...s.label, color: T.muted, marginBottom: 6 }}>SEXE</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {['M', 'F'].map(g => (
-                        <button key={g} onClick={() => setAddForm(f => ({ ...f, gender: g }))} style={{ background: addForm.gender === g ? C + '33' : T.bg, border: `1px solid ${addForm.gender === g ? C : T.border}`, borderRadius: 8, color: addForm.gender === g ? C : T.muted, fontWeight: 700, fontSize: 15, width: 44, height: 44, cursor: 'pointer' }}>{g}</button>
-                      ))}
-                    </div>
-                  </div>
+          <Sheet
+            title={`Nouveau patient — ${slotIcon(slot?.icon)} Ch.${lbl}`}
+            onClose={() => setAddBed(null)}
+            zIndex={100}
+            footer={
+              <Btn color={C} size="lg" full disabled={!addForm.initials.trim() || !addForm.age || saving} onClick={handleAddPatient}>
+                {saving ? 'Enregistrement…' : 'Admettre le patient'}
+              </Btn>
+            }
+          >
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Field label="Initiales" style={{ flex: 1 }}>
+                <Input value={addForm.initials} onChange={e => setAddForm(f => ({ ...f, initials: e.target.value }))} placeholder="Ex : M.D" maxLength={5} />
+              </Field>
+              <Field label="Sexe">
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {['M', 'F'].map(g => (
+                    <button key={g} onClick={() => setAddForm(f => ({ ...f, gender: g }))} style={{ background: addForm.gender === g ? C + '33' : T.bg, border: `1.5px solid ${addForm.gender === g ? C : T.border}`, borderRadius: tk.radius.sm, color: addForm.gender === g ? C : T.muted, fontWeight: 700, fontSize: tk.font.base, width: 48, height: 48, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>{g}</button>
+                  ))}
                 </div>
-                <div>
-                  <div style={{ ...s.label, color: T.muted, marginBottom: 6 }}>ÂGE</div>
-                  <input type="number" value={addForm.age} onChange={e => setAddForm(f => ({ ...f, age: e.target.value }))} inputMode="numeric" placeholder="Âge" style={{ ...s.input, width: 100, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <div style={{ ...s.label, color: T.muted, marginBottom: 6 }}>MOTIF</div>
-                  <input value={addForm.reason} onChange={e => setAddForm(f => ({ ...f, reason: e.target.value }))} placeholder="Ex : PTG Gche J25…" style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <div style={{ ...s.label, color: T.muted, marginBottom: 6 }}>ATCD</div>
-                  <input value={addForm.atcd} onChange={e => setAddForm(f => ({ ...f, atcd: e.target.value }))} placeholder="Ex : HTA, diabète…" style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
-                </div>
-                <button onClick={handleAddPatient} disabled={!addForm.initials.trim() || !addForm.age || saving}
-                  style={{ ...s.btn(C), width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, opacity: (addForm.initials.trim() && addForm.age && !saving) ? 1 : 0.4 }}>
-                  {saving ? 'Enregistrement…' : 'Ajouter le patient'}
-                </button>
-              </div>
+              </Field>
             </div>
-          </div>
+            <Field label="Âge">
+              <Input type="number" value={addForm.age} onChange={e => setAddForm(f => ({ ...f, age: e.target.value }))} inputMode="numeric" placeholder="Âge" style={{ width: 110 }} />
+            </Field>
+            <Field label="Motif">
+              <Input value={addForm.reason} onChange={e => setAddForm(f => ({ ...f, reason: e.target.value }))} placeholder="Ex : PTG Gche J25…" />
+            </Field>
+            <Field label="ATCD">
+              <Input value={addForm.atcd} onChange={e => setAddForm(f => ({ ...f, atcd: e.target.value }))} placeholder="Ex : HTA, diabète…" />
+            </Field>
+          </Sheet>
         );
       })()}
 

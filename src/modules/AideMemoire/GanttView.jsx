@@ -8,7 +8,8 @@
  */
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, IconBtn, Field, Sheet, toast } from '../../ui/index.js';
 import { getCareType } from './careTypes.js';
 import { computeSlots } from './ServiceView.jsx';
 import { secureSet } from './crypto.js';
@@ -17,8 +18,9 @@ import { secureSet } from './crypto.js';
 
 const BASE_PX_HR = 56;   // px/heure à zoom 1×
 const LEFT_W     = 72;   // largeur colonne patient
-const BLOCK_W    = 30;   // largeur d'un bloc soin
-const BASE_BH    = 26;   // hauteur bloc (portrait)
+const BLOCK_W    = 30;   // largeur d'un bloc soin (alimente assignLanes — ne pas élargir)
+const BASE_BH    = 30;   // hauteur bloc (portrait)
+const HIT_W      = 44;   // zone de tap invisible autour d'un bloc
 const ROW_PAD    = 8;    // marge haut/bas dans la ligne
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -109,87 +111,71 @@ function CareActionModal({ patient, care, bedLabel, onValidate, onDelete, onClos
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'flex-end', zIndex: 300 }}>
-      <div onTouchMove={e => e.stopPropagation()}
-        style={{ background: T.surface, borderRadius: '16px 16px 0 0', padding: '20px 20px 44px', width: '100%', boxSizing: 'border-box', maxHeight: '85vh', overflowY: 'auto' }}>
-
-        {/* En-tête */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-          <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>{ct.emoji} {care.label}</div>
-            <div style={{ color: T.muted, fontSize: 12, marginTop: 2 }}>
-              {patient.initials} · 🛏 {bedLabel} · ⏰ {care.plannedTime}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer', lineHeight: 1 }}>×</button>
-        </div>
-
-        {/* Soin déjà réalisé */}
-        {care.done && (
-          <div style={{ background: '#22c55e11', border: '1px solid #22c55e33', borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}>
-            <div style={{ color: '#22c55e', fontSize: 13, fontWeight: 700 }}>✓ Réalisé à {care.doneTime || '—'}</div>
-            {care.doneValue && <div style={{ color: T.text, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>{care.doneValue}</div>}
-          </div>
-        )}
-
-        {/* Constantes vitales : sous-champs */}
-        {!care.done && ct.id === 'constantes_vitales' && subFields && (
-          <div style={{ marginBottom: 14 }}>
-            {(ct.subFields || []).map(sf => (
-              <div key={sf.key} style={{ marginBottom: 8 }}>
-                <div style={{ color: T.muted, fontSize: 11, marginBottom: 4 }}>{sf.label}</div>
-                <input
-                  value={subFields[sf.key]}
-                  onChange={e => setSubFields(p => ({ ...p, [sf.key]: e.target.value }))}
-                  placeholder={sf.placeholder}
-                  style={{ ...s.input, width: '100%', boxSizing: 'border-box', fontSize: 14 }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Soin avec valeur simple */}
-        {!care.done && ct.valueLabel && ct.id !== 'constantes_vitales' && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ color: T.muted, fontSize: 11, marginBottom: 6 }}>{ct.valueLabel}</div>
-            <input
-              value={simpleValue}
-              onChange={e => setSimpleValue(e.target.value)}
-              placeholder={ct.valuePlaceholder || ''}
-              style={{ ...s.input, width: '100%', boxSizing: 'border-box', fontSize: 14 }}
-            />
-          </div>
-        )}
-
-        {/* Boutons d'action */}
+    <Sheet
+      title={`${ct.emoji} ${care.label}`}
+      subtitle={`${patient.initials} · 🛏 ${bedLabel} · ⏰ ${care.plannedTime}`}
+      onClose={onClose}
+      zIndex={300}
+      footer={
         <div style={{ display: 'flex', gap: 10 }}>
           {!care.done ? (
             <>
-              <button onClick={handleValidate}
-                style={{ flex: 2, padding: '13px', background: '#22c55e22', border: '1px solid #22c55e44', borderRadius: 10, color: '#22c55e', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                ✓ Valider
-              </button>
-              <button onClick={onDelete}
-                style={{ flex: 1, padding: '13px', background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 10, color: '#f43f5e', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <Btn color={T.success} variant="soft" size="lg" icon="✓" onClick={handleValidate} style={{ flex: 2 }}>
+                Valider
+              </Btn>
+              <Btn color={T.danger} variant="soft" size="lg" onClick={onDelete} style={{ flex: 1 }}>
                 🗑
-              </button>
+              </Btn>
             </>
           ) : (
             <>
-              <button onClick={() => onValidate(null, true)}
-                style={{ flex: 1, padding: '13px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <Btn color={T.muted} variant="outline" size="lg" onClick={() => onValidate(null, true)} style={{ flex: 1 }}>
                 ↩ Annuler validation
-              </button>
-              <button onClick={onDelete}
-                style={{ flex: 'none', padding: '13px 16px', background: '#f43f5e11', border: '1px solid #f43f5e33', borderRadius: 10, color: '#f43f5e', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              </Btn>
+              <Btn color={T.danger} variant="soft" size="lg" onClick={onDelete}>
                 🗑
-              </button>
+              </Btn>
             </>
           )}
         </div>
-      </div>
-    </div>
+      }
+    >
+      {/* Soin déjà réalisé */}
+      {care.done && (
+        <div style={{ background: T.successDim, border: `1px solid ${T.success}33`, borderRadius: tk.radius.sm, padding: '10px 14px', marginBottom: 14 }}>
+          <div style={{ color: T.success, fontSize: tk.font.base, fontWeight: 700 }}>✓ Réalisé à {care.doneTime || '—'}</div>
+          {care.doneValue && <div style={{ color: T.text, fontSize: tk.font.sm, marginTop: 4, lineHeight: 1.5 }}>{care.doneValue}</div>}
+        </div>
+      )}
+
+      {/* Constantes vitales : sous-champs */}
+      {!care.done && ct.id === 'constantes_vitales' && subFields && (
+        <div style={{ marginBottom: 4 }}>
+          {(ct.subFields || []).map(sf => (
+            <Field key={sf.key} label={sf.label}>
+              <input
+                value={subFields[sf.key]}
+                onChange={e => setSubFields(p => ({ ...p, [sf.key]: e.target.value }))}
+                placeholder={sf.placeholder}
+                style={{ ...s.input, width: '100%', boxSizing: 'border-box', fontSize: tk.font.base, height: tk.touch.input }}
+              />
+            </Field>
+          ))}
+        </div>
+      )}
+
+      {/* Soin avec valeur simple */}
+      {!care.done && ct.valueLabel && ct.id !== 'constantes_vitales' && (
+        <Field label={ct.valueLabel}>
+          <input
+            value={simpleValue}
+            onChange={e => setSimpleValue(e.target.value)}
+            placeholder={ct.valuePlaceholder || ''}
+            style={{ ...s.input, width: '100%', boxSizing: 'border-box', fontSize: tk.font.base, height: tk.touch.input }}
+          />
+        </Field>
+      )}
+    </Sheet>
   );
 }
 
@@ -308,6 +294,7 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
     );
     await persistDailyData({ ...dailyData, [patient.id]: { ...entry, careEntries: updatedCare } });
     setSelectedCare(null);
+    if (!undo) toast('Soin validé');
   }
 
   async function handleDelete(patient, careId) {
@@ -334,13 +321,11 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
 
         {/* Zoom buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
-            onClick={() => setZoom(z => Math.max(0.3, parseFloat((z - 0.25).toFixed(2))))}
-            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, color: T.text, fontSize: 18, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-          <span style={{ color: T.muted, fontSize: 11, minWidth: 36, textAlign: 'center', flexShrink: 0 }}>{Math.round(zoom * 100)}%</span>
-          <button
-            onClick={() => setZoom(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}
-            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, color: T.text, fontSize: 18, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+          <IconBtn label="Dézoomer" variant="outline" size={44} fontSize={20}
+            onClick={() => setZoom(z => Math.max(0.3, parseFloat((z - 0.25).toFixed(2))))}>−</IconBtn>
+          <span style={{ color: T.muted, fontSize: tk.font.xs, minWidth: 38, textAlign: 'center', flexShrink: 0 }}>{Math.round(zoom * 100)}%</span>
+          <IconBtn label="Zoomer" variant="outline" size={44} fontSize={20}
+            onClick={() => setZoom(z => Math.min(4, parseFloat((z + 0.25).toFixed(2))))}>+</IconBtn>
         </div>
       </div>
 
@@ -360,7 +345,7 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
                 </span>
               ))}
               {/* Heure courante */}
-              {cx !== null && <div style={{ position: 'absolute', left: cx, top: 0, bottom: 0, width: 2, background: '#f43f5e55' }} />}
+              {cx !== null && <div style={{ position: 'absolute', left: cx, top: 0, bottom: 0, width: 2, background: T.danger + '55' }} />}
             </div>
           </div>
 
@@ -407,15 +392,16 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
 
                   {/* Heure courante */}
                   {cx !== null && (
-                    <div style={{ position: 'absolute', left: cx, top: 0, bottom: 0, width: 2, background: '#f43f5e', zIndex: 3, opacity: 0.6 }} />
+                    <div style={{ position: 'absolute', left: cx, top: 0, bottom: 0, width: 2, background: T.danger, zIndex: 3, opacity: 0.6 }} />
                   )}
 
-                  {/* Blocs soins, répartis en couloirs */}
+                  {/* Blocs soins, répartis en couloirs — zone de tap 44px, visuel inchangé */}
                   {assignments.map(({ item: e, lane }) => {
                     const x  = timeToX(e.plannedTime, pxPerHr);
                     if (x === null) return null;
-                    const ct = getCareType(e.type);
-                    const y  = rowPad + lane * laneH;
+                    const ct   = getCareType(e.type);
+                    const y    = rowPad + lane * laneH;
+                    const hitH = Math.max(HIT_W, blockH);
                     return (
                       <div
                         key={e.id}
@@ -423,21 +409,27 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
                         title={`${e.label} ${e.plannedTime}${e.done ? ` ✓ ${e.doneTime || ''}` : ''}`}
                         style={{
                           position:   'absolute',
-                          left:       x - BLOCK_W / 2,
-                          top:        y,
+                          left:       x - HIT_W / 2,
+                          top:        y - (hitH - blockH) / 2,
+                          width:      HIT_W,
+                          height:     hitH,
+                          display:    'flex', alignItems: 'center', justifyContent: 'center',
+                          zIndex:     2, cursor: 'pointer',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <div style={{
                           width:      BLOCK_W,
                           height:     blockH,
                           borderRadius: 6,
                           background: e.done ? ct.color + 'cc' : ct.color + '22',
                           border:     `1.5px solid ${ct.color}${e.done ? '' : '99'}`,
                           display:    'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize:   isLandscape ? 11 : 13,
-                          zIndex:     2, cursor: 'pointer',
+                          fontSize:   isLandscape ? 12 : 14,
                           boxSizing:  'border-box',
-                          WebkitTapHighlightColor: 'transparent',
-                        }}
-                      >
-                        {ct.emoji}
+                        }}>
+                          {ct.emoji}
+                        </div>
                       </div>
                     );
                   })}
@@ -459,7 +451,7 @@ export default function GanttView({ service, patients, dailyData: initDaily, onC
           <span style={{ color: T.muted, fontSize: 10 }}>En attente</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{ width: 2, height: 15, background: '#f43f5e', opacity: 0.7 }} />
+          <div style={{ width: 2, height: 15, background: T.danger, opacity: 0.7 }} />
           <span style={{ color: T.muted, fontSize: 10 }}>Maintenant</span>
         </div>
         <span style={{ color: T.muted, fontSize: 10, fontStyle: 'italic' }}>Tap sur un bloc → valider / supprimer</span>
