@@ -1,6 +1,7 @@
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
 import ModuleShell from '../shared/ModuleShell.jsx';
 import StarButton  from '../shared/StarButton.jsx';
+import { Card, Chip } from '../../ui/index.js';
 
 import RCP          from './RCP.jsx';
 import AVC          from './AVC.jsx';
@@ -52,28 +53,23 @@ export default function Urgences({ onBack, initialTool = null, onFavChange, onBa
       initialTool={initialTool}
       onFavChange={onFavChange}
       renderItem={(p, openTool) => (
-        <div
-          style={{
-            ...s.card,
-            display:'flex', alignItems:'center', gap:14,
-            borderColor: p.urgent ? C+'44' : T.border,
-            cursor:'pointer',
-          }}
+        <Card
           onClick={() => openTool(p.id)}
+          style={{ display:'flex', alignItems:'center', gap:14, borderColor: p.urgent ? C+'44' : T.border }}
         >
-          <span style={{ fontSize:26 }}>{p.icon}</span>
+          <span style={{ fontSize:28 }}>{p.icon}</span>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color: p.urgent ? C : T.text, fontWeight:700, fontSize:14, marginBottom:2 }}>{p.label}</div>
-            <div style={{ color:T.muted, fontSize:12 }}>{p.sub}</div>
+            <div style={{ color: p.urgent ? C : T.text, fontWeight:700, fontSize:tk.font.base, marginBottom:2 }}>{p.label}</div>
+            <div style={{ color:T.muted, fontSize:tk.font.xs, lineHeight:1.5 }}>{p.sub}</div>
           </div>
           {p.urgent && (
-            <span style={{ background:C+'22', color:C, fontSize:9, fontFamily:'monospace', padding:'2px 7px', borderRadius:10, flexShrink:0 }}>
+            <Chip color={C} active style={{ flexShrink:0, height:28, padding:'0 10px', fontSize:tk.font.xs }}>
               URGENT
-            </span>
+            </Chip>
           )}
           <StarButton mod={MOD} toolId={p.id} label={p.label} icon={p.icon} color={C} onFavChange={onFavChange} />
-          <span style={{ color:T.muted }}>›</span>
-        </div>
+          <span style={{ color:T.muted, fontSize:20 }}>›</span>
+        </Card>
       )}
       renderDetail={(toolId) => MAP[toolId] || null}
     />
