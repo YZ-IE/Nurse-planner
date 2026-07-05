@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Btn, Card, Chip, Banner } from '../../ui/index.js';
 const C = T.soins || '#06b6d4';
 
 // ── Images libres de droit — Wikimedia Commons (CC BY-SA) ────────────────────
@@ -148,7 +149,7 @@ const PHASES = [
   {
     id: 'infecte', label: 'INFECTÉ', color: '#ef4444', icon: '🦠',
     desc: 'Exsudat tous niveaux · Chaleur · Érythème · Douleur · Odeur · Fièvre possible',
-    action: 'Antisepsie + prélèvement bactério', freq: 'TLJ (24h)', bgColor: '#450a0a',
+    action: 'Antisepsie + prélèvement bactério', freq: 'TLJ (24h)', bgColor: T.dangerDim,
     pansements: [
       { nom: 'Argent (Ag)', ex: 'Mepilex Ag, Aquacel Ag', detail: 'Argent ionique bactéricide large spectre. Ne pas utiliser >14j en continu.' },
       { nom: 'Miel médical (Medihoney)', ex: 'Medihoney, L-Mesitran', detail: 'Actif osmotique + H₂O₂ → antibactérien. Ramollit la fibrine. Odeur forte normale.' },
@@ -186,7 +187,7 @@ const PHASES = [
   {
     id: 'fibrine_mod', label: 'FIBRINE — Modérée', color: '#d97706', icon: '🟠',
     desc: 'Dépôt fibrineux partiel · Exsudat + à ++ · Berges mal délimitées',
-    action: 'Absorber + détersion', freq: 'TLJ', bgColor: '#1c1007',
+    action: 'Absorber + détersion', freq: 'TLJ', bgColor: T.warningDim,
     pansements: [
       { nom: 'Alginate de calcium', ex: 'Algostéril, Melgisorb', detail: 'Absorption modérée à élevée. Déterse la fibrine. Hémostase. Réhydrater avant retrait si collé.' },
       { nom: 'Hydrofibre', ex: 'Aquacel Extra, Durafiber', detail: 'Gélification verticale → protège les berges. Haute capacité d\'absorption.' },
@@ -195,7 +196,7 @@ const PHASES = [
   {
     id: 'fibrine_abon', label: 'FIBRINE — Abondante', color: '#ea580c', icon: '🔶',
     desc: 'Fibrine extensive · Exsudat +++ · Risque macération péri-lésionnelle',
-    action: 'Pomper (absorber max)', freq: 'TLJ', bgColor: '#1c0a07',
+    action: 'Pomper (absorber max)', freq: 'TLJ', bgColor: T.warningDim,
     pansements: [
       { nom: 'Super-absorbant', ex: 'Zetuvit Plus, Eclypse, Kerramax', detail: 'Capacité d\'absorption extrême. Évite les fuites, protège la peau péri-lésionnelle.' },
       { nom: 'Irrigo-détersif', ex: 'Prontosan gel, Octenilin gel', detail: 'Détersion + antisepsie locale douce. En lavage ou compresse imprégnée.' },
@@ -319,10 +320,10 @@ const CLASSIFICATION = [
 ];
 
 const NIVEAU_STYLE = {
-  'INFO':     { bg: T.surface2, badge: '#06b6d4' },
-  'ALERTE':   { bg: '#1c1007', badge: '#f97316' },
-  'PRIORITÉ': { bg: '#1c0a07', badge: '#ef4444' },
-  'TECHNIQUE':{ bg: T.orgaDim, badge: '#22c55e' },
+  'INFO':     { dim: T.infoDim,    color: T.info },
+  'ALERTE':   { dim: T.warningDim, color: T.warning },
+  'PRIORITÉ': { dim: T.dangerDim,  color: T.danger },
+  'TECHNIQUE':{ dim: T.successDim, color: T.success },
 };
 
 export default function Pansements() {
@@ -341,40 +342,39 @@ export default function Pansements() {
     <div style={{ padding: '14px' }}>
 
       {/* Rappel anatomique */}
-      <div style={{ ...s.card, background: T.surface2, marginBottom: 10 }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 4 }}>🩻 Rappel — Structure de la peau</div>
-        <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
+      <Card style={{ marginBottom: 10 }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>🩻 Rappel — Structure de la peau</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.6 }}>
           <b style={{ color: T.text }}>3 couches :</b> Épiderme (5 ss-couches) · Derme (collagène + nerfs) · Hypoderme (tissu gras){'\n'}
           <b style={{ color: T.text }}>Thermorégulation :</b> 32–36°C · <b style={{ color: T.text }}>Élasticité</b> → plasticité cutanée
         </div>
-      </div>
+      </Card>
 
       {/* Phases de cicatrisation */}
-      <div style={{ ...s.card, background: T.surface2, marginBottom: 12 }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 8 }}>🔄 Phases de cicatrisation</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 8 }}>🔄 Phases de cicatrisation</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {[
-            { phase: 'J0',     label: 'Hémostase',        detail: 'Caillot fibrine',             color: '#ef4444' },
+            { phase: 'J0',     label: 'Hémostase',        detail: 'Caillot fibrine',             color: T.danger },
             { phase: 'J0–21',  label: 'Inflammation',     detail: 'Macrophages / nettoyage',     color: '#f97316' },
-            { phase: 'J3–21',  label: 'Bourgeonnement',   detail: 'Angiogenèse / fibroblastes',  color: '#22c55e' },
+            { phase: 'J3–21',  label: 'Bourgeonnement',   detail: 'Angiogenèse / fibroblastes',  color: T.success },
             { phase: 'Final',  label: 'Épithélialisation', detail: 'Fermeture cutanée',           color: '#0ea5e9' },
           ].map(p => (
-            <div key={p.phase} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${p.color}` }}>
-              <div style={{ color: p.color, fontFamily: 'monospace', fontSize: 10, marginBottom: 2 }}>{p.phase}</div>
-              <div style={{ color: T.text, fontWeight: 600, fontSize: 12 }}>{p.label}</div>
-              <div style={{ color: T.muted, fontSize: 11 }}>{p.detail}</div>
+            <div key={p.phase} style={{ background: T.bg, borderRadius: 8, padding: '9px 11px', borderLeft: `3px solid ${p.color}` }}>
+              <div style={{ color: p.color, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 2 }}>{p.phase}</div>
+              <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm }}>{p.label}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.xs }}>{p.detail}</div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Onglets */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setVue(t.id)}
-            style={{ ...s.btn(vue === t.id ? C : T.border), padding: '7px 11px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <Chip key={t.id} color={C} active={vue === t.id} onClick={() => setVue(t.id)} style={{ flexShrink: 0 }}>
             {t.icon} {t.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -383,47 +383,40 @@ export default function Pansements() {
         <div>
           {/* Disclaimer images médicales */}
           {!disclaimerOk ? (
-            <div style={{ background: T.urgDim, border: '1px solid #ef444466', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
-              <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                ⚕️ Contenu à usage professionnel
-              </div>
-              <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+            <Banner kind="danger" icon="⚕️" title="Contenu à usage professionnel">
+              <div style={{ marginBottom: 12 }}>
                 Cette section contient des <b style={{ color: T.text }}>photographies cliniques réelles</b> de plaies à différents stades (infection, nécrose, bourgeonnement...).{'\n\n'}
                 Ces images sont issues de <b style={{ color: T.text }}>Wikimedia Commons</b> (licence CC BY-SA) et sont destinées à la <b style={{ color: T.text }}>formation et à la pratique infirmière professionnelle</b>.
               </div>
-              <button
-                onClick={() => setDisclaimerOk(true)}
-                style={{ ...s.btn('#ef4444'), padding: '10px 20px', fontSize: 13, fontWeight: 700, width: '100%' }}>
+              <Btn color={T.danger} size="lg" full onClick={() => setDisclaimerOk(true)}>
                 ✓ Je suis professionnel de santé — Afficher le contenu
-              </button>
-            </div>
+              </Btn>
+            </Banner>
           ) : (
-            <div style={{ background: T.orgaDim, border: '1px solid #16a34a44', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
-              <div style={{ color: '#16a34a', fontSize: 11, fontFamily: 'monospace' }}>
-                ⚕️ Contenu professionnel · Photos © Wikimedia Commons CC BY-SA
-              </div>
-            </div>
+            <Banner kind="success" icon="⚕️">
+              Contenu professionnel · Photos © Wikimedia Commons CC BY-SA
+            </Banner>
           )}
 
-          <div style={{ color: T.muted, fontSize: 12, marginBottom: 10 }}>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 10 }}>
             Sélectionner le stade de la plaie pour voir les pansements adaptés.
           </div>
 
           {PHASES.map(p => (
             <div key={p.id}>
               <div onClick={() => setPhaseOpen(phaseOpen === p.id ? null : p.id)}
-                style={{ ...s.card, background: p.bgColor, borderLeft: `4px solid ${p.color}`, cursor: 'pointer', marginBottom: phaseOpen === p.id ? 0 : undefined }}>
+                style={{ background: p.bgColor, border: `1px solid ${T.border}`, borderLeft: `4px solid ${p.color}`, borderRadius: tk.radius.lg, padding: '14px', cursor: 'pointer', marginBottom: phaseOpen === p.id ? 0 : 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 20 }}>{p.icon}</span>
-                      <span style={{ color: p.color, fontWeight: 700, fontSize: 14 }}>{p.label}</span>
+                      <span style={{ color: p.color, fontWeight: 700, fontSize: tk.font.base }}>{p.label}</span>
                     </div>
-                    <div style={{ color: T.muted, fontSize: 11, marginBottom: 3 }}>{p.desc}</div>
-                    <div style={{ color: p.color, fontSize: 11, fontFamily: 'monospace' }}>🎯 {p.action}</div>
+                    <div style={{ color: T.muted, fontSize: tk.font.xs, marginBottom: 4, lineHeight: 1.5 }}>{p.desc}</div>
+                    <div style={{ color: p.color, fontSize: tk.font.xs, fontWeight: 600 }}>🎯 {p.action}</div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 8 }}>
-                    <span style={{ background: p.color + '22', color: p.color, fontSize: 9, fontFamily: 'monospace', padding: '2px 7px', borderRadius: 10 }}>
+                    <span style={{ background: p.color + '22', color: p.color, fontSize: tk.font.xs, fontWeight: 600, padding: '2px 8px', borderRadius: 10 }}>
                       {p.freq}
                     </span>
                     <span style={{ color: T.muted, fontSize: 16 }}>{phaseOpen === p.id ? '▲' : '▼'}</span>
@@ -441,22 +434,22 @@ export default function Pansements() {
                       : <WoundSVG id={p.id} color={p.color} />
                     }
                     <div style={{ flex: 1 }}>
-                      <div style={{ color: p.color, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>Aspect clinique</div>
-                      <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.6 }}>{p.desc}</div>
-                      <div style={{ color: p.color, fontSize: 11, fontFamily: 'monospace', marginTop: 6 }}>🎯 {p.action}</div>
+                      <div style={{ color: p.color, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 4 }}>Aspect clinique</div>
+                      <div style={{ color: T.muted, fontSize: tk.font.xs, lineHeight: 1.6 }}>{p.desc}</div>
+                      <div style={{ color: p.color, fontSize: tk.font.xs, fontWeight: 600, marginTop: 6 }}>🎯 {p.action}</div>
                     </div>
                   </div>
 
                   {/* Pansements */}
                   {p.pansements.map((pm, i) => (
                     <div key={i} style={{ background: T.surface, borderRadius: 8, padding: '10px 12px', marginBottom: 8, borderLeft: `3px solid ${p.color}88` }}>
-                      <div style={{ color: T.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{pm.nom}</div>
-                      <div style={{ color: p.color, fontSize: 11, marginBottom: 4, fontStyle: 'italic' }}>Ex : {pm.ex}</div>
-                      <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>{pm.detail}</div>
+                      <div style={{ color: T.text, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 3 }}>{pm.nom}</div>
+                      <div style={{ color: p.color, fontSize: tk.font.xs, marginBottom: 4, fontStyle: 'italic' }}>Ex : {pm.ex}</div>
+                      <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.5 }}>{pm.detail}</div>
                     </div>
                   ))}
 
-                  <div style={{ color: T.muted, fontSize: 11, marginTop: 4, fontFamily: 'monospace' }}>
+                  <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 4 }}>
                     🕐 Fréquence de change : {p.freq}
                   </div>
                 </div>
@@ -470,16 +463,16 @@ export default function Pansements() {
       {vue === 'proprietes' && (
         <div>
           {PROPRIETES.map((p, i) => (
-            <div key={i} style={{ ...s.card }}>
+            <Card key={i}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 24, flexShrink: 0 }}>{p.icon}</span>
                 <div>
-                  <div style={{ color: T.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{p.nom}</div>
-                  <div style={{ color: C, fontSize: 12, marginBottom: 4 }}>{p.prop}</div>
-                  <div style={{ color: T.muted, fontSize: 11 }}>Indiqué : {p.usage}</div>
+                  <div style={{ color: T.text, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 3 }}>{p.nom}</div>
+                  <div style={{ color: C, fontSize: tk.font.sm, marginBottom: 4 }}>{p.prop}</div>
+                  <div style={{ color: T.muted, fontSize: tk.font.xs }}>Indiqué : {p.usage}</div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -487,7 +480,7 @@ export default function Pansements() {
       {/* ── Règles cliniques — redessinées ── */}
       {vue === 'regles' && (
         <div>
-          <div style={{ color: T.muted, fontSize: 12, marginBottom: 12 }}>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 12 }}>
             Protocoles et points de vigilance essentiels pour la prise en charge des plaies.
           </div>
 
@@ -495,24 +488,22 @@ export default function Pansements() {
             const style = NIVEAU_STYLE[r.niveau] || NIVEAU_STYLE['INFO'];
             return (
               <div key={i} style={{
-                background: style.bg,
-                border: `1px solid ${style.badge}44`,
+                background: style.dim,
+                border: `1px solid ${style.color}44`,
                 borderRadius: 12,
                 padding: '14px',
                 marginBottom: 12,
               }}>
                 {/* En-tête */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div style={{ color: style.badge, fontWeight: 700, fontSize: 14 }}>{r.situation}</div>
+                  <div style={{ color: style.color, fontWeight: 700, fontSize: tk.font.base }}>{r.situation}</div>
                   <span style={{
-                    background: style.badge + '22',
-                    color: style.badge,
-                    fontSize: 9,
-                    fontFamily: 'monospace',
+                    background: style.color + '22',
+                    color: style.color,
+                    fontSize: tk.font.xs,
                     fontWeight: 700,
-                    padding: '3px 8px',
+                    padding: '3px 9px',
                     borderRadius: 10,
-                    letterSpacing: 1,
                   }}>{r.niveau}</span>
                 </div>
 
@@ -524,22 +515,21 @@ export default function Pansements() {
                     alignItems: 'flex-start',
                     marginBottom: 8,
                     paddingBottom: j < r.protocole.length - 1 ? 8 : 0,
-                    borderBottom: j < r.protocole.length - 1 ? `1px solid ${style.badge}22` : 'none',
+                    borderBottom: j < r.protocole.length - 1 ? `1px solid ${style.color}22` : 'none',
                   }}>
                     <div style={{
-                      background: style.badge + '22',
-                      color: style.badge,
-                      fontFamily: 'monospace',
-                      fontSize: 10,
+                      background: style.color + '22',
+                      color: style.color,
+                      fontSize: tk.font.xs,
                       fontWeight: 700,
-                      padding: '2px 7px',
+                      padding: '2px 8px',
                       borderRadius: 6,
                       flexShrink: 0,
                       marginTop: 1,
                     }}>{j + 1}</div>
                     <div>
-                      <div style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{etape.etape}</div>
-                      <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>{etape.detail}</div>
+                      <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm }}>{etape.etape}</div>
+                      <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.5 }}>{etape.detail}</div>
                     </div>
                   </div>
                 ))}
@@ -549,11 +539,11 @@ export default function Pansements() {
                   <div style={{
                     background: T.bg,
                     borderRadius: 8,
-                    padding: '8px 12px',
+                    padding: '9px 12px',
                     marginTop: 4,
-                    borderLeft: `3px solid ${style.badge}`,
+                    borderLeft: `3px solid ${style.color}`,
                   }}>
-                    <div style={{ color: style.badge, fontSize: 11, lineHeight: 1.5 }}>
+                    <div style={{ color: style.color, fontSize: tk.font.xs, lineHeight: 1.5, fontWeight: 500 }}>
                       💡 {r.attention}
                     </div>
                   </div>
@@ -567,27 +557,24 @@ export default function Pansements() {
       {/* ── LPPR ── */}
       {vue === 'lppr' && (
         <div>
-          <div style={{ ...s.card, background: T.surface2, borderLeft: '3px solid #a78bfa' }}>
-            <div style={{ color: '#a78bfa', fontWeight: 700, marginBottom: 6 }}>⚖️ Classification LPPR des pansements</div>
-            <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.6 }}>
+          <Card accent="#a78bfa">
+            <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: tk.font.base, marginBottom: 6 }}>⚖️ Classification LPPR des pansements</div>
+            <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.6 }}>
               Liste des Produits et Prestations Remboursables — pansements remboursables sur prescription médicale.
             </div>
-          </div>
+          </Card>
           {CLASSIFICATION.map((c, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: '3px solid #a78bfa' }}>
-              <div style={{ color: '#a78bfa', fontWeight: 700, fontFamily: 'monospace', fontSize: 12, marginBottom: 4 }}>{c.classe}</div>
-              <div style={{ color: T.text, fontSize: 13, marginBottom: 4 }}>{c.ex}</div>
-              <div style={{ color: T.muted, fontSize: 12 }}>{c.remb}</div>
-            </div>
+            <Card key={i} accent="#a78bfa">
+              <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: tk.font.sm, marginBottom: 4 }}>{c.classe}</div>
+              <div style={{ color: T.text, fontSize: tk.font.sm, marginBottom: 4 }}>{c.ex}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.sm }}>{c.remb}</div>
+            </Card>
           ))}
-          <div style={{ ...s.card, background: T.urgDim, borderLeft: '3px solid #ef4444' }}>
-            <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 12, marginBottom: 4 }}>⚠️ Rappel réglementaire</div>
-            <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>
-              Les pansements de classe II et III nécessitent une ordonnance médicale.
-              La pose et le choix clinique relèvent du rôle propre infirmier (art. R.4311-5 CSP)
-              mais la prescription médicale reste obligatoire pour le remboursement.
-            </div>
-          </div>
+          <Banner kind="danger" title="Rappel réglementaire">
+            Les pansements de classe II et III nécessitent une ordonnance médicale.
+            La pose et le choix clinique relèvent du rôle propre infirmier (art. R.4311-5 CSP)
+            mais la prescription médicale reste obligatoire pour le remboursement.
+          </Banner>
         </div>
       )}
     </div>
