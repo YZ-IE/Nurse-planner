@@ -1,5 +1,6 @@
 import { MedicalDisclaimer } from '../../components/MedicalDisclaimer.jsx';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card } from '../../ui/index.js';
 const C = T.urg;
 export default function Convulsions() {
   return (
@@ -11,10 +12,10 @@ export default function Convulsions() {
         {title:'APRÈS LA CRISE — Phase postcritique',color:'#22c55e',content:['Position latérale de sécurité','Surveiller respiration, SpO₂, conscience','Glasgow · Déficit focal ? (AVC ?)','Glycémie capillaire systématique','Température · ECG','NFS · Ionogramme · EEG si prescrit']},
         {title:'CAUSES À RECHERCHER',color:'#8b5cf6',content:['Épilepsie connue · Oubli traitement','Hypoglycémie · Hyponatrémie','Fièvre (convulsions fébriles enfant)','AVC · Traumatisme crânien','Sevrage alcoolique · Toxiques','Méningite · Encéphalite']},
       ].map((sec,i)=>(
-        <div key={i} style={{...s.card,borderLeft:`3px solid ${sec.color}`,marginBottom:10}}>
-          <div style={{color:sec.color,fontWeight:700,fontSize:14,marginBottom:8}}>{sec.title}</div>
-          {sec.content.map((line,j)=><div key={j} style={{color:T.text,fontSize:13,marginBottom:3}}>• {line}</div>)}
-        </div>
+        <Card key={i} accent={sec.color}>
+          <div style={{color:sec.color,fontWeight:700,fontSize:tk.font.base,marginBottom:8}}>{sec.title}</div>
+          {sec.content.map((line,j)=><div key={j} style={{color:T.text,fontSize:tk.font.sm,marginBottom:4,lineHeight:1.5}}>• {line}</div>)}
+        </Card>
       ))}
     </div>
   );
