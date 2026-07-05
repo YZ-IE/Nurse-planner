@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card, Chip, Banner } from '../../ui/index.js';
 const C = T.soins || '#06b6d4';
 
 const SECTIONS_PAC = [
@@ -8,8 +9,8 @@ const SECTIONS_PAC = [
     label: 'Définition',
     content: (
       <div>
-        <p style={{ color: T?.text, fontSize: 13, lineHeight: 1.6 }}>
-          Chambre implantable sous-cutanée reliée à un cathéter central. Implantée chirurgicalement sous la clavicule ou dans le bras. 
+        <p style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.6 }}>
+          Chambre implantable sous-cutanée reliée à un cathéter central. Implantée chirurgicalement sous la clavicule ou dans le bras.
           L'accès se fait par ponction percutanée de la membrane en silicone (septum) à l'aide d'une <b style={{ color: C }}>aiguille de Huber</b> (pointe non tranchante).
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
@@ -19,9 +20,9 @@ const SECTIONS_PAC = [
             { label: 'Accès', val: 'Aiguille Huber UNIQUEMENT' },
             { label: 'Rinçage min.', val: '1×/mois si non utilisé' },
           ].map((i, idx) => (
-            <div key={idx} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-              <div style={{ color: T?.muted, fontSize: 10, fontFamily: 'monospace' }}>{i.label}</div>
-              <div style={{ color: C, fontWeight: 600, fontSize: 12, marginTop: 2 }}>{i.val}</div>
+            <div key={idx} style={{ background: T.bg, borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 600 }}>{i.label}</div>
+              <div style={{ color: C, fontWeight: 600, fontSize: tk.font.sm, marginTop: 2 }}>{i.val}</div>
             </div>
           ))}
         </div>
@@ -56,7 +57,7 @@ const SECTIONS_PAC = [
       { step: 'Pansement sec', detail: 'Petite compresse stérile + sparadrap 24h' },
       { step: 'Traçabilité', detail: 'Date déponction, état du site, noter dans dossier' },
     ],
-    color: '#22c55e',
+    color: T.success,
   },
   {
     id: 'surveillance',
@@ -97,35 +98,29 @@ export default function PAC() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${C}` }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+      <Card accent={C}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>
           🔵 Port-à-Cathéter (PAC) — Chambre implantable
         </div>
-        <div style={{ color: T.muted, fontSize: 12 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.sm }}>
           Dispositif veineux central implantable. Accès exclusif par <b style={{ color: C }}>aiguille de Huber</b>.
           Permet chimiothérapies, NPT, traitements prolongés sans contrainte quotidienne.
         </div>
-      </div>
+      </Card>
 
       {/* Alerte clé */}
-      <div style={{ background: '#451a03', border: '1px solid #f59e0b88', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
-        <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: 12, marginBottom: 3 }}>
-          ⚠️ RÈGLE ABSOLUE
-        </div>
-        <div style={{ color: '#fbbf24', fontSize: 12, lineHeight: 1.5 }}>
-          Toujours vérifier le <b>reflux sanguin</b> avant toute injection.
-          Ne jamais utiliser une aiguille standard (risque de carottage du septum).
-          <b> Aiguille de Huber obligatoire.</b>
-        </div>
-      </div>
+      <Banner kind="warning" title="RÈGLE ABSOLUE">
+        Toujours vérifier le <b>reflux sanguin</b> avant toute injection.
+        Ne jamais utiliser une aiguille standard (risque de carottage du septum).
+        <b> Aiguille de Huber obligatoire.</b>
+      </Banner>
 
       {/* Onglets */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setOpen(t.id)}
-            style={{ ...s.btn(open === t.id ? C : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <Chip key={t.id} color={C} active={open === t.id} onClick={() => setOpen(t.id)} style={{ flexShrink: 0 }}>
             {t.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -133,44 +128,44 @@ export default function PAC() {
       {open === 'def' && current.content}
 
       {(open === 'ponction' || open === 'deponction') && (
-        <div style={{ ...s.card, borderLeft: `3px solid ${current.color}` }}>
-          <div style={{ color: current.color, fontWeight: 700, marginBottom: 10 }}>
+        <Card accent={current.color}>
+          <div style={{ color: current.color, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>
             {open === 'ponction' ? '📍 Protocole de ponction' : '🔄 Protocole de déponction'}
           </div>
           {current.steps.map((st, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, padding: '7px 0', borderBottom: i < current.steps.length-1 ? '1px solid #1e293b' : 'none' }}>
-              <div style={{ color: current.color, fontFamily: 'monospace', fontSize: 11, minWidth: 24, fontWeight: 700 }}>
+            <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: i < current.steps.length-1 ? `1px solid ${T.border}` : 'none' }}>
+              <div style={{ color: current.color, fontSize: tk.font.sm, minWidth: 24, fontWeight: 700 }}>
                 {i+1}.
               </div>
               <div>
-                <div style={{ color: T.text, fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{st.step}</div>
-                <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.4 }}>{st.detail}</div>
+                <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm, marginBottom: 3 }}>{st.step}</div>
+                <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.4 }}>{st.detail}</div>
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {open === 'surveillance' && (
-        <div style={{ ...s.card, borderLeft: '3px solid #f59e0b' }}>
-          <div style={{ color: '#f59e0b', fontWeight: 700, marginBottom: 10 }}>👁️ Points de surveillance</div>
+        <Card accent={T.warning}>
+          <div style={{ color: T.warning, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>👁️ Points de surveillance</div>
           {current.items.map((sv, i) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: i < current.items.length-1 ? '1px solid #1e293b' : 'none' }}>
-              <div style={{ color: T.text, fontWeight: 600, fontSize: 12 }}>{sv.item}</div>
-              <div style={{ color: '#f59e0b', fontSize: 12 }}>⚠️ {sv.alerte}</div>
+            <div key={i} style={{ padding: '7px 0', borderBottom: i < current.items.length-1 ? `1px solid ${T.border}` : 'none' }}>
+              <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm }}>{sv.item}</div>
+              <div style={{ color: T.warning, fontSize: tk.font.sm }}>⚠️ {sv.alerte}</div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {open === 'complications' && (
         <div>
           {current.items2.map((c, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: '3px solid #ef4444' }}>
-              <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{c.type}</div>
-              <div style={{ color: T.muted, fontSize: 12, marginBottom: 4 }}>Cause : {c.cause}</div>
-              <div style={{ color: '#22c55e', fontSize: 12 }}>→ {c.action}</div>
-            </div>
+            <Card key={i} accent={T.danger}>
+              <div style={{ color: T.danger, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>{c.type}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 5 }}>Cause : {c.cause}</div>
+              <div style={{ color: T.success, fontSize: tk.font.sm }}>→ {c.action}</div>
+            </Card>
           ))}
         </div>
       )}

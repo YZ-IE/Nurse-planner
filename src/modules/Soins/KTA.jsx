@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card, Chip, Banner } from '../../ui/index.js';
 const C = T.soins || '#06b6d4';
-const RED = '#ef4444';
+const RED = T.danger;
 
 const CONTENU = {
   def: {
@@ -15,7 +16,7 @@ const CONTENU = {
   },
   indic: {
     label: 'Indications',
-    color: '#22c55e',
+    color: T.success,
     liste: [
       'Monitorage PAI en réanimation / soins intensifs',
       'Instabilité hémodynamique (choc, chirurgie lourde)',
@@ -27,7 +28,7 @@ const CONTENU = {
   },
   surveillance: {
     label: 'Surveillance',
-    color: '#f59e0b',
+    color: T.warning,
     items: [
       { item: 'Courbe de pression', alerte: 'Amortissement anormal → coudure, caillot, positionnement' },
       { item: 'Site artériel', alerte: 'Pâleur, cyanose, froideur en aval → ischémie = urgence' },
@@ -89,97 +90,93 @@ export default function KTA() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${RED}` }}>
-        <div style={{ color: RED, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+      <Card accent={RED}>
+        <div style={{ color: RED, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>
           🔴 KTA — Cathéter Artériel (PAI)
         </div>
-        <div style={{ color: T.muted, fontSize: 12 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.sm }}>
           Monitorage invasif de la pression artérielle et prélèvements gazométriques répétés en réanimation / soins intensifs.
         </div>
-      </div>
+      </Card>
 
       {/* Test d'Allen */}
-      <div style={{ ...s.card, background: T.surface2, borderLeft: `3px solid ${C}`, marginBottom: 12 }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 8 }}>🖐️ Test d'Allen — Pré-ponction radiale</div>
+      <Card accent={C}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 8 }}>🖐️ Test d'Allen — Pré-ponction radiale</div>
         {TEST_ALLEN.map((t, i) => (
-          <div key={i} style={{ display: 'flex', gap: 10, padding: '3px 0', color: T.text, fontSize: 12 }}>
-            <span style={{ color: C, fontFamily: 'monospace' }}>{i+1}.</span>
+          <div key={i} style={{ display: 'flex', gap: 10, padding: '4px 0', color: T.text, fontSize: tk.font.sm }}>
+            <span style={{ color: C, fontWeight: 700 }}>{i+1}.</span>
             <span>{t}</span>
           </div>
         ))}
-      </div>
+      </Card>
 
       {/* Alerte */}
-      <div style={{ background: '#450a0a', border: '1px solid #ef444488', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
-        <div style={{ color: RED, fontWeight: 700, fontSize: 12, marginBottom: 3 }}>⚠️ SÉCURITÉ CRITIQUE</div>
-        <div style={{ color: '#fca5a5', fontSize: 12, lineHeight: 1.5 }}>
-          Ne <b>JAMAIS</b> injecter de médicament par le KTA. Risque de nécrose et d'ischémie irréversible. 
-          Identifier clairement le circuit artériel (étiquette rouge + ligne sans robinet accessible).
-        </div>
-      </div>
+      <Banner kind="danger" title="SÉCURITÉ CRITIQUE">
+        Ne <b>JAMAIS</b> injecter de médicament par le KTA. Risque de nécrose et d'ischémie irréversible.
+        Identifier clairement le circuit artériel (étiquette rouge + ligne sans robinet accessible).
+      </Banner>
 
       {/* Onglets */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {Object.entries(CONTENU).map(([id, val]) => (
-          <button key={id} onClick={() => setOpen(id)}
-            style={{ ...s.btn(open === id ? val.color : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <Chip key={id} color={val.color} active={open === id} onClick={() => setOpen(id)} style={{ flexShrink: 0 }}>
             {val.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {/* Contenu */}
       {open === 'def' && current.body.map((b, i) => (
-        <div key={i} style={{ ...s.card, borderLeft: `3px solid ${C}` }}>
-          <div style={{ color: C, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{b.titre}</div>
-          <div style={{ color: T.text, fontSize: 13, lineHeight: 1.5 }}>{b.texte}</div>
-        </div>
+        <Card key={i} accent={C}>
+          <div style={{ color: C, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 5 }}>{b.titre}</div>
+          <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.5 }}>{b.texte}</div>
+        </Card>
       ))}
 
       {open === 'indic' && (
-        <div style={{ ...s.card, borderLeft: '3px solid #22c55e' }}>
-          <div style={{ color: '#22c55e', fontWeight: 700, marginBottom: 8 }}>✅ Indications</div>
+        <Card accent={T.success}>
+          <div style={{ color: T.success, fontWeight: 700, fontSize: tk.font.base, marginBottom: 8 }}>✅ Indications</div>
           {current.liste.map((l, i) => (
-            <div key={i} style={{ color: T.text, fontSize: 13, padding: '3px 0' }}>• {l}</div>
+            <div key={i} style={{ color: T.text, fontSize: tk.font.sm, padding: '4px 0', lineHeight: 1.5 }}>• {l}</div>
           ))}
-        </div>
+        </Card>
       )}
 
       {open === 'surveillance' && (
-        <div style={{ ...s.card, borderLeft: '3px solid #f59e0b' }}>
-          <div style={{ color: '#f59e0b', fontWeight: 700, marginBottom: 10 }}>👁️ Points de surveillance</div>
+        <Card accent={T.warning}>
+          <div style={{ color: T.warning, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>👁️ Points de surveillance</div>
           {current.items.map((sv, i) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: i < current.items.length-1 ? '1px solid #1e293b' : 'none' }}>
-              <div style={{ color: T.text, fontWeight: 600, fontSize: 12 }}>{sv.item}</div>
-              <div style={{ color: '#f59e0b', fontSize: 12 }}>→ {sv.alerte}</div>
+            <div key={i} style={{ padding: '7px 0', borderBottom: i < current.items.length-1 ? `1px solid ${T.border}` : 'none' }}>
+              <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm }}>{sv.item}</div>
+              <div style={{ color: T.warning, fontSize: tk.font.sm }}>→ {sv.alerte}</div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {(open === 'prelevements' || open === 'entretien') && (
-        <div style={{ ...s.card, borderLeft: `3px solid ${current.color}` }}>
-          <div style={{ color: current.color, fontWeight: 700, marginBottom: 10 }}>{current.label}</div>
+        <Card accent={current.color}>
+          <div style={{ color: current.color, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>{current.label}</div>
           {current.steps.map((st, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: i < current.steps.length-1 ? '1px solid #1e293b' : 'none' }}>
-              <div style={{ color: current.color, fontFamily: 'monospace', fontSize: 11, minWidth: 22, fontWeight: 700 }}>{i+1}.</div>
+            <div key={i} style={{ display: 'flex', gap: 12, padding: '7px 0', borderBottom: i < current.steps.length-1 ? `1px solid ${T.border}` : 'none' }}>
+              <div style={{ color: current.color, fontSize: tk.font.sm, minWidth: 22, fontWeight: 700 }}>{i+1}.</div>
               <div>
-                <div style={{ color: T.text, fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{st.step}</div>
-                <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.4 }}>{st.detail}</div>
+                <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm, marginBottom: 3 }}>{st.step}</div>
+                <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.4 }}>{st.detail}</div>
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {open === 'complications' && (
         <div>
           {current.items2.map((c, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: '3px solid #ef4444' }}>
-              <div style={{ color: RED, fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{c.type}</div>
-              <div style={{ color: T.muted, fontSize: 12, marginBottom: 4 }}>Signes : {c.signe}</div>
-              <div style={{ color: '#22c55e', fontSize: 12 }}>→ {c.action}</div>
-            </div>
+            <Card key={i} accent={T.danger}>
+              <div style={{ color: T.danger, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>{c.type}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 5 }}>Signes : {c.signe}</div>
+              <div style={{ color: T.success, fontSize: tk.font.sm }}>→ {c.action}</div>
+            </Card>
           ))}
         </div>
       )}
