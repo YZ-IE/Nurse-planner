@@ -160,8 +160,8 @@ function VisitModal({ patient, slot, visitData, C, onClose, onSave }) {
 
       <div style={{ flex:1, overflowY:'auto', padding:'12px 16px' }}>
         {patient.allergie && (
-          <div style={{ background:'#f43f5e15', border:'1px solid #f43f5e33', borderRadius:8, padding:'7px 12px', marginBottom:12 }}>
-            <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️ Allergie : {patient.allergie}</span>
+          <div style={{ background:T.dangerDim, border:`1px solid ${T.danger}33`, borderRadius:8, padding:'8px 12px', marginBottom:12 }}>
+            <span style={{ color:T.danger, fontSize:13, fontWeight:600 }}>⚠️ Allergie : {patient.allergie}</span>
           </div>
         )}
 
@@ -188,12 +188,12 @@ function VisitModal({ patient, slot, visitData, C, onClose, onSave }) {
         ))}
 
         {majs.map(m => (
-          <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 11px', marginBottom:3, background:'#f9731615', border:'1px solid #f9731633', borderRadius:8 }}>
+          <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 11px', marginBottom:3, background:T.warningDim, border:`1px solid ${T.warning}33`, borderRadius:8 }}>
             <div style={{ color:T.text, fontSize:12 }}>
               {m.label}{m.perKm && m.km ? ` (${m.km} km)` : ''}
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ color:'#f97316', fontSize:12 }}>
+              <span style={{ color:T.warning, fontSize:13 }}>
                 {m.flat ? `+${m.flat.toFixed(2)}€` : m.factor ? `×${m.factor}` : `+${((m.km||0)*m.perKm).toFixed(2)}€`}
               </span>
               <button onClick={() => setMajs(majs.filter(x=>x.id!==m.id))}
@@ -374,8 +374,8 @@ function PatientDetail({ patient, serviceId, cryptoKey, C, onClose, onEdit, onDe
         {tab === 'info' && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
             {patient.allergie && (
-              <div style={{ background:'#f43f5e15', border:'1px solid #f43f5e33', borderRadius:8, padding:'8px 12px' }}>
-                <span style={{ color:'#f43f5e', fontSize:13 }}>⚠️ Allergie : {patient.allergie}</span>
+              <div style={{ background:T.dangerDim, border:`1px solid ${T.danger}33`, borderRadius:8, padding:'8px 12px' }}>
+                <span style={{ color:T.danger, fontSize:13, fontWeight:600 }}>⚠️ Allergie : {patient.allergie}</span>
               </div>
             )}
             {[['Adresse', patient.adresse], ['Téléphone', patient.tel], ['Notes', patient.notes]].map(([l,v]) =>
@@ -400,14 +400,14 @@ function PatientDetail({ patient, serviceId, cryptoKey, C, onClose, onEdit, onDe
             <div style={{ marginTop:8, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
               {!confirmDel
                 ? <button onClick={() => setConfirmDel(true)}
-                    style={{ background:'none', border:'1px solid #f43f5e44', borderRadius:10, color:'#f43f5e', padding:'10px', fontSize:13, cursor:'pointer', width:'100%' }}>
+                    style={{ background:'none', border:`1px solid ${T.danger}44`, borderRadius:10, color:T.danger, padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer', width:'100%', minHeight:48 }}>
                     🗑 Supprimer ce patient
                   </button>
-                : <div style={{ background:'#f43f5e10', border:'1px solid #f43f5e33', borderRadius:10, padding:12 }}>
+                : <div style={{ background:T.dangerDim, border:`1px solid ${T.danger}33`, borderRadius:10, padding:12 }}>
                     <div style={{ color:T.text, fontSize:13, marginBottom:10 }}>Supprimer définitivement {patient.initials} ?</div>
                     <div style={{ display:'flex', gap:8 }}>
                       <button onClick={() => setConfirmDel(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:8, color:T.muted, padding:'9px', cursor:'pointer', fontSize:13 }}>Annuler</button>
-                      <button onClick={onDelete} style={{ flex:1, background:'#f43f5e', border:'none', borderRadius:8, color:'#fff', padding:'9px', fontSize:13, fontWeight:700, cursor:'pointer' }}>Supprimer</button>
+                      <button onClick={onDelete} style={{ flex:1, background:SOLID.danger, border:'none', borderRadius:8, color:'#fff', padding:'12px', fontSize:14, fontWeight:700, minHeight:48, cursor:'pointer' }}>Supprimer</button>
                     </div>
                   </div>
               }
@@ -554,35 +554,33 @@ function PatientsTab({ patients, serviceId, cryptoKey, C, onAdd, onEdit, onDelet
         })();
 
         return (
-          <div key={p.id} onClick={() => setDetailPid(p.id)}
-            style={{ background:T.surface, border:`1px solid ${T.border}`, borderLeft:`3px solid ${C}`, borderRadius:12,
-              padding:'12px 14px', marginBottom:8, cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
+          <Card key={p.id} accent={C} onClick={() => setDetailPid(p.id)} style={{ padding:'12px 14px' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ color:T.text, fontWeight:700, fontSize:15 }}>{p.initials}</span>
-                {p.allergie && <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️</span>}
+                <span style={{ color:T.text, fontWeight:tk.weight.bold, fontSize:tk.font.md }}>{p.initials}</span>
+                {p.allergie && <span style={{ color:T.danger, fontSize:tk.font.sm }}>⚠️</span>}
               </div>
               {nextSlot && (
-                <div style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:7, padding:'3px 8px' }}>
-                  <span style={{ color:C, fontSize:12, fontWeight:600 }}>{nextSlot.day} {nextSlot.heure}</span>
+                <div style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:tk.radius.sm, padding:'3px 10px' }}>
+                  <span style={{ color:C, fontSize:tk.font.sm, fontWeight:tk.weight.semi, fontVariantNumeric:'tabular-nums' }}>{nextSlot.day} {nextSlot.heure}</span>
                 </div>
               )}
             </div>
-            {p.adresse && <div style={{ color:T.muted, fontSize:12, marginTop:2 }}>{p.adresse}</div>}
+            {p.adresse && <div style={{ color:T.muted, fontSize:tk.font.sm, marginTop:2 }}>{p.adresse}</div>}
             {(p.schedule || []).length > 0 && (
               <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:5 }}>
                 {DAYS_FR.map((day, dow) => {
                   const slots = (p.schedule || []).filter(s => s.dow === dow);
                   if (!slots.length) return null;
                   return (
-                    <span key={dow} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:6, fontSize:10, padding:'2px 6px', color:T.muted }}>
+                    <span key={dow} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:tk.radius.sm, fontSize:tk.font.xs, padding:'2px 8px', color:T.muted, fontVariantNumeric:'tabular-nums' }}>
                       {day} {slots.map(s=>s.heure).join(' · ')}
                     </span>
                   );
                 })}
               </div>
             )}
-          </div>
+          </Card>
         );
       })}
 
@@ -611,60 +609,58 @@ function DayTab({ patients, daily, C, slots, onVisit, onMoveSlot }) {
       {/* Résumé journée */}
       {slots.length > 0 && (
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12,
-          background:C+'10', border:`1px solid ${C}30`, borderRadius:10, padding:'8px 14px' }}>
-          <span style={{ color:T.muted, fontSize:13 }}>{doneCount}/{slots.length} visites effectuées</span>
-          <span style={{ color:C, fontWeight:800, fontSize:15 }}>{totalEur.toFixed(2)} €</span>
+          background:C+'10', border:`1px solid ${C}30`, borderRadius:tk.radius.md, padding:'10px 14px' }}>
+          <span style={{ color:T.muted, fontSize:tk.font.sm }}>{doneCount}/{slots.length} visites effectuées</span>
+          <span style={{ color:C, fontWeight:tk.weight.black, fontSize:tk.font.md, fontVariantNumeric:'tabular-nums' }}>{totalEur.toFixed(2)} €</span>
         </div>
       )}
 
       {slots.length === 0 ? (
         <div style={{ textAlign:'center', padding:'48px 0', color:T.muted }}>
           <div style={{ fontSize:44, marginBottom:10 }}>📅</div>
-          <div style={{ color:T.text, fontSize:15, fontWeight:600, marginBottom:5 }}>
+          <div style={{ color:T.text, fontSize:tk.font.md, fontWeight:tk.weight.semi, marginBottom:5 }}>
             Aucun passage prévu {DAYS_FULL[new Date().getDay()]}
           </div>
-          <div style={{ fontSize:13 }}>Programmez les jours via l'onglet Patients</div>
+          <div style={{ fontSize:tk.font.sm }}>Programmez les jours via l'onglet Patients</div>
         </div>
       ) : slots.map((sl, idx) => {
         const visit = daily.visits[sl.key];
         const done  = visit?.status === 'done';
         const p     = sl.patient;
         return (
-          <div key={sl.key} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:9 }}>
-            <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-              <button onClick={() => onMoveSlot(sl.key, -1)} disabled={idx===0}
-                style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
-                  width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===0?0.25:1 }}>↑</button>
-              <button onClick={() => onMoveSlot(sl.key, 1)} disabled={idx===slots.length-1}
-                style={{ background:'none', border:`1px solid ${T.border}`, borderRadius:5, color:T.muted,
-                  width:24, height:24, fontSize:11, cursor:'pointer', padding:0, opacity:idx===slots.length-1?0.25:1 }}>↓</button>
+          <div key={sl.key} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:10 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+              <IconBtn label="Monter" onClick={() => onMoveSlot(sl.key, -1)} disabled={idx===0}
+                variant="outline" size={tk.touch.compact} fontSize={15}>↑</IconBtn>
+              <IconBtn label="Descendre" onClick={() => onMoveSlot(sl.key, 1)} disabled={idx===slots.length-1}
+                variant="outline" size={tk.touch.compact} fontSize={15}>↓</IconBtn>
             </div>
             <div onClick={() => onVisit(sl)} style={{ flex:1, background:done?C+'10':T.surface,
               border:`1px solid ${done?C+'55':T.border}`, borderLeft:`3px solid ${done?C:T.border}`,
-              borderRadius:12, padding:'11px 13px', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
+              borderRadius:tk.radius.lg, padding:'12px 14px', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:2 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ color:T.text, fontWeight:700, fontSize:15 }}>{p.initials}</span>
-                  {p.allergie && <span style={{ color:'#f43f5e', fontSize:12 }}>⚠️</span>}
+                  <span style={{ color:T.text, fontWeight:tk.weight.bold, fontSize:tk.font.md }}>{p.initials}</span>
+                  {p.allergie && <span style={{ color:T.danger, fontSize:tk.font.sm }}>⚠️</span>}
                 </div>
                 <div>
                   {done
-                    ? <span style={{ color:C, fontSize:12, fontWeight:700 }}>✓ {visit.total?.toFixed(2)}€</span>
-                    : <span style={{ color:T.muted, fontSize:13, fontWeight:600 }}>{sl.slot.heure}</span>}
+                    ? <span style={{ color:C, fontSize:tk.font.sm, fontWeight:tk.weight.bold, fontVariantNumeric:'tabular-nums' }}>✓ {visit.total?.toFixed(2)}€</span>
+                    : <span style={{ color:T.muted, fontSize:tk.font.base, fontWeight:tk.weight.semi, fontVariantNumeric:'tabular-nums' }}>{sl.slot.heure}</span>}
                 </div>
               </div>
-              {p.adresse && <div style={{ color:T.muted, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.adresse}</div>}
+              {p.adresse && <div style={{ color:T.muted, fontSize:tk.font.sm, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.adresse}</div>}
               {!done && p.ordonnance?.[0]?.actes?.length > 0 && (
                 <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:4 }}>
                   {p.ordonnance[0].actes.slice(0,3).map(a => (
-                    <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:5, color:C, fontSize:10, padding:'2px 6px' }}>
+                    <span key={a.id} style={{ background:C+'18', border:`1px solid ${C}30`, borderRadius:tk.radius.sm, color:C, fontSize:tk.font.xs, padding:'2px 8px' }}>
                       {a.label.split('—')[0].trim().slice(0,22)}
                     </span>
                   ))}
-                  {p.ordonnance[0].actes.length > 3 && <span style={{ color:T.muted, fontSize:10 }}>+{p.ordonnance[0].actes.length-3}</span>}
+                  {p.ordonnance[0].actes.length > 3 && <span style={{ color:T.muted, fontSize:tk.font.xs }}>+{p.ordonnance[0].actes.length-3}</span>}
                 </div>
               )}
-              {done && visit.notes ? <div style={{ color:T.muted, fontSize:11, marginTop:3, fontStyle:'italic' }}>{visit.notes.slice(0,70)}{visit.notes.length>70?'…':''}</div> : null}
+              {done && visit.notes ? <div style={{ color:T.muted, fontSize:tk.font.xs, marginTop:3, fontStyle:'italic' }}>{visit.notes.slice(0,70)}{visit.notes.length>70?'…':''}</div> : null}
             </div>
           </div>
         );
