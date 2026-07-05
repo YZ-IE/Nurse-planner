@@ -1,5 +1,6 @@
 import { MedicalDisclaimer } from '../../components/MedicalDisclaimer.jsx';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card } from '../../ui/index.js';
 const C = T.urg;
 const CHOCS = [
   {type:'Hypovolémique',color:'#ef4444',signes:['Tachycardie','Hypotension','Pâleur · Sueurs froides','TRC > 3s · Marbrures','Oligurie'],causes:['Hémorragie (digestive, traumatique)','Déshydratation sévère','3e secteur (brûlures, pancréatite)'],ttt:['2 VVP larges (G14-G16)','Remplissage NaCl 0,9% ou Cristalloïdes rapide','Contrôle hémorragie si visible','Transfusion si choc hémorragique','Position de Trendelenburg']},
@@ -12,15 +13,15 @@ export default function ChocEtats() {
     <div style={{padding:'14px'}}>
       <MedicalDisclaimer level="standard" />
       {CHOCS.map((choc,i)=>(
-        <div key={i} style={{...s.card,borderLeft:`3px solid ${choc.color}`,marginBottom:12}}>
-          <div style={{color:choc.color,fontWeight:700,fontSize:15,marginBottom:10}}>Choc {choc.type}</div>
-          <div style={{color:T.muted,fontSize:11,fontFamily:'monospace',marginBottom:6}}>SIGNES</div>
-          {choc.signes.map((s,j)=><div key={j} style={{color:T.text,fontSize:12,marginBottom:2}}>• {s}</div>)}
-          <div style={{color:T.muted,fontSize:11,fontFamily:'monospace',margin:'8px 0 5px'}}>CAUSES</div>
-          {choc.causes.map((c,j)=><div key={j} style={{color:T.text,fontSize:12,marginBottom:2}}>• {c}</div>)}
-          <div style={{color:choc.color,fontSize:11,fontFamily:'monospace',margin:'8px 0 5px'}}>TRAITEMENT INFIRMIER</div>
-          {choc.ttt.map((t,j)=><div key={j} style={{color:T.text,fontSize:12,marginBottom:2}}>→ {t}</div>)}
-        </div>
+        <Card key={i} accent={choc.color}>
+          <div style={{color:choc.color,fontWeight:700,fontSize:tk.font.md,marginBottom:10}}>Choc {choc.type}</div>
+          <div style={{color:T.muted,fontSize:tk.font.xs,fontWeight:600,marginBottom:6}}>Signes</div>
+          {choc.signes.map((s,j)=><div key={j} style={{color:T.text,fontSize:tk.font.sm,marginBottom:3,lineHeight:1.5}}>• {s}</div>)}
+          <div style={{color:T.muted,fontSize:tk.font.xs,fontWeight:600,margin:'10px 0 6px'}}>Causes</div>
+          {choc.causes.map((c,j)=><div key={j} style={{color:T.text,fontSize:tk.font.sm,marginBottom:3,lineHeight:1.5}}>• {c}</div>)}
+          <div style={{color:choc.color,fontSize:tk.font.xs,fontWeight:700,margin:'10px 0 6px'}}>Traitement infirmier</div>
+          {choc.ttt.map((t,j)=><div key={j} style={{color:T.text,fontSize:tk.font.sm,marginBottom:3,lineHeight:1.5}}>→ {t}</div>)}
+        </Card>
       ))}
     </div>
   );
