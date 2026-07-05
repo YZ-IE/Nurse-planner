@@ -1,6 +1,7 @@
 import { MedicalDisclaimer } from '../../components/MedicalDisclaimer.jsx';
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Btn, Card, Input, Banner } from '../../ui/index.js';
 const C = T.urg;
 
 const ANTIDOTES = [
@@ -29,41 +30,40 @@ export default function Intoxication() {
   if (selected) return (
     <div style={{ padding: '14px' }}>
       <MedicalDisclaimer level="standard" />
-      <button onClick={() => setSelected(null)} style={{ ...s.btn(C), marginBottom: 14 }}>← Retour</button>
-      <div style={{ background: C+'18', border: `1px solid ${C}44`, borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 14 }}>{selected.toxique}</div>
-        <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 13, marginTop: 4 }}>Antidote : {selected.antidote}</div>
-      </div>
+      <Btn color={C} onClick={() => setSelected(null)} style={{ marginBottom: 14 }}>← Retour</Btn>
+      <Card dim={C + '14'} style={{ border: `1px solid ${C}44` }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base }}>{selected.toxique}</div>
+        <div style={{ color: T.success, fontWeight: 700, fontSize: tk.font.sm, marginTop: 4 }}>Antidote : {selected.antidote}</div>
+      </Card>
       {[
-        { label: '💊 Posologie antidote', val: selected.dose, color: '#22c55e' },
-        { label: '🔍 Signes cliniques / orientation', val: selected.signes, color: '#f59e0b' },
+        { label: '💊 Posologie antidote', val: selected.dose, color: T.success },
+        { label: '🔍 Signes cliniques / orientation', val: selected.signes, color: T.warning },
       ].map(({ label, val, color }) => (
-        <div key={label} style={{ ...s.card, borderLeft: `3px solid ${color}` }}>
-          <div style={{ color, fontFamily: 'monospace', fontSize: 11, marginBottom: 8 }}>{label}</div>
-          <div style={{ color: T.text, fontSize: 13, lineHeight: 1.6 }}>{val}</div>
-        </div>
+        <Card key={label} accent={color}>
+          <div style={{ color, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 8 }}>{label}</div>
+          <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.6 }}>{val}</div>
+        </Card>
       ))}
-      <div style={{ ...s.card, background: '#431407', border: `1px solid ${C}44` }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 12, marginBottom: 8 }}>⚠️ TOUJOURS</div>
+      <Banner kind="warning" icon="⚠️" title="TOUJOURS">
         {['Appeler le 15 (SAMU) ou le centre antipoison (0 800 59 59 59)', 'Voie veineuse + scope + ECG', 'Recueillir emballages / flacons du toxique', 'Heure d\'ingestion + quantité estimée', 'Éviter le vomissement provoqué (contre-indiqué)', 'Charbon activé si < 1h et patient conscient (selon prescription)'].map((item, i) => (
-          <div key={i} style={{ color: T.text, fontSize: 12, marginBottom: 5 }}>• {item}</div>
+          <div key={i} style={{ marginTop: i > 0 ? 3 : 6 }}>• {item}</div>
         ))}
-      </div>
+      </Banner>
     </div>
   );
 
   return (
     <div style={{ padding: '14px' }}>
-      <div style={{ background: C+'18', border: `1px solid ${C}44`, borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 14 }}>☠️ Intoxications — Antidotes</div>
-        <div style={{ color: T.muted, fontSize: 12, marginTop: 4 }}>Centre antipoison : 0 800 59 59 59 (gratuit)</div>
-      </div>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un toxique ou antidote…" style={{ ...s.input, marginBottom: 12 }} />
+      <Card dim={C + '14'} style={{ border: `1px solid ${C}44` }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base }}>☠️ Intoxications — Antidotes</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, marginTop: 4 }}>Centre antipoison : 0 800 59 59 59 (gratuit)</div>
+      </Card>
+      <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un toxique ou antidote…" style={{ marginBottom: 12 }} />
       {filtered.map((a, i) => (
-        <div key={i} onClick={() => setSelected(a)} style={{ ...s.card, cursor: 'pointer' }}>
-          <div style={{ color: C, fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{a.toxique}</div>
-          <div style={{ color: '#22c55e', fontSize: 12 }}>→ {a.antidote}</div>
-        </div>
+        <Card key={i} onClick={() => setSelected(a)}>
+          <div style={{ color: C, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 4 }}>{a.toxique}</div>
+          <div style={{ color: T.success, fontSize: tk.font.sm }}>→ {a.antidote}</div>
+        </Card>
       ))}
     </div>
   );
