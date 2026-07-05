@@ -16,7 +16,11 @@ import ServiceView    from './ServiceView.jsx';
 import PatientSheet   from './PatientSheet.jsx';
 import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
+import GanttView      from './GanttView.jsx';
+import OcrScanner     from './OcrScanner.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
+import ModuleSettings from './ModuleSettings.jsx';
+import NavDrawer      from './NavDrawer.jsx';
 import { dateStrOffset } from './utils.jsx';
 
 const ACCENT = '#6366f1';
@@ -53,6 +57,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   const [pinExists,  setPinExists]  = useState(null);
   const [nav,        setNav]        = useState(INITIAL_NAV);
   const [warnExpiry, setWarnExpiry] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const timerRef     = useRef(null);
   const warnTimerRef = useRef(null);
@@ -111,10 +116,14 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     setNav(prev => ({ ...prev, screen, ...extras }));
   }
 
+  const hasService = () => nav.service && typeof nav.service === 'object';
+
   function goBack() {
     const screen = nav.screen;
-    if (screen === 'patient' || screen === 'quick' || screen === 'dayoverview' || screen === 'transfer' || screen === 'log') {
-      goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
+    const serviceScoped = ['patient', 'quick', 'dayoverview', 'gantt', 'ocr', 'transfer', 'log', 'moduleSettings'];
+    if (serviceScoped.includes(screen)) {
+      if (hasService()) goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
+      else goTo('services', { service: null }, 'back');
     } else if (screen === 'service') {
       goTo('services', { service: null }, 'back');
     } else {
@@ -123,6 +132,51 @@ export default function AideMemoire({ onBack, onBackOverride }) {
       onBack();
       setNav(INITIAL_NAV);
     }
+  }
+
+  function handleDrawerSelect(key) {
+    setDrawerOpen(false);
+    switch (key) {
+      case 'dashboard':
+        goTo('services', { service: null });
+        break;
+      case 'patient':
+        if (hasService() && nav.patientId) goTo('patient', { patientTab: null });
+        else if (hasService()) goTo('service', { refreshKey: nav.refreshKey + 1 });
+        else goTo('services', { service: null });
+        break;
+      case 'clinical':
+        if (hasService() && nav.patientId) goTo('patient', { patientTab: 2 });
+        else if (hasService()) goTo('service', { refreshKey: nav.refreshKey + 1 });
+        else goTo('services', { service: null });
+        break;
+      case 'dayoverview':
+        if (hasService()) goTo('dayoverview', {});
+        else goTo('services', { service: null });
+        break;
+      case 'gantt':
+        if (hasService()) goTo('gantt', {});
+        else goTo('services', { service: null });
+        break;
+      case 'log':
+        goTo('log', {});
+        break;
+      case 'transfer':
+        goTo('transfer', {});
+        break;
+      case 'settings':
+        goTo('moduleSettings', {});
+        break;
+      default:
+        break;
+    }
+  }
+
+  function handleLock() {
+    setDrawerOpen(false);
+    appendLog('LOGOUT', 'Verrouillage manuel depuis le menu');
+    setCryptoKey(null);
+    setNav(prev => ({ ...prev, screen: 'pin' }));
   }
 
   useEffect(() => {
@@ -140,7 +194,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   // ── Chargement ────────────────────────────────────────────────────────────
   const th = getTheme(loadDarkPref());
-  const screenWrap = (content) => (
+  const screenWrap = (content, { menu = true } = {}) => (
     <div
       key={nav.screen}
       className={slideDir === 'forward' ? 'am-forward' : 'am-back'}
@@ -148,13 +202,24 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     >
       <style>{SLIDE_CSS}</style>
       {content}
+      {menu && (
+        <NavDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          currentScreen={nav.screen}
+          onSelect={handleDrawerSelect}
+          onLock={handleLock}
+          serviceName={hasService() ? nav.service.name : null}
+        />
+      )}
     </div>
   );
 
   if (pinExists === null) return screenWrap(
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh' }}>
       <span style={{ color:th.muted, fontSize:14 }}>Chargement…</span>
-    </div>
+    </div>,
+    { menu: false }
   );
 
   // ── Bandeau timeout ───────────────────────────────────────────────────────
@@ -170,7 +235,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
       <ConsentScreen onAccepted={() => {
         appendLog('CONSENT', 'Consentement donné');
         goTo('pin');
-      }} />
+      }} />,
+      { menu: false }
     );
   }
 
@@ -187,14 +253,15 @@ export default function AideMemoire({ onBack, onBackOverride }) {
           goTo('services');
         }}
         onBack={onBack}
-      />
+      />,
+      { menu: false }
     );
   }
 
   // ── Services ──────────────────────────────────────────────────────────────
   if (nav.screen === 'services') return screenWrap(
     <>{TimeoutBanner}
-      <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+      <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack} onMenu={() => setDrawerOpen(true)}
         onSelectService={service => goTo('service', { service, patientId: null })}
         onImport={() => goTo('transfer', { service: '__import__' })} />
     </>
@@ -205,8 +272,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <>{TimeoutBanner}
       <ServiceView
         service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT}
-        refreshKey={nav.refreshKey} onBack={goBack}
-        onSelectPatient={patientId => goTo('patient', { patientId })}
+        refreshKey={nav.refreshKey} onBack={goBack} onMenu={() => setDrawerOpen(true)}
+        onSelectPatient={patientId => goTo('patient', { patientId, patientTab: null })}
         selectedDate={nav.selectedDate || dateStrOffset(0)}
         onDateChange={date => setNav(prev => ({ ...prev, selectedDate: date, refreshKey: prev.refreshKey + 1 }))}
         onQuickEntry={() => goTo('quick')}
@@ -214,6 +281,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
         onServiceUpdate={handleServiceUpdate}
         onTransfer={() => goTo('transfer')}
         onLog={() => goTo('log')}
+        onOcr={() => goTo('ocr')}
       />
     </>
   );
@@ -223,7 +291,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <>{TimeoutBanner}
       <PatientSheet patientId={nav.patientId} service={nav.service}
         selectedDate={nav.selectedDate || dateStrOffset(0)}
-        cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+        cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack} onMenu={() => setDrawerOpen(true)}
+        initialTab={nav.patientTab}
         onNavigate={(pid) => goTo('patient', { patientId: pid })} />
     </>
   );
@@ -231,30 +300,51 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   // ── Saisie rapide ─────────────────────────────────────────────────────────
   if (nav.screen === 'quick' && nav.service) return screenWrap(
     <>{TimeoutBanner}
-      <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+      <QuickEntry service={nav.service} cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack} onMenu={() => setDrawerOpen(true)}
         selectedDate={nav.selectedDate || dateStrOffset(0)}
-        onNavigate={(pid) => goTo('patient', { patientId: pid })} />
+        onNavigate={(pid) => goTo('patient', { patientId: pid, patientTab: null })} />
     </>
   );
 
   // ── Vue du jour ───────────────────────────────────────────────────────────
   if (nav.screen === 'dayoverview' && nav.service) return screenWrap(
     <>{TimeoutBanner}
-      <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} selectedDate={nav.selectedDate || dateStrOffset(0)} />
+      <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} selectedDate={nav.selectedDate || dateStrOffset(0)} />
+    </>
+  );
+
+  // ── Vue Gantt ─────────────────────────────────────────────────────────────
+  if (nav.screen === 'gantt' && nav.service) return screenWrap(
+    <>{TimeoutBanner}
+      <GanttView service={nav.service} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} selectedDate={nav.selectedDate || dateStrOffset(0)} />
+    </>
+  );
+
+  // ── Scanner OCR ───────────────────────────────────────────────────────────
+  if (nav.screen === 'ocr' && nav.service) return screenWrap(
+    <>{TimeoutBanner}
+      <OcrScanner service={nav.service} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} />
     </>
   );
 
   // ── Transfert sécurisé ────────────────────────────────────────────────────
   if (nav.screen === 'transfer') return screenWrap(
     <>{TimeoutBanner}
-      <SecureTransfer service={nav.service !== '__import__' ? nav.service : null} cryptoKey={cryptoKey} onBack={goBack} />
+      <SecureTransfer service={nav.service !== '__import__' ? nav.service : null} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} />
     </>
   );
 
   // ── Journal d'accès ───────────────────────────────────────────────────────
   if (nav.screen === 'log') return screenWrap(
     <>{TimeoutBanner}
-      <AccessLog onBack={goBack} />
+      <AccessLog onBack={goBack} onMenu={() => setDrawerOpen(true)} />
+    </>
+  );
+
+  // ── Paramètres du module ─────────────────────────────────────────────────
+  if (nav.screen === 'moduleSettings') return screenWrap(
+    <>{TimeoutBanner}
+      <ModuleSettings onBack={goBack} onMenu={() => setDrawerOpen(true)} onLock={handleLock} />
     </>
   );
 

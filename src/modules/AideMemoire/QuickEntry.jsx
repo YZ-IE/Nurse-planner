@@ -9,6 +9,9 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
 import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
+import MenuButton from './MenuButton.jsx';
+import TimeDial from './TimeDial.jsx';
+import SpringCheck from './SpringCheck.jsx';
 
 // ─── Types de soins ───────────────────────────────────────────────────────────
 
@@ -33,7 +36,14 @@ function AddCareModal({ patient, onAdd, onClose }) {
   const [label,       setLabel]       = useState('');
   const [plannedTime, setPlannedTime] = useState(timeStr());
   const [note,        setNote]        = useState('');
+  const [justSaved,   setJustSaved]   = useState(false);
   const ct = CARE_TYPES.find(t => t.id === type) || CARE_TYPES[0];
+
+  function handleValidate() {
+    onAdd({ type, label: label.trim() || ct.label, plannedTime, note: note.trim() });
+    setJustSaved(true);
+    setTimeout(onClose, 420);
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
@@ -46,40 +56,42 @@ function AddCareModal({ patient, onAdd, onClose }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 26, cursor: 'pointer' }}>×</button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto', marginBottom: 12 }}>
-          {CARE_TYPES.map(ct => {
-            const active = type === ct.id;
+        {/* Pad de Soins — grille statique 4x4, boutons fixes */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+          {CARE_TYPES.map(item => {
+            const active = type === item.id;
             return (
-              <button key={ct.id} onClick={() => { setType(ct.id); setLabel(''); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, background: active ? ct.color + '22' : T.bg, border: `1px solid ${active ? ct.color : T.border}`, borderLeft: `3px solid ${active ? ct.color : 'transparent'}`, borderRadius: 8, color: active ? ct.color : T.text, fontSize: 14, fontWeight: active ? 700 : 400, padding: '8px 12px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
-                <span style={{ fontSize: 18 }}>{ct.emoji}</span>
-                <span>{ct.label}</span>
+              <button key={item.id} onClick={() => { setType(item.id); setLabel(''); }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  minWidth: 48, minHeight: 60, background: active ? item.color + '22' : T.bg,
+                  border: `1px solid ${active ? item.color : T.border}`, borderRadius: 12,
+                  color: active ? item.color : T.text, fontSize: 10.5, fontWeight: active ? 700 : 500,
+                  padding: '8px 4px', cursor: 'pointer', textAlign: 'center', lineHeight: 1.15,
+                  WebkitTapHighlightColor: 'transparent',
+                }}>
+                <span style={{ fontSize: 20 }}>{item.emoji}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
         </div>
 
         <div style={{ marginBottom: 10 }}>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Heure planifiée</div>
-          <input type="time" value={plannedTime} onChange={e => setPlannedTime(e.target.value)}
-            style={{ ...s.input, width: 130, boxSizing: 'border-box' }} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
           <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Libellé (optionnel)</div>
           <input value={label} onChange={e => setLabel(e.target.value)} placeholder={ct.label}
             style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 6 }}>
           <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Note (optionnel)</div>
           <input value={note} onChange={e => setNote(e.target.value)} placeholder="Contexte…"
             style={{ ...s.input, width: '100%', boxSizing: 'border-box' }} />
         </div>
 
-        <button onClick={() => { onAdd({ type, label: label.trim() || ct.label, plannedTime, note: note.trim() }); onClose(); }}
-          style={{ width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, background: ct.color, border: 'none', borderRadius: 10, color: '#fff', cursor: 'pointer' }}>
-          {ct.emoji} Planifier
-        </button>
+        {/* Smart-Time Slider — ajuste l'heure et valide en un geste */}
+        <TimeDial time={plannedTime} onChange={setPlannedTime} onValidate={handleValidate} color={ct.color} validateLabel="Planifier" />
       </div>
+      <SpringCheck show={justSaved} />
     </div>
   );
 }
@@ -131,7 +143,7 @@ function AddRdvModal({ patient, infoFields, onAdd, onClose }) {
   );
 }
 
-export default function QuickEntry({ service, cryptoKey, accentColor, onBack, selectedDate: selDate }) {
+export default function QuickEntry({ service, cryptoKey, accentColor, onBack, onMenu, selectedDate: selDate }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -235,6 +247,7 @@ export default function QuickEntry({ service, cryptoKey, accentColor, onBack, se
       {/* ── Header ── */}
       <div style={{ padding: '14px 16px 12px', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>⚡ Saisie rapide — {formatDateLabel(selectedDate)}{readOnly ? ' 👁' : ''}</div>
