@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Btn, Card, Banner } from '../../ui/index.js';
 const C = T.soins;
 
 const PHASES = [
@@ -7,7 +8,7 @@ const PHASES = [
     id: 'sign_in',
     label: 'SIGN IN',
     subtitle: 'Avant induction anesthésique',
-    color: '#22c55e',
+    color: T.success,
     icon: '🟢',
     items: [
       { id: 'identite', label: 'Identité patient confirmée (bracelet + verbal)' },
@@ -26,7 +27,7 @@ const PHASES = [
     id: 'time_out',
     label: 'TIME OUT',
     subtitle: 'Avant incision cutanée',
-    color: '#f59e0b',
+    color: T.warning,
     icon: '🟡',
     items: [
       { id: 'equipe', label: 'Toute l\'équipe s\'est présentée (nom + rôle)' },
@@ -42,7 +43,7 @@ const PHASES = [
     id: 'sign_out',
     label: 'SIGN OUT',
     subtitle: 'Avant que le patient quitte le bloc',
-    color: '#ef4444',
+    color: T.danger,
     icon: '🔴',
     items: [
       { id: 'acte', label: 'Acte réalisé confirmé et consigné' },
@@ -84,22 +85,22 @@ export default function ChecklistPreOp() {
 
   return (
     <div style={{ padding: '14px' }}>
-      <div style={{ ...s.card, background: C + '11', border: `1px solid ${C}33`, marginBottom: 14 }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 13 }}>✅ Checklist Sécurité Bloc Opératoire — OMS</div>
-        <div style={{ color: T.muted, fontSize: 12, marginTop: 3 }}>Surgical Safety Checklist · {totalDone}/{totalItems} items cochés</div>
+      <Card dim={C + '11'} style={{ border: `1px solid ${C}33` }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.sm }}>✅ Checklist Sécurité Bloc Opératoire — OMS</div>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 4 }}>Surgical Safety Checklist · {totalDone}/{totalItems} items cochés</div>
         <div style={{ background: T.bg, borderRadius: 20, height: 6, marginTop: 8, overflow: 'hidden' }}>
           <div style={{ background: C, height: '100%', width: `${(totalDone / totalItems) * 100}%`, borderRadius: 20, transition: 'width 0.3s' }} />
         </div>
-      </div>
+      </Card>
 
       {/* Tabs phases */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         {PHASES.map(p => (
           <button key={p.id} onClick={() => setPhase(p.id)}
-            style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `1px solid ${phase === p.id ? p.color : T.border}`, background: phase === p.id ? p.color + '22' : T.surface, cursor: 'pointer', textAlign: 'center' }}>
+            style={{ flex: 1, minHeight: 56, padding: '8px 4px', borderRadius: 10, border: `1.5px solid ${phase === p.id ? p.color : T.border}`, background: phase === p.id ? p.color + '22' : T.surface, cursor: 'pointer', textAlign: 'center', WebkitTapHighlightColor: 'transparent' }}>
             <div style={{ fontSize: 14 }}>{p.icon}</div>
-            <div style={{ color: phase === p.id ? p.color : T.muted, fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }}>{p.label}</div>
-            <div style={{ color: phaseDone(p) ? '#22c55e' : T.muted, fontSize: 9, marginTop: 1 }}>
+            <div style={{ color: phase === p.id ? p.color : T.muted, fontSize: tk.font.xs, fontWeight: 700 }}>{p.label}</div>
+            <div style={{ color: phaseDone(p) ? T.success : T.muted, fontSize: tk.font.xs, marginTop: 1 }}>
               {p.items.filter(it => checked[it.id]).length}/{p.items.length}
             </div>
           </button>
@@ -107,31 +108,29 @@ export default function ChecklistPreOp() {
       </div>
 
       {/* Sous-titre */}
-      <div style={{ background: phaseData.color + '18', border: `1px solid ${phaseData.color}44`, borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
-        <div style={{ color: phaseData.color, fontWeight: 700, fontSize: 13 }}>{phaseData.icon} {phaseData.label}</div>
-        <div style={{ color: T.muted, fontSize: 12, marginTop: 2 }}>{phaseData.subtitle}</div>
+      <div style={{ background: phaseData.color + '18', border: `1px solid ${phaseData.color}44`, borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>
+        <div style={{ color: phaseData.color, fontWeight: 700, fontSize: tk.font.sm }}>{phaseData.icon} {phaseData.label}</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, marginTop: 2 }}>{phaseData.subtitle}</div>
       </div>
 
       {/* Items */}
       {phaseData.items.map(item => (
-        <div key={item.id} onClick={() => toggle(item.id)}
-          style={{ ...s.card, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, background: checked[item.id] ? '#22c55e18' : T.surface, border: `1px solid ${checked[item.id] ? '#22c55e' : T.border}` }}>
-          <div style={{ width: 24, height: 24, borderRadius: 6, border: `2px solid ${checked[item.id] ? '#22c55e' : '#475569'}`, background: checked[item.id] ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
+        <button key={item.id} onClick={() => toggle(item.id)}
+          style={{ width: '100%', minHeight: 52, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, background: checked[item.id] ? T.successDim : T.surface, border: `1.5px solid ${checked[item.id] ? T.success : T.border}`, borderRadius: tk.radius.lg, padding: '12px 14px', marginBottom: 8, textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
+          <div style={{ width: 26, height: 26, borderRadius: 7, border: `2px solid ${checked[item.id] ? T.success : T.border2}`, background: checked[item.id] ? T.success : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 15, color: '#fff', fontWeight: 800 }}>
             {checked[item.id] ? '✓' : ''}
           </div>
-          <span style={{ color: checked[item.id] ? '#22c55e' : T.text, fontSize: 13, lineHeight: 1.4 }}>{item.label}</span>
-        </div>
+          <span style={{ color: checked[item.id] ? T.success : T.text, fontSize: tk.font.sm, lineHeight: 1.4 }}>{item.label}</span>
+        </button>
       ))}
 
       {phaseDone(phaseData) && (
-        <div style={{ background: '#22c55e18', border: '1px solid #22c55e44', borderRadius: 10, padding: '12px', textAlign: 'center', marginTop: 6, animation: 'fadeIn 0.3s' }}>
-          <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 15 }}>✅ {phaseData.label} — Complété</div>
-        </div>
+        <Banner kind="success" icon="✅" title={`${phaseData.label} — Complété`} />
       )}
 
-      <button onClick={reset} style={{ ...s.btn('#64748b'), width: '100%', padding: '12px', marginTop: 14 }}>
+      <Btn color={T.muted} variant="outline" size="lg" full onClick={reset} style={{ marginTop: 14 }}>
         🔄 Réinitialiser la checklist
-      </button>
+      </Btn>
     </div>
   );
 }
