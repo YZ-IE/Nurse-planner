@@ -1,6 +1,7 @@
-import { T } from '../../theme.js';
+import { T, tk } from '../../theme.js';
 import ModuleShell        from '../shared/ModuleShell.jsx';
 import StarButton         from '../shared/StarButton.jsx';
+import { Card }           from '../../ui/index.js';
 
 import Quiz               from './Quiz.jsx';
 import CasCliniques       from './CasCliniques.jsx';
@@ -37,20 +38,7 @@ export default function Formation({ onBack, initialTool = null, onFavChange, onB
       initialTool={initialTool}
       onFavChange={onFavChange}
       renderItem={(t, openTool) => (
-        <div
-          style={{
-            background: T.surface,
-            border: `1px solid ${C}33`,
-            borderRadius: 16,
-            padding: '16px 14px',
-            marginBottom: 10,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-          onClick={() => openTool(t.id)}
-        >
+        <Card onClick={() => openTool(t.id)} style={{ border: `1px solid ${C}33`, display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
             width: 48, height: 48, borderRadius: 12,
             background: C + '18',
@@ -60,12 +48,12 @@ export default function Formation({ onBack, initialTool = null, onFavChange, onB
             {t.icon}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:C, fontWeight:700, fontSize:14, marginBottom:3 }}>{t.label}</div>
-            <div style={{ color:T.muted, fontSize:12 }}>{t.desc}</div>
+            <div style={{ color:C, fontWeight:tk.weight.bold, fontSize:tk.font.base, marginBottom:3 }}>{t.label}</div>
+            <div style={{ color:T.muted, fontSize:tk.font.xs, lineHeight:1.5 }}>{t.desc}</div>
           </div>
           <StarButton mod={MOD} toolId={t.id} label={t.label} icon={t.icon} color={C} onFavChange={onFavChange} />
-          <span style={{ color:T.muted }}>›</span>
-        </div>
+          <span style={{ color:T.muted, fontSize:20 }}>›</span>
+        </Card>
       )}
       renderDetail={(toolId) => MAP[toolId] || null}
     />

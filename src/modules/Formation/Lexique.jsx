@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card, Input } from '../../ui/index.js';
 const C = T.form;
 const ENTREES = [
   {term:'ACLS',def:'Advanced Cardiovascular Life Support — protocole de réanimation avancée'},
@@ -80,13 +81,13 @@ export default function Lexique() {
   const filtered=search.trim()?ENTREES.filter(e=>e.term.toLowerCase().includes(search.toLowerCase())||e.def.toLowerCase().includes(search.toLowerCase())):ENTREES;
   return (
     <div style={{padding:'14px'}}>
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher une abréviation ou un terme..." style={{...s.input,marginBottom:12}}/>
-      <div style={{color:T.muted,fontSize:11,fontFamily:'monospace',marginBottom:10}}>{filtered.length} entrée(s)</div>
+      <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher une abréviation ou un terme…" style={{marginBottom:12}}/>
+      <div style={{color:T.muted,fontSize:tk.font.xs,fontWeight:600,marginBottom:10}}>{filtered.length} entrée(s)</div>
       {filtered.map((e,i)=>(
-        <div key={i} style={{...s.card,marginBottom:7,display:'flex',gap:12,alignItems:'flex-start'}}>
-          <span style={{color:C,fontFamily:'monospace',fontWeight:700,fontSize:14,minWidth:70,flexShrink:0}}>{e.term}</span>
-          <span style={{color:T.muted,fontSize:13,lineHeight:1.5}}>{e.def}</span>
-        </div>
+        <Card key={i} pad="sm" style={{marginBottom:8,display:'flex',gap:12,alignItems:'flex-start'}}>
+          <span style={{color:C,fontWeight:700,fontSize:tk.font.base,minWidth:78,flexShrink:0}}>{e.term}</span>
+          <span style={{color:T.muted,fontSize:tk.font.sm,lineHeight:1.5}}>{e.def}</span>
+        </Card>
       ))}
     </div>
   );
