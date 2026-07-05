@@ -184,7 +184,7 @@ function EcgStrip({ rhythmId, color=ECG_GREEN, height=130, animate=false, onZoom
         <path ref={pathRef} d={stripPath} fill="none" stroke={color} strokeWidth="2" filter={`url(#glow-${rhythmId})`} strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
       {onZoom && (
-        <div style={{position:'absolute',bottom:6,right:8,background:'#000000aa',border:`1px solid ${color}44`,borderRadius:6,padding:'2px 7px',fontSize:10,color:color,fontFamily:'monospace',pointerEvents:'none'}}>
+        <div style={{position:'absolute',bottom:6,right:8,background:'#000000aa',border:`1px solid ${color}44`,borderRadius:6,padding:'3px 8px',fontSize:12,color:color,fontFamily:'monospace',pointerEvents:'none'}}>
           ⛶ gros plan
         </div>
       )}
@@ -223,11 +223,11 @@ function EcgModal({ rhythm, onClose }) {
         <div>
           <div style={{color:rhythm.color,fontFamily:'monospace',fontWeight:'bold',fontSize:15}}>{rhythm.label}</div>
           <div style={{display:'flex',gap:8,marginTop:4,alignItems:'center'}}>
-            <span style={{color:ECG_MUTED,fontFamily:'monospace',fontSize:11}}>FC: {rhythm.hr}</span>
-            <span style={{background:p.bg,border:`1px solid ${p.border}`,color:p.text,fontSize:9,fontFamily:'monospace',padding:'2px 7px',borderRadius:10}}>{p.label}</span>
+            <span style={{color:ECG_MUTED,fontFamily:'monospace',fontSize:12}}>FC: {rhythm.hr}</span>
+            <span style={{background:p.bg,border:`1px solid ${p.border}`,color:p.text,fontSize:12,fontFamily:'monospace',padding:'3px 8px',borderRadius:10}}>{p.label}</span>
           </div>
         </div>
-        <button onClick={onClose} style={{background:'none',border:`1px solid ${ECG_BORD}`,color:ECG_MUTED,borderRadius:8,padding:'6px 14px',fontSize:14,cursor:'pointer',fontFamily:'monospace'}}>✕ Fermer</button>
+        <button onClick={onClose} aria-label="Fermer" style={{background:'none',border:`1px solid ${ECG_BORD}`,color:ECG_MUTED,borderRadius:8,minWidth:48,minHeight:44,padding:'6px 16px',fontSize:14,cursor:'pointer',fontFamily:'monospace'}}>✕ Fermer</button>
       </div>
 
       {/* Tracé plein écran — scrollable horizontalement */}
@@ -249,7 +249,7 @@ function EcgModal({ rhythm, onClose }) {
           {/* Légende graduée */}
           <div style={{display:'flex',justifyContent:'space-between',paddingTop:6,width:W2}}>
             {Array.from({length:17},(_,i)=>(
-              <span key={i} style={{color:'#ffffff33',fontFamily:'monospace',fontSize:9}}>{i*0.2>0?`${(i*0.2).toFixed(1)}s`:''}</span>
+              <span key={i} style={{color:'#ffffff33',fontFamily:'monospace',fontSize:12}}>{i*0.2>0?`${(i*0.2).toFixed(1)}s`:''}</span>
             ))}
           </div>
         </div>
@@ -260,10 +260,10 @@ function EcgModal({ rhythm, onClose }) {
         onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',gap:8,flexWrap:'nowrap'}}>
           {rhythm.signs.map((sg,i)=>(
-            <span key={i} style={{background:ECG_SURF2,border:`1px solid ${rhythm.color}44`,color:rhythm.color,padding:'5px 12px',borderRadius:20,fontSize:11,fontFamily:'monospace',whiteSpace:'nowrap',flexShrink:0}}>✓ {sg}</span>
+            <span key={i} style={{background:ECG_SURF2,border:`1px solid ${rhythm.color}44`,color:rhythm.color,padding:'5px 12px',borderRadius:20,fontSize:12,fontFamily:'monospace',whiteSpace:'nowrap',flexShrink:0}}>✓ {sg}</span>
           ))}
         </div>
-        <div style={{color:'#ffffff33',fontSize:10,fontFamily:'monospace',marginTop:8,textAlign:'center'}}>
+        <div style={{color:'#ffffff33',fontSize:12,fontFamily:'monospace',marginTop:8,textAlign:'center'}}>
           ← Faire défiler le tracé · Appuyer en dehors pour fermer →
         </div>
       </div>
@@ -287,7 +287,7 @@ function BasesTab() {
   return (
     <div>
       <div style={{marginBottom:16}}>
-        <div style={{color:ECG_GREEN,fontFamily:'monospace',fontSize:10,letterSpacing:3,marginBottom:10}}>ANATOMIE DU COMPLEXE ECG</div>
+        <div style={{color:ECG_GREEN,fontFamily:'monospace',fontSize:12,letterSpacing:3,marginBottom:10}}>ANATOMIE DU COMPLEXE ECG</div>
         <svg viewBox="0 0 380 140" width="100%" style={{display:'block',borderRadius:8}}>
           <rect width="380" height="140" fill="#050f0a" rx="8"/>
           <EcgGrid width={380} height={140}/>
@@ -298,7 +298,7 @@ function BasesTab() {
           {segs.map((s,i)=>(<g key={i}><line x1={s.x1} y1={s.y-3} x2={s.x2} y2={s.y-3} stroke="#ffffff44" strokeWidth="1"/><line x1={s.x1} y1={s.y-6} x2={s.x1} y2={s.y} stroke="#ffffff44" strokeWidth="1"/><line x1={s.x2} y1={s.y-6} x2={s.x2} y2={s.y} stroke="#ffffff44" strokeWidth="1"/><text x={(s.x1+s.x2)/2} y={s.y+9} fill="#ffffff77" fontSize="8" fontFamily="monospace" textAnchor="middle">{s.label}</text></g>))}
         </svg>
       </div>
-      <div style={{color:ECG_GREEN,fontFamily:'monospace',fontSize:10,letterSpacing:3,marginBottom:10}}>NOTIONS FONDAMENTALES</div>
+      <div style={{color:ECG_GREEN,fontFamily:'monospace',fontSize:12,letterSpacing:3,marginBottom:10}}>NOTIONS FONDAMENTALES</div>
       {concepts.map((c,i)=>(
         <div key={i} style={{background:ECG_SURF2,border:`1px solid ${ECG_BORD}`,borderRadius:8,padding:'12px 14px',marginBottom:8}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
@@ -324,15 +324,15 @@ function DetailPanel({ rhythm, onClose }) {
           <div style={{flex:1,paddingRight:8}}>
             <h2 style={{color:rhythm.color,fontFamily:'monospace',fontSize:14,margin:'0 0 4px',lineHeight:1.3}}>{rhythm.label}</h2>
             <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-              <span style={{color:ECG_MUTED,fontSize:11,fontFamily:'monospace'}}>FC: {rhythm.hr}</span>
-              <span style={{background:p.bg,border:`1px solid ${p.border}`,color:p.text,fontSize:9,fontFamily:'monospace',padding:'2px 7px',borderRadius:10}}>{p.label}</span>
+              <span style={{color:ECG_MUTED,fontSize:12,fontFamily:'monospace'}}>FC: {rhythm.hr}</span>
+              <span style={{background:p.bg,border:`1px solid ${p.border}`,color:p.text,fontSize:12,fontFamily:'monospace',padding:'3px 8px',borderRadius:10}}>{p.label}</span>
             </div>
           </div>
-          <button onClick={onClose} style={{background:'none',border:`1px solid ${ECG_BORD}`,color:ECG_MUTED,borderRadius:6,padding:'4px 10px',fontSize:12,cursor:'pointer'}}>✕</button>
+          <button onClick={onClose} aria-label="Fermer" style={{background:'none',border:`1px solid ${ECG_BORD}`,color:ECG_MUTED,borderRadius:8,minWidth:44,minHeight:44,padding:'4px 12px',fontSize:14,cursor:'pointer'}}>✕</button>
         </div>
         <div style={{display:'flex',gap:6,marginTop:10}}>
           {[{id:'ecg',label:'📈 ECG'},{id:'nursing',label:'💉 Actions IDE'}].map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?ECG_SURF2:'none',border:`1px solid ${tab===t.id?rhythm.color:ECG_BORD}`,color:tab===t.id?rhythm.color:ECG_MUTED,borderRadius:6,padding:'7px 12px',fontSize:12,fontFamily:'monospace',cursor:'pointer'}}>{t.label}</button>
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?ECG_SURF2:'none',border:`1px solid ${tab===t.id?rhythm.color:ECG_BORD}`,color:tab===t.id?rhythm.color:ECG_MUTED,borderRadius:6,minHeight:44,padding:'7px 14px',fontSize:12,fontFamily:'monospace',cursor:'pointer'}}>{t.label}</button>
           ))}
         </div>
       </div>
@@ -342,7 +342,7 @@ function DetailPanel({ rhythm, onClose }) {
           <EcgStrip rhythmId={rhythm.id} color={rhythm.color} animate height={100} onZoom={()=>setZoom(true)}/>
           <p style={{color:ECG_TEXT,fontSize:13,lineHeight:1.7,margin:'12px 0'}}>{rhythm.desc}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-            {rhythm.signs.map((s,i)=>(<span key={i} style={{background:ECG_SURF2,border:`1px solid ${rhythm.color}44`,color:rhythm.color,padding:'4px 10px',borderRadius:20,fontSize:11,fontFamily:'monospace'}}>✓ {s}</span>))}
+            {rhythm.signs.map((s,i)=>(<span key={i} style={{background:ECG_SURF2,border:`1px solid ${rhythm.color}44`,color:rhythm.color,padding:'4px 10px',borderRadius:20,fontSize:12,fontFamily:'monospace'}}>✓ {s}</span>))}
           </div>
         </>}
         {tab==='nursing' && rhythm.nursing && <>
@@ -353,12 +353,12 @@ function DetailPanel({ rhythm, onClose }) {
             <div key={i} style={{background:ECG_SURF,border:`1px solid ${ECG_BORD}`,borderLeft:`3px solid ${rhythm.color}`,borderRadius:8,padding:'10px 12px',marginBottom:8,display:'flex',gap:10}}>
               <span style={{fontSize:20,flexShrink:0,marginTop:2}}>{a.icon}</span>
               <div>
-                <div style={{color:rhythm.color,fontFamily:'monospace',fontSize:11,fontWeight:'bold',marginBottom:4}}>{a.step}</div>
+                <div style={{color:rhythm.color,fontFamily:'monospace',fontSize:12,fontWeight:'bold',marginBottom:4}}>{a.step}</div>
                 <div style={{color:ECG_TEXT,fontSize:13,lineHeight:1.6}}>{a.text}</div>
               </div>
             </div>
           ))}
-          <div style={{marginTop:8,padding:'8px 12px',background:ECG_SURF,border:`1px dashed ${ECG_BORD}`,borderRadius:8,color:'#ffffff44',fontSize:11,fontFamily:'monospace'}}>
+          <div style={{marginTop:8,padding:'8px 12px',background:ECG_SURF,border:`1px dashed ${ECG_BORD}`,borderRadius:8,color:'#ffffff44',fontSize:12,fontFamily:'monospace'}}>
             ⚕️ Usage éducatif. Toute décision thérapeutique requiert validation médicale.
           </div>
         </>}
@@ -382,8 +382,8 @@ function RythmesTab() {
         {RHYTHMS.map(r=>(
           <div key={r.id} onClick={()=>select(r)} style={{background:selected?.id===r.id?ECG_SURF2:ECG_SURF,border:`1px solid ${selected?.id===r.id?r.color:ECG_BORD}`,borderRadius:8,padding:'10px 12px',cursor:'pointer',transition:'all 0.2s',boxShadow:selected?.id===r.id?`0 0 12px ${r.color}33`:'none'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6,gap:4}}>
-              <span style={{color:r.color,fontFamily:'monospace',fontSize:11,fontWeight:'bold',lineHeight:1.3,flex:1}}>{r.label}</span>
-              <span style={{background:r.category==='URGENCE'?'#ff525222':'#143d2088',color:r.category==='URGENCE'?'#ff5252':ECG_MUTED,fontSize:9,fontFamily:'monospace',padding:'2px 5px',borderRadius:4,flexShrink:0}}>{r.category}</span>
+              <span style={{color:r.color,fontFamily:'monospace',fontSize:12,fontWeight:'bold',lineHeight:1.3,flex:1}}>{r.label}</span>
+              <span style={{background:r.category==='URGENCE'?'#ff525222':'#143d2088',color:r.category==='URGENCE'?'#ff5252':ECG_MUTED,fontSize:12,fontFamily:'monospace',padding:'2px 6px',borderRadius:4,flexShrink:0}}>{r.category}</span>
             </div>
             <div style={{height:46,overflow:'hidden',borderRadius:4,position:'relative'}}
               onClick={e=>{e.stopPropagation();setZoom(r);}}>
@@ -392,9 +392,9 @@ function RythmesTab() {
                 <EcgGrid/>
                 <path d={generateStrip(r.id)} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <div style={{position:'absolute',bottom:2,right:4,color:r.color,fontSize:8,fontFamily:'monospace',background:'#000000aa',padding:'1px 5px',borderRadius:4}}>⛶</div>
+              <div style={{position:'absolute',bottom:2,right:4,color:r.color,fontSize:12,fontFamily:'monospace',background:'#000000aa',padding:'1px 6px',borderRadius:4}}>⛶</div>
             </div>
-            <div style={{marginTop:4,color:'#ffffff55',fontSize:10,fontFamily:'monospace'}}>FC: {r.hr}</div>
+            <div style={{marginTop:4,color:'#ffffff55',fontSize:12,fontFamily:'monospace'}}>FC: {r.hr}</div>
           </div>
         ))}
       </div>
@@ -444,12 +444,12 @@ function QuizTab() {
         ].map((s,i)=>(
           <div key={i} style={{flex:1,textAlign:'center',padding:'12px 6px',borderRight:i<2?`1px solid ${ECG_BORD}`:'none'}}>
             <div style={{color:s.color,fontFamily:'monospace',fontSize:20,fontWeight:'bold'}}>{s.value}</div>
-            <div style={{color:'#ffffff44',fontSize:10,fontFamily:'monospace',marginTop:2}}>{s.label}</div>
+            <div style={{color:'#ffffff44',fontSize:12,fontFamily:'monospace',marginTop:2}}>{s.label}</div>
           </div>
         ))}
       </div>
       <div style={{background:ECG_SURF,border:`1px solid ${ECG_BORD}`,borderRadius:10,padding:'14px',marginBottom:12}}>
-        <div style={{color:'#ffffff55',fontFamily:'monospace',fontSize:10,marginBottom:10,letterSpacing:2}}>IDENTIFIEZ CE RYTHME</div>
+        <div style={{color:'#ffffff55',fontFamily:'monospace',fontSize:12,marginBottom:10,letterSpacing:2}}>IDENTIFIEZ CE RYTHME</div>
         {zoom && <EcgModal rhythm={q.target} onClose={()=>setZoom(false)}/>}
         <EcgStrip rhythmId={q.target.id} color={q.target.color} height={100} animate={!answered} onZoom={()=>setZoom(true)}/>
       </div>
@@ -459,9 +459,9 @@ function QuizTab() {
           let bg=ECG_SURF,bc=ECG_BORD,tc=ECG_TEXT;
           if (answered) { if (isCorrect){bg=ECG_SURF2;bc=ECG_GREEN;tc=ECG_GREEN;} else if (isSel){bg='#1f0a0a';bc='#ff5252';tc='#ff5252';} else {tc='#ffffff33';} }
           return (
-            <button key={opt.id} onClick={()=>handleAnswer(opt)} style={{background:bg,border:`1px solid ${bc}`,borderRadius:8,padding:'10px 12px',textAlign:'left',transition:'all 0.25s',fontFamily:'monospace',cursor:answered?'default':'pointer'}}>
+            <button key={opt.id} onClick={()=>handleAnswer(opt)} style={{background:bg,border:`1px solid ${bc}`,borderRadius:8,minHeight:48,padding:'10px 12px',textAlign:'left',transition:'all 0.25s',fontFamily:'monospace',cursor:answered?'default':'pointer'}}>
               <div style={{color:tc,fontSize:12,fontWeight:'bold',marginBottom:2,lineHeight:1.3}}>{answered&&isCorrect?'✓ ':answered&&isSel?'✗ ':''}{opt.label}</div>
-              <div style={{color:answered?(isCorrect?ECG_MUTED:'#ffffff33'):'#ffffff44',fontSize:10}}>{opt.hr}</div>
+              <div style={{color:answered?(isCorrect?ECG_MUTED:'#ffffff33'):'#ffffff44',fontSize:12}}>{opt.hr}</div>
             </button>
           );
         })}
@@ -474,17 +474,17 @@ function QuizTab() {
             </div>
             <p style={{color:ECG_TEXT,fontSize:13,lineHeight:1.6,margin:'0 0 8px'}}>{q.target.desc}</p>
             <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-              {q.target.signs.map((s,i)=>(<span key={i} style={{background:ECG_SURF2,color:ECG_GREEN,padding:'3px 8px',borderRadius:20,fontSize:10,fontFamily:'monospace',border:`1px solid ${ECG_GREEN}44`}}>✓ {s}</span>))}
+              {q.target.signs.map((s,i)=>(<span key={i} style={{background:ECG_SURF2,color:ECG_GREEN,padding:'3px 8px',borderRadius:20,fontSize:12,fontFamily:'monospace',border:`1px solid ${ECG_GREEN}44`}}>✓ {s}</span>))}
             </div>
           </div>
           {q.target.nursing && (
             <div style={{padding:'12px 14px',borderBottom:`1px solid ${ECG_BORD}`}}>
-              <div style={{color:'#42a5f5',fontFamily:'monospace',fontSize:10,letterSpacing:2,marginBottom:8}}>💉 ACTIONS IDE CLÉS</div>
+              <div style={{color:'#42a5f5',fontFamily:'monospace',fontSize:12,letterSpacing:2,marginBottom:8}}>💉 ACTIONS IDE CLÉS</div>
               {q.target.nursing.actions.slice(0,2).map((a,i)=>(
                 <div key={i} style={{display:'flex',gap:8,background:ECG_SURF,borderLeft:`2px solid ${q.target.color}`,borderRadius:6,padding:'7px 10px',marginBottom:6}}>
                   <span style={{fontSize:16,flexShrink:0}}>{a.icon}</span>
                   <div>
-                    <div style={{color:q.target.color,fontFamily:'monospace',fontSize:10,marginBottom:2}}>{a.step}</div>
+                    <div style={{color:q.target.color,fontFamily:'monospace',fontSize:12,marginBottom:2}}>{a.step}</div>
                     <div style={{color:ECG_MUTED,fontSize:12,lineHeight:1.5}}>{a.text}</div>
                   </div>
                 </div>
@@ -492,7 +492,7 @@ function QuizTab() {
             </div>
           )}
           <div style={{padding:'10px 14px'}}>
-            <button onClick={next} style={{background:`${ECG_GREEN}18`,border:`1px solid ${ECG_GREEN}`,color:ECG_GREEN,fontFamily:'monospace',fontSize:13,padding:'8px 18px',borderRadius:8,cursor:'pointer'}}>
+            <button onClick={next} style={{background:`${ECG_GREEN}18`,border:`1px solid ${ECG_GREEN}`,color:ECG_GREEN,fontFamily:'monospace',fontSize:13,minHeight:48,padding:'8px 20px',borderRadius:8,cursor:'pointer'}}>
               PROCHAIN ECG →
             </button>
           </div>
@@ -526,9 +526,9 @@ export default function ECG({ onBack, onBackOverride }) {
       {/* Header */}
       <div style={{background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <button onClick={onBack} style={{background:'none',border:`1px solid ${ECG_GREEN}44`,borderRadius:100,width:36,height:36,color:ECG_GREEN,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
+          <button onClick={onBack} aria-label="Retour" style={{background:'none',border:`1px solid ${ECG_GREEN}44`,borderRadius:100,width:48,height:48,color:ECG_GREEN,fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>‹</button>
           <div>
-            <div style={{fontFamily:'monospace',fontSize:9,color:ECG_GREEN,letterSpacing:3}}>MODULE</div>
+            <div style={{fontFamily:'monospace',fontSize:12,color:ECG_GREEN,letterSpacing:3}}>MODULE</div>
             <h1 style={{fontFamily:'monospace',fontSize:17,margin:0,color:'#fff',letterSpacing:1}}>ECG <span style={{color:ECG_GREEN}}>Interactif</span></h1>
           </div>
         </div>
@@ -542,7 +542,7 @@ export default function ECG({ onBack, onBackOverride }) {
       {/* Tabs */}
       <div style={{display:'flex',background:ECG_SURF,borderBottom:`1px solid ${ECG_BORD}`,flexShrink:0,zIndex:9}}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:'none',border:'none',borderBottom:tab===t.id?`2px solid ${ECG_GREEN}`:'2px solid transparent',color:tab===t.id?ECG_GREEN:ECG_MUTED,fontFamily:'monospace',fontSize:10,padding:'10px 2px',cursor:'pointer',transition:'all 0.2s'}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:'none',border:'none',borderBottom:tab===t.id?`2px solid ${ECG_GREEN}`:'2px solid transparent',color:tab===t.id?ECG_GREEN:ECG_MUTED,fontFamily:'monospace',fontSize:12,minHeight:48,padding:'10px 2px',cursor:'pointer',transition:'all 0.2s'}}>
             {t.icon} {t.label}
           </button>
         ))}
