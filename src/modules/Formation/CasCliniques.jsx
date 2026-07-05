@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Btn, Card } from '../../ui/index.js';
 const C = T.form;
 
 const CAS = [
@@ -196,15 +197,15 @@ export default function CasCliniques() {
   // Écran liste
   if (!cas) return (
     <div style={{ padding: '14px' }}>
-      <div style={{ ...s.card, background: '#1e1a03' }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 4 }}>Cas cliniques interactifs</div>
-        <div style={{ color: T.muted, fontSize: 12 }}>Répondez aux questions — les réponses sont révélées après votre choix</div>
-      </div>
+      <Card dim={T.formDim} style={{ border: `1px solid ${C}30` }}>
+        <div style={{ color: C, fontWeight: tk.weight.bold, fontSize: tk.font.md, marginBottom: 4 }}>Cas cliniques interactifs</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm }}>Répondez aux questions — les réponses sont révélées après votre choix</div>
+      </Card>
       {CAS.map((c, i) => (
-        <div key={i} onClick={() => startCas(c)} style={{ ...s.card, cursor: 'pointer', borderLeft: `3px solid ${C}` }}>
-          <div style={{ color: C, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c.titre}</div>
-          <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5 }}>{c.context.slice(0, 100)}…</div>
-        </div>
+        <Card key={i} onClick={() => startCas(c)} accent={C}>
+          <div style={{ color: C, fontWeight: tk.weight.bold, fontSize: tk.font.base, marginBottom: 4 }}>{c.titre}</div>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.5 }}>{c.context.slice(0, 100)}…</div>
+        </Card>
       ))}
     </div>
   );
@@ -212,58 +213,62 @@ export default function CasCliniques() {
   const q = cas.questions[etape];
 
   // Écran résultat final
-  if (done) return (
-    <div style={{ padding: '14px' }}>
-      <div style={{ ...s.result(score === cas.questions.length ? C : '#f59e0b'), textAlign: 'center', marginBottom: 12 }}>
-        <div style={{ color: score === cas.questions.length ? C : '#f59e0b', fontSize: 28, fontWeight: 700 }}>
-          {score}/{cas.questions.length}
+  if (done) {
+    const perfect = score === cas.questions.length;
+    const resultColor = perfect ? C : T.warning;
+    return (
+      <div style={{ padding: '14px' }}>
+        <Card dim={perfect ? T.formDim : T.warningDim} style={{ border: `1px solid ${resultColor}44`, textAlign: 'center', marginBottom: 12 }}>
+          <div style={{ color: resultColor, fontSize: 30, fontWeight: 700 }}>
+            {score}/{cas.questions.length}
+          </div>
+          <div style={{ color: T.muted, fontSize: tk.font.sm, marginTop: 4 }}>
+            {perfect ? '🏆 Parfait !' : score >= cas.questions.length / 2 ? '👍 Bien !' : '📚 À retravailler'}
+          </div>
+        </Card>
+        <Card>
+          <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 10 }}>Conclusion clinique</div>
+          <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.7 }}>{cas.conclusion}</div>
+        </Card>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn color={C} size="lg" onClick={() => startCas(cas)} style={{ flex: 1 }}>🔄 Recommencer</Btn>
+          <Btn color={T.muted} variant="outline" size="lg" onClick={() => setCas(null)} style={{ flex: 1 }}>← Autres cas</Btn>
         </div>
-        <div style={{ color: T.muted, fontSize: 13, marginTop: 4 }}>
-          {score === cas.questions.length ? '🏆 Parfait !' : score >= cas.questions.length / 2 ? '👍 Bien !' : '📚 À retravailler'}
-        </div>
       </div>
-      <div style={s.card}>
-        <div style={{ color: C, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 10 }}>CONCLUSION CLINIQUE</div>
-        <div style={{ color: T.text, fontSize: 13, lineHeight: 1.7 }}>{cas.conclusion}</div>
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => startCas(cas)} style={{ ...s.btn(C), flex: 1, padding: '12px' }}>🔄 Recommencer</button>
-        <button onClick={() => setCas(null)} style={{ ...s.btn(T.muted), flex: 1, padding: '12px' }}>← Autres cas</button>
-      </div>
-    </div>
-  );
+    );
+  }
 
   // Écran question
   return (
     <div style={{ padding: '14px' }}>
-      <div style={s.card}>
-        <div style={{ color: C, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>SITUATION CLINIQUE</div>
-        <div style={{ color: T.text, fontSize: 13, lineHeight: 1.7 }}>{cas.context}</div>
-      </div>
+      <Card>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 8 }}>Situation clinique</div>
+        <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.7 }}>{cas.context}</div>
+      </Card>
 
-      <div style={{ ...s.card, borderLeft: `3px solid ${C}` }}>
+      <Card accent={C}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ color: T.muted, fontFamily: 'monospace', fontSize: 11 }}>Question {etape + 1}/{cas.questions.length}</div>
-          <div style={{ color: C, fontFamily: 'monospace', fontSize: 11 }}>{score} pt{score > 1 ? 's' : ''}</div>
+          <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 600 }}>Question {etape + 1}/{cas.questions.length}</div>
+          <div style={{ color: C, fontSize: tk.font.xs, fontWeight: 700 }}>{score} pt{score > 1 ? 's' : ''}</div>
         </div>
-        <div style={{ color: T.text, fontWeight: 700, fontSize: 14, marginBottom: 14 }}>{q.q}</div>
+        <div style={{ color: T.text, fontWeight: 700, fontSize: tk.font.base, marginBottom: 14 }}>{q.q}</div>
 
         {options.map((opt, i) => {
           let bg = T.surface;
-          let border = '#334155';
+          let border = T.border;
           let color = T.text;
           if (choix !== null) {
-            if (opt === q.correct) { bg = '#14532d'; border = '#22c55e'; color = '#22c55e'; }
-            else if (opt === choix && opt !== q.correct) { bg = '#450a0a'; border = '#f87171'; color = '#f87171'; }
+            if (opt === q.correct) { bg = T.successDim; border = T.success; color = T.success; }
+            else if (opt === choix && opt !== q.correct) { bg = T.dangerDim; border = T.danger; color = T.danger; }
             else { color = T.muted; }
           }
           return (
             <button key={i} onClick={() => choisir(opt)} style={{
-              background: bg, border: `1px solid ${border}`, color,
-              borderRadius: 8, padding: '11px 14px', marginBottom: 8,
-              width: '100%', textAlign: 'left', fontSize: 13,
+              background: bg, border: `1.5px solid ${border}`, color,
+              borderRadius: tk.radius.sm, padding: '11px 14px', marginBottom: 8, minHeight: tk.touch.min,
+              width: '100%', textAlign: 'left', fontSize: tk.font.base,
               cursor: choix !== null ? 'default' : 'pointer',
-              fontFamily: 'system-ui', transition: 'all 0.2s'
+              fontFamily: 'inherit', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent',
             }}>
               {choix !== null && opt === q.correct && '✓ '}
               {choix !== null && opt === choix && opt !== q.correct && '✗ '}
@@ -274,18 +279,18 @@ export default function CasCliniques() {
 
         {/* Explication après réponse */}
         {choix !== null && (
-          <div style={{ background: '#0f2a1a', border: '1px solid #22c55e44', borderRadius: 8, padding: '12px 14px', marginTop: 4 }}>
-            <div style={{ color: '#22c55e', fontFamily: 'monospace', fontSize: 11, marginBottom: 6 }}>EXPLICATION</div>
-            <div style={{ color: T.text, fontSize: 13, lineHeight: 1.6 }}>{q.explication}</div>
+          <div style={{ background: T.successDim, border: `1px solid ${T.success}44`, borderRadius: tk.radius.sm, padding: '12px 14px', marginTop: 4 }}>
+            <div style={{ color: T.success, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 6 }}>Explication</div>
+            <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.6 }}>{q.explication}</div>
           </div>
         )}
 
         {choix !== null && (
-          <button onClick={suivant} style={{ ...s.btn(C), width: '100%', padding: '12px', marginTop: 12 }}>
+          <Btn color={C} size="lg" full onClick={suivant} style={{ marginTop: 12 }}>
             {etape < cas.questions.length - 1 ? 'Question suivante →' : 'Voir le résultat →'}
-          </button>
+          </Btn>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
