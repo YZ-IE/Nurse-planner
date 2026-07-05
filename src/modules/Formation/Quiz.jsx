@@ -4,7 +4,8 @@
  */
 
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, Card, Chip } from '../../ui/index.js';
 const C = T.form;
 
 const THEMES = {
@@ -82,48 +83,48 @@ function QuizSession({ questions, onDone }) {
 
   return (
     <div style={{ padding: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ ...s.tag(th.color), fontSize: 11 }}>{th.icon} {th.label}</span>
-        <span style={{ color: T.muted, fontFamily: 'monospace', fontSize: 12 }}>Q{idx + 1}/{questions.length} · {score}✓</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <Chip color={th.color} active>{th.icon} {th.label}</Chip>
+        <span style={{ color: T.muted, fontSize: tk.font.sm, fontWeight: 600 }}>Q{idx + 1}/{questions.length} · {score}✓</span>
       </div>
       <div style={{ background: T.border, borderRadius: 4, height: 4, marginBottom: 16 }}>
         <div style={{ background: C, height: 4, borderRadius: 4, width: `${idx / questions.length * 100}%`, transition: 'width 0.3s' }} />
       </div>
 
-      <div style={s.card}>
-        <div style={{ color: T.text, fontSize: 15, fontWeight: 600, lineHeight: 1.5, marginBottom: 14 }}>{q.q}</div>
+      <Card>
+        <div style={{ color: T.text, fontSize: tk.font.md, fontWeight: 600, lineHeight: 1.5, marginBottom: 14 }}>{q.q}</div>
         {q.opts.map((opt, i) => {
           const isCorrect  = i === q.rep;
           const isSelected = answered === i;
           let bg = T.bg, border = T.border, color = T.text;
           if (answered !== null) {
-            if (isCorrect)       { bg = C + '22'; border = C; color = C; }
-            else if (isSelected) { bg = '#ef444422'; border = '#ef4444'; color = '#ef4444'; }
+            if (isCorrect)       { bg = T.successDim; border = T.success; color = T.success; }
+            else if (isSelected) { bg = T.dangerDim; border = T.danger; color = T.danger; }
             else                 { color = T.muted; }
           }
           return (
             <button key={i} onClick={() => handleAnswer(i)}
-              style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%', background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '10px 12px', marginBottom: 8, cursor: answered !== null ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent' }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${border}33`, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+              style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%', minHeight: tk.touch.min, background: bg, border: `1.5px solid ${border}`, borderRadius: tk.radius.sm, padding: '10px 12px', marginBottom: 8, cursor: answered !== null ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent' }}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${border}33`, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: tk.font.xs, fontWeight: 700, flexShrink: 0 }}>
                 {String.fromCharCode(65 + i)}
               </div>
-              <span style={{ color, fontSize: 13 }}>{opt}</span>
+              <span style={{ color, fontSize: tk.font.sm }}>{opt}</span>
             </button>
           );
         })}
 
         {answered !== null && (
-          <div style={{ background: answered === q.rep ? C + '18' : '#ef444418', border: `1px solid ${answered === q.rep ? C : '#ef4444'}44`, borderRadius: 8, padding: 12, marginTop: 8 }}>
-            <div style={{ color: answered === q.rep ? C : '#ef4444', fontWeight: 700, fontSize: 13, marginBottom: 5 }}>
+          <div style={{ background: answered === q.rep ? T.successDim : T.dangerDim, border: `1px solid ${answered === q.rep ? T.success : T.danger}44`, borderRadius: tk.radius.sm, padding: 12, marginTop: 8 }}>
+            <div style={{ color: answered === q.rep ? T.success : T.danger, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 5 }}>
               {answered === q.rep ? '✓ Bonne réponse !' : '✗ Incorrect'}
             </div>
-            <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6 }}>{q.expl}</div>
-            <button onClick={next} style={{ ...s.btn(C), marginTop: 10, padding: '8px 20px' }}>
+            <div style={{ color: T.muted, fontSize: tk.font.sm, lineHeight: 1.6 }}>{q.expl}</div>
+            <Btn color={C} size="md" onClick={next} style={{ marginTop: 10 }}>
               {idx < questions.length - 1 ? 'Suivant →' : 'Résultats'}
-            </button>
+            </Btn>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -132,17 +133,19 @@ function QuizSession({ questions, onDone }) {
 
 function Results({ score, total, onRestart }) {
   const pct = Math.round(score / total * 100);
+  const pass = pct >= 70;
+  const resultColor = pass ? T.success : T.danger;
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ ...s.result(pct >= 70 ? C : '#ef4444'), textAlign: 'center' }}>
+      <Card dim={pass ? T.successDim : T.dangerDim} style={{ border: `1px solid ${resultColor}44`, textAlign: 'center' }}>
         <div style={{ fontSize: 44, marginBottom: 12 }}>{pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '📚'}</div>
-        <div style={{ color: C, fontSize: 30, fontWeight: 700 }}>{score}/{total}</div>
-        <div style={{ color: T.muted, fontSize: 14, marginTop: 4 }}>{pct}% de bonnes réponses</div>
-        <div style={{ color: T.muted, fontSize: 13, marginTop: 6 }}>
+        <div style={{ color: resultColor, fontSize: 30, fontWeight: 700 }}>{score}/{total}</div>
+        <div style={{ color: T.muted, fontSize: tk.font.base, marginTop: 4 }}>{pct}% de bonnes réponses</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, marginTop: 6 }}>
           {score === total ? 'Parfait !' : pct >= 80 ? 'Excellent !' : pct >= 60 ? 'Bien, continuez !' : 'Révisez les explications.'}
         </div>
-        <button onClick={onRestart} style={{ ...s.btn(C), marginTop: 16, padding: '10px 24px' }}>Recommencer</button>
-      </div>
+        <Btn color={C} size="lg" onClick={onRestart} style={{ marginTop: 16 }}>Recommencer</Btn>
+      </Card>
     </div>
   );
 }
@@ -166,35 +169,33 @@ export default function Quiz() {
 
   return (
     <div style={{ padding: 14 }}>
-      <div style={{ color: T.text, fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Choisissez un thème</div>
-      <div style={{ color: T.muted, fontSize: 13, marginBottom: 16 }}>{QUESTIONS.length} questions au total</div>
+      <div style={{ color: T.text, fontSize: tk.font.lg, fontWeight: 700, marginBottom: 4 }}>Choisissez un thème</div>
+      <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 16 }}>{QUESTIONS.length} questions au total</div>
 
       {/* Tout mélangé */}
-      <div onClick={() => startMode('all')}
-        style={{ background: T.surface, border: `1px solid ${C}44`, borderLeft: `3px solid ${C}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 26 }}>🎲</span>
+      <Card onClick={() => startMode('all')} accent={C}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 28 }}>🎲</span>
           <div>
-            <div style={{ color: C, fontWeight: 700, fontSize: 15 }}>Tout mélangé</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{QUESTIONS.length} questions · Tous thèmes</div>
+            <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base }}>Tout mélangé</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs }}>{QUESTIONS.length} questions · Tous thèmes</div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Par thème */}
       {Object.entries(THEMES).map(([id, th]) => {
         const count = QUESTIONS.filter(q => q.theme === id).length;
         return (
-          <div key={id} onClick={() => startMode(id)}
-            style={{ background: T.surface, border: `1px solid ${th.color}44`, borderLeft: `3px solid ${th.color}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>{th.icon}</span>
+          <Card key={id} onClick={() => startMode(id)} accent={th.color}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 26 }}>{th.icon}</span>
               <div>
-                <div style={{ color: th.color, fontWeight: 700, fontSize: 14 }}>{th.label}</div>
-                <div style={{ color: T.muted, fontSize: 12 }}>{count} questions</div>
+                <div style={{ color: th.color, fontWeight: 700, fontSize: tk.font.base }}>{th.label}</div>
+                <div style={{ color: T.muted, fontSize: tk.font.xs }}>{count} questions</div>
               </div>
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>
