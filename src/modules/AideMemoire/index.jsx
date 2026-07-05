@@ -161,7 +161,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   // ── Bandeau timeout ───────────────────────────────────────────────────────
   const TimeoutBanner = warnExpiry ? (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: '#f97316', color: '#000', textAlign: 'center', padding: '8px 16px', fontSize: 13, fontWeight: 600 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: '#EA580C', color: '#fff', textAlign: 'center', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}>
       ⏱ Session expire dans moins d'1 min — Touchez l'écran pour continuer
     </div>
   ) : null;
@@ -193,7 +193,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
         </div>
         <button
           onClick={() => goTo('consent')}
-          style={{ marginTop: 8, padding: '12px 24px', background: '#6366f1', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          style={{ marginTop: 8, padding: '14px 26px', minHeight: 48, background: ACCENT, border: 'none', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
         >
           Revoir les informations
         </button>
