@@ -399,7 +399,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
       )}
 
       {error && (
-        <div style={{ background:'#f43f5e18', border:'1px solid #f43f5e33', borderRadius:10, padding:'8px 12px', marginBottom:12, color:'#f43f5e', fontSize:12 }}>
+        <div style={{ background:T.dangerDim, border:`1px solid ${T.danger}33`, borderRadius:10, padding:'8px 12px', marginBottom:12, color:T.danger, fontSize:13 }}>
           {error}
         </div>
       )}
@@ -484,7 +484,7 @@ export default function WoundPhotos({ patient, service, cryptoKey, readOnly }) {
             </div>
             {!readOnly && (
               <button onClick={() => handleDelete(selected)}
-                style={{ background:'#f43f5e22', border:'1px solid #f43f5e44', borderRadius:8, color:'#f43f5e', fontSize:12, padding:'6px 10px', cursor:'pointer' }}>
+                style={{ background:T.dangerDim, border:`1px solid ${T.danger}44`, borderRadius:8, color:T.danger, fontSize:13, minHeight:44, padding:'6px 12px', cursor:'pointer' }}>
                 🗑
               </button>
             )}

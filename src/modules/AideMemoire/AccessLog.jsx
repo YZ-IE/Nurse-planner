@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { T } from '../../theme.js';
+import { T, SOLID } from '../../theme.js';
 
 const ACCENT = '#6366f1';
 
@@ -33,14 +33,14 @@ export function clearLog() {
 }
 
 const EVENT_META = {
-  LOGIN_OK:        { label: 'Connexion réussie',         color: '#22c55e' },
-  LOGIN_FAIL:      { label: 'Échec de connexion',        color: '#f97316' },
-  LOGOUT:          { label: 'Déconnexion',               color: '#6366f1' },
-  LOCKOUT:         { label: 'Verrouillage',              color: '#ef4444' },
-  SESSION_EXPIRED: { label: 'Session expirée',           color: '#f97316' },
-  SETUP:           { label: 'Mot de passe créé',         color: '#6366f1' },
-  CONSENT:         { label: 'Consentement enregistré',   color: '#22c55e' },
-  EXPORT_TEXT:     { label: 'Export texte confirmé',     color: '#f97316' },
+  LOGIN_OK:        { label: 'Connexion réussie',         color: SOLID.success },
+  LOGIN_FAIL:      { label: 'Échec de connexion',        color: SOLID.warning },
+  LOGOUT:          { label: 'Déconnexion',               color: SOLID.info },
+  LOCKOUT:         { label: 'Verrouillage',              color: SOLID.danger },
+  SESSION_EXPIRED: { label: 'Session expirée',           color: SOLID.warning },
+  SETUP:           { label: 'Mot de passe créé',         color: SOLID.info },
+  CONSENT:         { label: 'Consentement enregistré',   color: SOLID.success },
+  EXPORT_TEXT:     { label: 'Export texte confirmé',     color: SOLID.warning },
   TRANSFER_EXPORT: { label: 'Transfert exporté',         color: '#06b6d4' },
   TRANSFER_IMPORT: { label: 'Transfert importé',         color: '#06b6d4' },
   PURGE:           { label: 'Purge données',             color: '#a78bfa' },
@@ -96,7 +96,7 @@ export default function AccessLog({ onBack }) {
             <div style={{ color: T.muted, fontSize: 12 }}>{logs.length} événement(s) · Conformité RGPD/HDS</div>
           </div>
           <button onClick={handleExport}
-            style={{ background: copied ? '#22c55e22' : ACCENT + '22', border: `1px solid ${copied ? '#22c55e' : ACCENT}`, borderRadius: 8, color: copied ? '#22c55e' : ACCENT, fontSize: 12, padding: '6px 10px', cursor: 'pointer', fontWeight: 600 }}>
+            style={{ background: copied ? T.successDim : ACCENT + '22', border: `1px solid ${copied ? T.success : ACCENT}`, borderRadius: 8, color: copied ? T.success : ACCENT, fontSize: 13, minHeight: 40, padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}>
             {copied ? '✅ Copié' : '📋 Exporter'}
           </button>
         </div>
@@ -146,7 +146,7 @@ export default function AccessLog({ onBack }) {
           <div style={{ marginTop: 24, textAlign: 'center' }}>
             {!confirm ? (
               <button onClick={() => setConfirm(true)}
-                style={{ background: 'none', border: '1px solid #f43f5e44', borderRadius: 8, color: '#f43f5e', fontSize: 12, padding: '8px 16px', cursor: 'pointer' }}>
+                style={{ background: 'none', border: `1px solid ${T.danger}44`, borderRadius: 8, color: T.danger, fontSize: 13, minHeight: 44, padding: '8px 16px', cursor: 'pointer' }}>
                 🗑 Effacer le journal
               </button>
             ) : (
@@ -156,7 +156,7 @@ export default function AccessLog({ onBack }) {
                   Annuler
                 </button>
                 <button onClick={handleClear}
-                  style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 8, color: '#f43f5e', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontWeight: 700 }}>
+                  style={{ background: T.dangerDim, border: `1px solid ${T.danger}44`, borderRadius: 8, color: T.danger, fontSize: 13, minHeight: 44, padding: '8px 16px', cursor: 'pointer', fontWeight: 700 }}>
                   Confirmer l'effacement
                 </button>
               </div>

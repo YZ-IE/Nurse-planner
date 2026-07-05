@@ -270,7 +270,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
                 </div>
               ))}
             </div>
-            {error&&<div style={{color:'#f43f5e',fontSize:13,marginBottom:10}}>{error}</div>}
+            {error&&<div style={{color:T.danger,fontSize:13,marginBottom:10}}>{error}</div>}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setMode(null)} style={{flex:1,background:'none',border:`1px solid ${P.bdr}`,borderRadius:12,color:T.muted,padding:'13px',fontSize:14,cursor:'pointer'}}>Retour</button>
               <button onClick={handleExport} disabled={!selPhoto||busy}
@@ -317,7 +317,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
               </>
             )}
 
-            {error&&<div style={{color:'#f43f5e',fontSize:13,marginBottom:10}}>{error}</div>}
+            {error&&<div style={{color:T.danger,fontSize:13,marginBottom:10}}>{error}</div>}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setMode(null)} style={{flex:1,background:'none',border:`1px solid ${P.bdr}`,borderRadius:12,color:T.muted,padding:'13px',fontSize:14,cursor:'pointer'}}>Retour</button>
               {importTab==='file'
@@ -361,7 +361,7 @@ export default function WoundPhotoTransfer({ photos, patient, service, cryptoKey
         {step==='error'&&(
           <div style={{textAlign:'center',padding:'16px 0'}}>
             <div style={{fontSize:40,marginBottom:12}}>❌</div>
-            <div style={{color:'#f43f5e',fontSize:15,marginBottom:16}}>{error}</div>
+            <div style={{color:T.danger,fontSize:15,marginBottom:16}}>{error}</div>
             <button onClick={()=>{setStep('select');setError('');}}
               style={{background:C,border:'none',borderRadius:12,color:'#fff',padding:'12px 24px',fontSize:14,fontWeight:700,cursor:'pointer'}}>Réessayer</button>
           </div>

@@ -161,7 +161,7 @@ function QRSend({ photo, patient, service, onClose }) {
   );
   if (error) return (
     <div style={{ textAlign:'center', padding:'40px 20px' }}>
-      <div style={{ color:'#f43f5e', fontSize:14, marginBottom:16 }}>{error}</div>
+      <div style={{ color:T.danger, fontSize:14, marginBottom:16 }}>{error}</div>
       <button onClick={onClose} style={{ background:C, border:'none', borderRadius:10, color:'#fff', padding:'10px 20px', cursor:'pointer' }}>Fermer</button>
     </div>
   );
@@ -374,7 +374,7 @@ function QRReceive({ patient, service, cryptoKey, onClose, onImported }) {
             style={{ width:'100%', background:T.bg, border:`1px solid ${T.border}`, borderRadius:10,
               padding:'11px 14px', color:T.text, fontSize:22, letterSpacing:8, textAlign:'center',
               outline:'none', boxSizing:'border-box', fontFamily:'monospace' }}/>
-          {error && <div style={{ color:'#f43f5e', fontSize:13 }}>{error}</div>}
+          {error && <div style={{ color:T.danger, fontSize:13 }}>{error}</div>}
           <button onClick={handleDecrypt} disabled={busy || code.length !== 6}
             style={{ background:code.length===6&&!busy?C:'#555', border:'none', borderRadius:12,
               color:'#fff', padding:'13px', fontSize:14, fontWeight:700, cursor:'pointer' }}>
@@ -398,7 +398,7 @@ function QRReceive({ patient, service, cryptoKey, onClose, onImported }) {
       {step === 'error' && (
         <div style={{ textAlign:'center', padding:'24px 0' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>❌</div>
-          <div style={{ color:'#f43f5e', fontSize:14, marginBottom:16 }}>{error}</div>
+          <div style={{ color:T.danger, fontSize:14, marginBottom:16 }}>{error}</div>
           <button onClick={onClose}
             style={{ background:C, border:'none', borderRadius:12, color:'#fff', padding:'12px 24px', cursor:'pointer' }}>
             Fermer

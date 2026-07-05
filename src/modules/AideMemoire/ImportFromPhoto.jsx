@@ -187,7 +187,7 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
           <div style={{ color: T.muted, fontSize: 13, lineHeight: 1.6 }}>
             Photographiez la feuille. L'app détecte automatiquement les <strong style={{ color: T.text }}>numéros de chambre</strong>, <strong style={{ color: T.text }}>noms</strong> et <strong style={{ color: T.text }}>âges</strong> des patients.
           </div>
-          <div style={{ color: isOCRSupported() ? '#22c55e' : T.muted, fontSize: 11, marginTop: 8 }}>
+          <div style={{ color: isOCRSupported() ? T.success : T.muted, fontSize: 12, marginTop: 8 }}>
             {isOCRSupported()
               ? '✓ OCR natif disponible — fonctionne sans connexion réseau'
               : '⚠️ OCR non disponible sur cet appareil — vous pourrez ajouter les patients manuellement'}
@@ -195,7 +195,7 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
         </div>
 
         {error && (
-          <div style={{ color: '#f43f5e', fontSize: 13, marginBottom: 16, background: '#f43f5e22', borderRadius: 8, padding: '8px 12px' }}>{error}</div>
+          <div style={{ color: T.danger, fontSize: 13, marginBottom: 16, background: T.dangerDim, borderRadius: 8, padding: '8px 12px' }}>{error}</div>
         )}
 
         <button onClick={handleCapture}
@@ -282,7 +282,7 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
                 <div>
                   <div style={{ color: T.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Lit *</div>
                   <select value={pt.slotIndex || ''} onChange={e => update(pt._key, 'slotIndex', e.target.value ? Number(e.target.value) : null)}
-                    style={{ ...INP, borderColor: slotOk ? T.border : '#f43f5e88' }}>
+                    style={{ ...INP, borderColor: slotOk ? T.border : T.danger + '88' }}>
                     <option value="">— Choisir —</option>
                     {freeSlots.map(s => (
                       <option key={s.slotIndex} value={s.slotIndex}>{s.roomLabel}</option>
@@ -295,7 +295,7 @@ export default function ImportFromPhoto({ service, existingPatients, onImport, o
                   <div style={{ color: T.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Initiales *</div>
                   <input value={pt.initials} onChange={e => update(pt._key, 'initials', e.target.value.toUpperCase())}
                     maxLength={5} placeholder="Ex : M.D"
-                    style={{ ...INP, borderColor: initOk ? T.border : '#f43f5e88' }} />
+                    style={{ ...INP, borderColor: initOk ? T.border : T.danger + '88' }} />
                 </div>
 
                 {/* Sexe */}
