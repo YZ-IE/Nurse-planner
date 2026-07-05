@@ -1,6 +1,7 @@
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
 import ModuleShell   from '../shared/ModuleShell.jsx';
 import StarButton     from '../shared/StarButton.jsx';
+import { Card, Chip } from '../../ui/index.js';
 
 import Pansements     from './Pansements.jsx';
 import PiccMidline    from './PiccMidline.jsx';
@@ -44,25 +45,20 @@ export default function Soins({ onBack, initialTool = null, onFavChange, onBackO
       initialTool={initialTool}
       onFavChange={onFavChange}
       renderItem={(o, openTool) => (
-        <div
-          style={{ ...s.card, display:'flex', alignItems:'center', gap:14, cursor:'pointer' }}
-          onClick={() => openTool(o.id)}
-        >
-          <span style={{ fontSize:26 }}>{o.icon}</span>
+        <Card onClick={() => openTool(o.id)} style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <span style={{ fontSize:28 }}>{o.icon}</span>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:T.text, fontWeight:700, fontSize:14, marginBottom:2 }}>
+            <div style={{ color:T.text, fontWeight:700, fontSize:tk.font.base, marginBottom:2, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
               {o.label}
               {o.badge && (
-                <span style={{ marginLeft:8, background:C+'22', color:C, fontSize:9, fontFamily:'monospace', padding:'2px 7px', borderRadius:10 }}>
-                  {o.badge}
-                </span>
+                <Chip color={C} active style={{ height:24, padding:'0 8px', fontSize:tk.font.xs }}>{o.badge}</Chip>
               )}
             </div>
-            <div style={{ color:T.muted, fontSize:12 }}>{o.sub}</div>
+            <div style={{ color:T.muted, fontSize:tk.font.xs, lineHeight:1.5 }}>{o.sub}</div>
           </div>
           <StarButton mod={MOD} toolId={o.id} label={o.label} icon={o.icon} color={C} onFavChange={onFavChange} />
-          <span style={{ color:T.muted }}>›</span>
-        </div>
+          <span style={{ color:T.muted, fontSize:20 }}>›</span>
+        </Card>
       )}
       renderDetail={(toolId) => MAP[toolId] || null}
     />

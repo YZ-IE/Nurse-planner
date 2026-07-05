@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, IconBtn, Card, Input } from '../../ui/index.js';
 const C = T.soins;
 
 // ── Presets de timers médicaux ───────────────────────────────────────────────
@@ -61,36 +62,36 @@ function TimerWidget({ preset, onRemove }) {
   const reset = () => { setRunning(false); setDone(false); clearInterval(iRef.current); setRemaining(duration); };
 
   const pct = duration > 0 ? Math.round((1 - remaining / duration) * 100) : 0;
-  const color = done ? '#22c55e' : preset.color;
+  const color = done ? T.success : preset.color;
 
   return (
-    <div style={{ ...s.card, border: `1px solid ${color}44`, background: done ? color + '18' : T.surface, animation: done ? 'blink 0.5s ease 3' : 'none', marginBottom: 10 }}>
+    <Card style={{ border: `1px solid ${color}44`, background: done ? T.successDim : T.surface }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 22 }}>{preset.icon}</span>
           <div>
             {preset.id === 'perf_custom'
-              ? <input value={label} onChange={e => setLabel(e.target.value)} style={{ ...s.input, padding: '4px 8px', fontSize: 13, fontWeight: 700, width: 140 }} />
-              : <div style={{ color: T.text, fontWeight: 700, fontSize: 14 }}>{label}</div>
+              ? <Input value={label} onChange={e => setLabel(e.target.value)} size="compact" style={{ fontWeight: 700, width: 150 }} />
+              : <div style={{ color: T.text, fontWeight: 700, fontSize: tk.font.base }}>{label}</div>
             }
-            <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>{preset.tip}</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 2 }}>{preset.tip}</div>
           </div>
         </div>
-        <button onClick={onRemove} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 18 }}>×</button>
+        <IconBtn label="Retirer ce timer" onClick={onRemove} fontSize={20}>×</IconBtn>
       </div>
 
       {/* Durée custom */}
       {preset.id === 'perf_custom' && !running && !done && (
         <div style={{ marginBottom: 10 }}>
-          <input type="number" value={customDur} onChange={e => setCustomDur(e.target.value)} placeholder="Durée en minutes"
-            style={{ ...s.input, textAlign: 'center', fontSize: 15 }} />
+          <Input type="number" value={customDur} onChange={e => setCustomDur(e.target.value)} placeholder="Durée en minutes"
+            style={{ textAlign: 'center', fontSize: tk.font.md }} />
         </div>
       )}
 
       {/* Affichage temps */}
       <div style={{ textAlign: 'center', margin: '10px 0' }}>
-        <div style={{ color: done ? color : color, fontSize: 40, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 2 }}>
+        <div style={{ color, fontSize: 40, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 2 }}>
           {done ? '✓ TERMINÉ' : fmt(remaining)}
         </div>
         {duration > 0 && !done && (
@@ -103,16 +104,15 @@ function TimerWidget({ preset, onRemove }) {
       {/* Contrôles */}
       <div style={{ display: 'flex', gap: 8 }}>
         {!running ? (
-          <button onClick={start} disabled={preset.id === 'perf_custom' && !customDur}
-            style={{ ...s.btn(color), flex: 2, padding: '10px', opacity: preset.id === 'perf_custom' && !customDur ? 0.4 : 1 }}>
+          <Btn color={color} size="lg" disabled={preset.id === 'perf_custom' && !customDur} onClick={start} style={{ flex: 2 }}>
             {done ? '↺ Relancer' : remaining < duration && remaining > 0 ? '▶ Reprendre' : '▶ Démarrer'}
-          </button>
+          </Btn>
         ) : (
-          <button onClick={pause} style={{ ...s.btn('#f59e0b'), flex: 2, padding: '10px' }}>⏸ Pause</button>
+          <Btn color={T.warning} size="lg" onClick={pause} style={{ flex: 2 }}>⏸ Pause</Btn>
         )}
-        <button onClick={reset} style={{ ...s.btn('#475569'), flex: 1, padding: '10px' }}>↺</button>
+        <Btn color={T.muted} variant="outline" size="lg" onClick={reset} style={{ flex: 1 }}>↺</Btn>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -125,15 +125,15 @@ export default function Timers() {
 
   return (
     <div style={{ padding: '14px' }}>
-      <div style={{ ...s.card, background: C + '11', border: `1px solid ${C}33`, marginBottom: 14 }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 13 }}>⏱ Timers de soins</div>
-        <div style={{ color: T.muted, fontSize: 12, marginTop: 3 }}>Chronomètres antiseptiques, perfusions, soins · Plusieurs timers simultanés possibles</div>
-      </div>
+      <Card dim={C + '11'} style={{ border: `1px solid ${C}33` }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.sm }}>⏱ Timers de soins</div>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 4 }}>Chronomètres antiseptiques, perfusions, soins · Plusieurs timers simultanés possibles</div>
+      </Card>
 
       {/* Timers actifs */}
       {active.length > 0 && (
         <>
-          <div style={{ color: C, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>TIMERS ACTIFS</div>
+          <div style={{ color: C, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 8 }}>Timers actifs</div>
           {active.map((t, i) => (
             <TimerWidget key={t.key} preset={t} onRemove={() => setActive(p => p.filter((_, j) => j !== i))} />
           ))}
@@ -141,25 +141,25 @@ export default function Timers() {
       )}
 
       {/* Presets */}
-      <div style={{ color: C, fontFamily: 'monospace', fontSize: 11, letterSpacing: 2, margin: '14px 0 8px' }}>AJOUTER UN TIMER</div>
+      <div style={{ color: C, fontSize: tk.font.xs, fontWeight: 700, margin: '14px 0 8px' }}>Ajouter un timer</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {PRESETS.map(p => (
-          <div key={p.id} onClick={() => add(p)}
-            style={{ background: T.surface, border: `1px solid ${p.color}44`, borderRadius: 10, padding: '12px', cursor: 'pointer' }}>
-            <div style={{ fontSize: 22, marginBottom: 5 }}>{p.icon}</div>
-            <div style={{ color: p.color, fontWeight: 700, fontSize: 12, marginBottom: 2 }}>{p.label}</div>
-            <div style={{ color: T.muted, fontSize: 11 }}>
+          <button key={p.id} onClick={() => add(p)}
+            style={{ background: T.surface, border: `1px solid ${p.color}44`, borderRadius: 10, minHeight: 88, padding: '12px', cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}>
+            <div style={{ fontSize: 22, marginBottom: 6 }}>{p.icon}</div>
+            <div style={{ color: p.color, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 3 }}>{p.label}</div>
+            <div style={{ color: T.muted, fontSize: tk.font.xs }}>
               {p.duration === 0 ? 'Durée libre' : p.duration < 60 ? `${p.duration}s` : p.duration < 3600 ? `${p.duration / 60} min` : `${p.duration / 3600}h`}
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
-      <div style={{ ...s.card, marginTop: 14, background: '#f59e0b11', border: '1px solid #f59e0b33' }}>
-        <div style={{ color: '#f59e0b', fontSize: 11, fontFamily: 'monospace' }}>
+      <Card dim={T.warningDim} style={{ marginTop: 14, border: `1px solid ${T.warning}33` }}>
+        <div style={{ color: T.warning, fontSize: tk.font.xs, fontWeight: 600 }}>
           💡 Vibration activée à la fin du timer si votre appareil le supporte · Ne pas fermer l'application
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
