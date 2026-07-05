@@ -4,7 +4,8 @@
  */
 
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, s, tk } from '../../theme.js';
+import { Btn, Card, Input } from '../../ui/index.js';
 const C = T.form;
 
 // ─── Exercices par niveau ────────────────────────────────────────────────────
@@ -231,19 +232,18 @@ function Entrainement({ niveau, onBack }) {
 
   if (done) return (
     <div style={{ padding: 16 }}>
-      <div style={{ ...s.result(score / exos.length >= 0.7 ? cfg.color : '#ef4444'), textAlign: 'center' }}>
+      <Card dim={cfg.color + '14'} style={{ border: `1px solid ${cfg.color}44`, textAlign: 'center' }}>
         <div style={{ fontSize: 44, marginBottom: 10 }}>{score / exos.length >= 0.8 ? '🏆' : score / exos.length >= 0.6 ? '👍' : '📚'}</div>
         <div style={{ color: cfg.color, fontSize: 30, fontWeight: 700 }}>{score}/{exos.length}</div>
-        <div style={{ color: T.muted, fontSize: 14, marginTop: 4 }}>{Math.round(score / exos.length * 100)}% de bonnes réponses</div>
-        <div style={{ color: T.muted, fontSize: 13, marginTop: 6 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.base, marginTop: 4 }}>{Math.round(score / exos.length * 100)}% de bonnes réponses</div>
+        <div style={{ color: T.muted, fontSize: tk.font.sm, marginTop: 6 }}>
           {score === exos.length ? 'Parfait !' : score / exos.length >= 0.8 ? 'Excellent !' : score / exos.length >= 0.6 ? 'Bien, continuez !' : 'Révisez les formules clés.'}
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <button onClick={() => { setIdx(0); setInput(''); setResult(null); setScore(0); setDone(false); setShowHint(false); }}
-            style={{ ...s.btn(cfg.color), flex: 1, padding: '10px' }}>Recommencer</button>
-          <button onClick={onBack} style={{ ...s.btn(T.muted), flex: 1, padding: '10px' }}>Changer de niveau</button>
+          <Btn color={cfg.color} size="lg" onClick={() => { setIdx(0); setInput(''); setResult(null); setScore(0); setDone(false); setShowHint(false); }} style={{ flex: 1 }}>Recommencer</Btn>
+          <Btn color={T.muted} variant="outline" size="lg" onClick={onBack} style={{ flex: 1 }}>Changer de niveau</Btn>
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -251,21 +251,21 @@ function Entrainement({ niveau, onBack }) {
     <div style={{ padding: 16 }}>
       {/* Progression */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ color: T.muted, fontFamily: 'monospace', fontSize: 12 }}>Question {idx + 1}/{exos.length}</span>
-        <span style={{ color: cfg.color, fontFamily: 'monospace', fontSize: 12 }}>Score {score}</span>
+        <span style={{ color: T.muted, fontSize: tk.font.sm, fontWeight: 600 }}>Question {idx + 1}/{exos.length}</span>
+        <span style={{ color: cfg.color, fontSize: tk.font.sm, fontWeight: 700 }}>Score {score}</span>
       </div>
       <div style={{ background: T.border, borderRadius: 4, height: 4, marginBottom: 16 }}>
         <div style={{ background: cfg.color, height: 4, borderRadius: 4, width: `${idx / exos.length * 100}%`, transition: 'width 0.3s' }} />
       </div>
 
       {/* Énoncé */}
-      <div style={{ ...s.card, marginBottom: 12 }}>
-        <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Énoncé</div>
-        <div style={{ color: T.text, fontSize: 14, lineHeight: 1.6 }}>{ex.enonce}</div>
-      </div>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 600, marginBottom: 8 }}>Énoncé</div>
+        <div style={{ color: T.text, fontSize: tk.font.base, lineHeight: 1.6 }}>{ex.enonce}</div>
+      </Card>
 
       {/* Question */}
-      <div style={{ color: T.text, fontSize: 15, fontWeight: 700, marginBottom: 12, lineHeight: 1.5 }}>
+      <div style={{ color: T.text, fontSize: tk.font.md, fontWeight: 700, marginBottom: 12, lineHeight: 1.5 }}>
         {ex.question}
       </div>
 
@@ -273,29 +273,27 @@ function Entrainement({ niveau, onBack }) {
       {result === null && (
         <>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input
+            <Input
               type="number"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && input) handleCheck(); }}
               placeholder="Votre réponse…"
               inputMode="decimal"
-              style={{ ...s.input, flex: 1, boxSizing: 'border-box', fontSize: 18, textAlign: 'center', fontWeight: 700 }}
+              style={{ flex: 1, fontSize: tk.font.lg, textAlign: 'center', fontWeight: 700 }}
             />
-            <span style={{ display: 'flex', alignItems: 'center', color: T.muted, fontSize: 14, flexShrink: 0 }}>{ex.unite}</span>
+            <span style={{ display: 'flex', alignItems: 'center', color: T.muted, fontSize: tk.font.base, flexShrink: 0 }}>{ex.unite}</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleCheck} disabled={!input}
-              style={{ ...s.btn(cfg.color), flex: 2, padding: '12px', fontSize: 15, fontWeight: 700, opacity: input ? 1 : 0.4 }}>
+            <Btn color={cfg.color} size="lg" disabled={!input} onClick={handleCheck} style={{ flex: 2 }}>
               Vérifier
-            </button>
-            <button onClick={() => setShowHint(h => !h)}
-              style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, fontSize: 14, padding: '12px', cursor: 'pointer', flex: 1 }}>
+            </Btn>
+            <Btn color={T.muted} variant="outline" size="lg" onClick={() => setShowHint(h => !h)} style={{ flex: 1 }}>
               💡 Indice
-            </button>
+            </Btn>
           </div>
           {showHint && (
-            <div style={{ background: '#fbbf2418', border: '1px solid #fbbf2444', borderRadius: 9, padding: '10px 12px', marginTop: 10, color: '#fbbf24', fontSize: 13 }}>
+            <div style={{ background: T.warningDim, border: `1px solid ${T.warning}44`, borderRadius: tk.radius.md, padding: '10px 14px', marginTop: 10, color: T.warning, fontSize: tk.font.sm, fontWeight: 500 }}>
               💡 {ex.indice}
             </div>
           )}
@@ -304,17 +302,17 @@ function Entrainement({ niveau, onBack }) {
 
       {/* Résultat */}
       {result !== null && (
-        <div style={{ background: result === 'correct' ? cfg.color + '18' : '#ef444418', border: `1px solid ${result === 'correct' ? cfg.color : '#ef4444'}44`, borderRadius: 9, padding: '14px 14px', marginTop: 4, animation: 'fadeIn 0.3s' }}>
-          <div style={{ color: result === 'correct' ? cfg.color : '#ef4444', fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
+        <div style={{ background: result === 'correct' ? cfg.color + '18' : T.dangerDim, border: `1px solid ${result === 'correct' ? cfg.color : T.danger}44`, borderRadius: tk.radius.md, padding: '14px 14px', marginTop: 4 }}>
+          <div style={{ color: result === 'correct' ? cfg.color : T.danger, fontWeight: 700, fontSize: tk.font.base, marginBottom: 8 }}>
             {result === 'correct' ? `✓ Correct ! ${round2(ex.reponse)} ${ex.unite}` : `✗ La bonne réponse est ${round2(ex.reponse)} ${ex.unite}`}
           </div>
-          <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Calcul</div>
-          <div style={{ color: T.text, fontSize: 13, lineHeight: 1.7, fontFamily: 'monospace', background: T.bg, borderRadius: 7, padding: '8px 10px', marginBottom: 12, whiteSpace: 'pre-line' }}>
+          <div style={{ color: T.muted, fontSize: tk.font.xs, fontWeight: 600, marginBottom: 6 }}>Calcul</div>
+          <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.7, background: T.bg, borderRadius: 7, padding: '8px 10px', marginBottom: 12, whiteSpace: 'pre-line' }}>
             {ex.calcul}
           </div>
-          <button onClick={handleNext} style={{ ...s.btn(cfg.color), padding: '10px 20px' }}>
+          <Btn color={cfg.color} size="md" onClick={handleNext}>
             {idx < exos.length - 1 ? 'Suivant →' : 'Résultats'}
-          </button>
+          </Btn>
         </div>
       )}
     </div>
@@ -330,28 +328,27 @@ export default function DoseCalcEntrainement() {
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ color: T.text, fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Choisissez votre niveau</div>
-      <div style={{ color: T.muted, fontSize: 13, marginBottom: 20 }}>
-        Formule universelle : <span style={{ color: C, fontFamily: 'monospace' }}>Dose voulue × Volume stock ÷ Dose stock</span>
+      <div style={{ color: T.text, fontSize: tk.font.lg, fontWeight: 700, marginBottom: 4 }}>Choisissez votre niveau</div>
+      <div style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 20 }}>
+        Formule universelle : <span style={{ color: C, fontWeight: 600 }}>Dose voulue × Volume stock ÷ Dose stock</span>
       </div>
 
       {Object.entries(NIVEAU_CONFIG).map(([id, cfg]) => (
-        <div key={id} onClick={() => setNiveau(id)}
-          style={{ background: T.surface, border: `1px solid ${cfg.color}44`, borderLeft: `3px solid ${cfg.color}`, borderRadius: 12, padding: '16px 16px', marginBottom: 12, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 28 }}>{cfg.icon}</span>
+        <Card key={id} onClick={() => setNiveau(id)} accent={cfg.color}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 30 }}>{cfg.icon}</span>
             <div>
-              <div style={{ color: cfg.color, fontWeight: 700, fontSize: 15 }}>{cfg.label}</div>
-              <div style={{ color: T.muted, fontSize: 12, marginTop: 2 }}>{cfg.desc}</div>
-              <div style={{ color: T.muted, fontSize: 11, marginTop: 4 }}>{EXERCISES[id].length} exercices</div>
+              <div style={{ color: cfg.color, fontWeight: 700, fontSize: tk.font.base }}>{cfg.label}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 2 }}>{cfg.desc}</div>
+              <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 4, opacity: 0.8 }}>{EXERCISES[id].length} exercices</div>
             </div>
           </div>
-        </div>
+        </Card>
       ))}
 
       {/* Rappel des formules */}
-      <div style={{ ...s.card, marginTop: 8 }}>
-        <div style={{ color: C, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>📐 Formules clés</div>
+      <Card style={{ marginTop: 8 }}>
+        <div style={{ color: C, fontSize: tk.font.sm, fontWeight: 700, marginBottom: 10 }}>📐 Formules clés</div>
         {[
           { label: 'Dose injectable', formula: 'Dose voulue × V stock ÷ Dose stock' },
           { label: 'Débit SAP (mL/h)', formula: 'Dose/h × V total ÷ Dose totale' },
@@ -360,11 +357,11 @@ export default function DoseCalcEntrainement() {
           { label: 'mL/h → mcg/min', formula: 'mL/h × concentration ÷ 60' },
         ].map(f => (
           <div key={f.label} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <span style={{ color: T.muted, fontSize: 12, minWidth: 130, flexShrink: 0 }}>{f.label}</span>
-            <span style={{ color: T.text, fontSize: 12, fontFamily: 'monospace', background: T.bg, borderRadius: 5, padding: '2px 7px' }}>{f.formula}</span>
+            <span style={{ color: T.muted, fontSize: tk.font.xs, minWidth: 130, flexShrink: 0 }}>{f.label}</span>
+            <span style={{ color: T.text, fontSize: tk.font.xs, background: T.bg, borderRadius: 5, padding: '3px 8px', fontWeight: 500 }}>{f.formula}</span>
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }
