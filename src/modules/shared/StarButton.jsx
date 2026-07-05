@@ -18,14 +18,17 @@ export default function StarButton({ mod, toolId, label, icon, color, onFavChang
   return (
     <button
       onClick={handleToggle}
+      aria-label={fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       style={{
         background: 'none', border: 'none',
         color: fav ? '#FBBF24' : inactiveColor,
-        fontSize: 17, cursor: 'pointer',
-        padding: '2px 4px', lineHeight: 1,
+        fontSize: 19, cursor: 'pointer',
+        width: 44, height: 44, margin: '-12px -10px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
         transition: 'color 0.15s, transform 0.15s',
         transform: fav ? 'scale(1.1)' : 'scale(1)',
+        WebkitTapHighlightColor: 'transparent',
       }}
       title={fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
     >
