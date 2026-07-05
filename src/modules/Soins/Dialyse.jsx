@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk } from '../../theme.js';
+import { Card, Chip } from '../../ui/index.js';
 const C = T.soins || '#06b6d4';
 
 const TYPES = [
@@ -99,55 +100,53 @@ export default function Dialyse() {
   return (
     <div style={{ padding: '14px' }}>
       {/* Header */}
-      <div style={{ ...s.card, background: T.surface2, borderLeft: `4px solid ${C}` }}>
-        <div style={{ color: C, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+      <Card accent={C}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 4 }}>
           🫀 Dialyse — Principes généraux
         </div>
-        <div style={{ color: T.muted, fontSize: 12 }}>
+        <div style={{ color: T.muted, fontSize: tk.font.sm }}>
           Techniques d'épuration extra-rénale. Mécanismes, accès vasculaires, surveillance IDE.
         </div>
-      </div>
+      </Card>
 
       {/* Choix technique */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {TYPES.map(t => (
-          <button key={t.id} onClick={() => { setTypeOpen(t.id); setSection('principes'); }}
-            style={{ ...s.btn(typeOpen === t.id ? t.color : T.border), flex: 1, padding: '10px 6px', fontSize: 12, minWidth: 90 }}>
+          <Chip key={t.id} color={t.color} active={typeOpen === t.id} onClick={() => { setTypeOpen(t.id); setSection('principes'); }} style={{ flex: 1, justifyContent: 'center', minWidth: 90 }}>
             {t.icon} {t.abrev}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {/* Définition */}
-      <div style={{ ...s.card, background: data.bgColor, borderLeft: `4px solid ${data.color}` }}>
-        <div style={{ color: data.color, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{data.icon} {data.label}</div>
-        <div style={{ color: T.text, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>{data.def}</div>
-        <div style={{ background: data.color + '22', borderRadius: 6, padding: '6px 10px' }}>
-          <span style={{ color: data.color, fontSize: 11, fontFamily: 'monospace' }}>🕐 {data.seance}</span>
+      <Card dim={data.bgColor} style={{ borderLeft: `4px solid ${data.color}` }}>
+        <div style={{ color: data.color, fontWeight: 700, fontSize: tk.font.base, marginBottom: 6 }}>{data.icon} {data.label}</div>
+        <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.6, marginBottom: 8 }}>{data.def}</div>
+        <div style={{ background: data.color + '22', borderRadius: 6, padding: '7px 12px' }}>
+          <span style={{ color: data.color, fontSize: tk.font.xs, fontWeight: 600 }}>🕐 {data.seance}</span>
         </div>
-      </div>
+      </Card>
 
       {/* Onglets section */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
         {[
           { id: 'principes', label: '⚗️ Mécanismes' },
           { id: 'acces', label: '💉 Accès vasc.' },
           { id: 'surveillance', label: '👁️ Surveillance' },
         ].map(t => (
-          <button key={t.id} onClick={() => setSection(t.id)}
-            style={{ ...s.btn(section === t.id ? data.color : T.border), padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <Chip key={t.id} color={data.color} active={section === t.id} onClick={() => setSection(t.id)} style={{ flexShrink: 0 }}>
             {t.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {section === 'principes' && (
         <div>
           {data.principes.map((p, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: `3px solid ${data.color}` }}>
-              <div style={{ color: data.color, fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{p.p}</div>
-              <div style={{ color: T.text, fontSize: 13, lineHeight: 1.5 }}>{p.d}</div>
-            </div>
+            <Card key={i} accent={data.color}>
+              <div style={{ color: data.color, fontWeight: 700, fontSize: tk.font.sm, marginBottom: 4 }}>{p.p}</div>
+              <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.5 }}>{p.d}</div>
+            </Card>
           ))}
         </div>
       )}
@@ -155,46 +154,46 @@ export default function Dialyse() {
       {section === 'acces' && (
         <div>
           {data.acces.map((a, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: `3px solid ${data.color}` }}>
-              <div style={{ color: T.text, fontSize: 13 }}>• {a}</div>
-            </div>
+            <Card key={i} accent={data.color}>
+              <div style={{ color: T.text, fontSize: tk.font.sm, lineHeight: 1.5 }}>• {a}</div>
+            </Card>
           ))}
         </div>
       )}
 
       {section === 'surveillance' && (
-        <div style={{ ...s.card, borderLeft: `3px solid #f59e0b` }}>
-          <div style={{ color: '#f59e0b', fontWeight: 700, marginBottom: 8 }}>👁️ Points de surveillance IDE</div>
+        <Card accent={T.warning}>
+          <div style={{ color: T.warning, fontWeight: 700, fontSize: tk.font.base, marginBottom: 8 }}>👁️ Points de surveillance IDE</div>
           {data.surveillance.map((sv, i) => (
-            <div key={i} style={{ color: T.text, fontSize: 13, padding: '4px 0', borderBottom: i < data.surveillance.length-1 ? '1px solid #1e293b' : 'none' }}>
+            <div key={i} style={{ color: T.text, fontSize: tk.font.sm, padding: '5px 0', borderBottom: i < data.surveillance.length-1 ? `1px solid ${T.border}` : 'none', lineHeight: 1.5 }}>
               • {sv}
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {/* Accès vasculaires */}
-      <div style={{ ...s.card, marginTop: 10 }}>
-        <div style={{ color: C, fontWeight: 700, marginBottom: 10 }}>🩺 Soins des accès vasculaires</div>
+      <Card style={{ marginTop: 10 }}>
+        <div style={{ color: C, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>🩺 Soins des accès vasculaires</div>
         {ACCESVASCULAIRES.map((a, i) => (
-          <div key={i} style={{ padding: '8px 0', borderBottom: i < ACCESVASCULAIRES.length-1 ? '1px solid #1e293b' : 'none' }}>
-            <div style={{ color: T.text, fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{a.type}</div>
-            <div style={{ color: '#22c55e', fontSize: 11, marginBottom: 2 }}>+ {a.avantages}</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>🩺 {a.soins}</div>
+          <div key={i} style={{ padding: '9px 0', borderBottom: i < ACCESVASCULAIRES.length-1 ? `1px solid ${T.border}` : 'none' }}>
+            <div style={{ color: T.text, fontWeight: 600, fontSize: tk.font.sm, marginBottom: 3 }}>{a.type}</div>
+            <div style={{ color: T.success, fontSize: tk.font.xs, marginBottom: 3 }}>+ {a.avantages}</div>
+            <div style={{ color: T.muted, fontSize: tk.font.sm }}>🩺 {a.soins}</div>
           </div>
         ))}
-      </div>
+      </Card>
 
       {/* Complications communes */}
-      <div style={{ ...s.card, marginTop: 10 }}>
-        <div style={{ color: '#ef4444', fontWeight: 700, marginBottom: 10 }}>⚠️ Complications & CAT</div>
+      <Card style={{ marginTop: 10 }}>
+        <div style={{ color: T.danger, fontWeight: 700, fontSize: tk.font.base, marginBottom: 10 }}>⚠️ Complications & CAT</div>
         {COMPLICATIONS_COMMUNES.map((c, i) => (
-          <div key={i} style={{ padding: '7px 0', borderBottom: i < COMPLICATIONS_COMMUNES.length-1 ? '1px solid #1e293b' : 'none' }}>
-            <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 12, marginBottom: 3 }}>{c.comp}</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>→ {c.action}</div>
+          <div key={i} style={{ padding: '8px 0', borderBottom: i < COMPLICATIONS_COMMUNES.length-1 ? `1px solid ${T.border}` : 'none' }}>
+            <div style={{ color: T.danger, fontWeight: 600, fontSize: tk.font.sm, marginBottom: 4 }}>{c.comp}</div>
+            <div style={{ color: T.muted, fontSize: tk.font.sm }}>→ {c.action}</div>
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }
