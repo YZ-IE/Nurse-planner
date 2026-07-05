@@ -7,11 +7,10 @@
  */
 
 import { useState } from 'react';
-import { T, s } from '../../theme.js';
+import { T, tk, SOLID } from '../../theme.js';
+import { Btn, IconBtn, Banner, Input, Textarea, toast } from '../../ui/index.js';
 import { secureGet, secureSet, encryptForTransfer, decryptFromTransfer, generateTransferCode } from './crypto.js';
 import { todayStr } from './utils.jsx';
-
-const ACCENT = '#6366f1';
 
 export default function SecureTransfer({ service, cryptoKey, onBack }) {
   const [tab,      setTab]      = useState(service ? 'export' : 'import');
@@ -149,6 +148,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
         ? `✅ Import réussi — ${nb} patient(s) · config chambres mise à jour`
         : `✅ Service "${src.name}" créé — ${nb} patient(s) importé(s)`;
       setSuccess(msg);
+      toast('Transfert terminé');
       setPastedBlob(''); setInputCode(''); setPreview(null); setConfirmed(false);
 
     } catch (e) {
@@ -156,26 +156,30 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
     } finally { setBusy(false); }
   }
 
-  const card = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px' };
+  const card     = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: tk.radius.md, padding: '14px' };
+  const secLabel = { color: T.muted, fontSize: tk.font.xs, fontWeight: 600, letterSpacing: 0.2, marginBottom: 8 };
 
   return (
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* Header */}
       <div style={{ padding: '12px 16px', background: T.bg, borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <IconBtn label="Retour" onClick={onBack} fontSize={22}>←</IconBtn>
           <div>
-            <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>🔐 Transfert sécurisé</div>
-            <div style={{ color: T.muted, fontSize: 12 }}>{service ? service.name + " · Strictement local" : "Import uniquement"}</div>
+            <div style={{ color: T.text, fontSize: tk.font.lg, fontWeight: 700 }}>🔐 Transfert sécurisé</div>
+            <div style={{ color: T.muted, fontSize: tk.font.sm }}>{service ? service.name + " · Strictement local" : "Import uniquement"}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {[{ id: 'export', label: '📤 Exporter' }, { id: 'import', label: '📥 Importer' }].map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id); reset(); }}
-              style={{ flex: 1, background: tab === t.id ? ACCENT + '22' : T.surface, border: `1px solid ${tab === t.id ? ACCENT : T.border}`, borderRadius: 8, color: tab === t.id ? ACCENT : T.muted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, padding: '8px 4px', cursor: 'pointer' }}>
+            <Btn key={t.id}
+              variant={tab === t.id ? 'soft' : 'outline'}
+              color={tab === t.id ? T.info : T.muted}
+              onClick={() => { setTab(t.id); reset(); }}
+              style={{ flex: 1 }}>
               {t.label}
-            </button>
+            </Btn>
           ))}
         </div>
       </div>
@@ -183,72 +187,66 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
       <div style={{ padding: '16px 16px 60px' }}>
 
         {/* Info sécurité */}
-        <div style={{ background: T.surface2, border: '1px solid #1e3a5f', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
-          <div style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>🔒 Protocole de sécurité</div>
-          <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.5 }}>
-            AES-256-GCM · PBKDF2 100k · Code vocal séparé · Zéro réseau
-          </div>
-        </div>
+        <Banner kind="info" icon="🔒" title="Protocole de sécurité" style={{ marginBottom: 16 }}>
+          AES-256-GCM · PBKDF2 100k · Code vocal séparé · Zéro réseau
+        </Banner>
 
-        {error   && <div style={{ background: '#f43f5e22', border: '1px solid #f43f5e44', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#f43f5e', fontSize: 13 }}>{error}</div>}
-        {success && <div style={{ background: '#22c55e22', border: '1px solid #22c55e44', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#22c55e', fontSize: 13 }}>{success}</div>}
+        {error   && <Banner kind="danger"  style={{ marginBottom: 14 }}>{error}</Banner>}
+        {success && <Banner kind="success" style={{ marginBottom: 14 }}>{success}</Banner>}
 
         {/* ════ EXPORT ════ */}
         {tab === 'export' && (
           <>
             <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Ce qui est exporté</div>
+              <div style={secLabel}>Ce qui est exporté</div>
               {[
                 '👥 Patients présents (initiales, âge, motif, ATCD)',
                 '💊 Soins du jour (planifiés et effectués)',
                 '📊 Constantes et événements du jour',
                 '🚪 Configuration des chambres',
               ].map((item, i) => (
-                <div key={i} style={{ color: T.muted, fontSize: 12, marginBottom: 4 }}>✓ {item}</div>
+                <div key={i} style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 4 }}>✓ {item}</div>
               ))}
             </div>
 
             <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Étape 1 — Générer le paquet chiffré</div>
-              <button onClick={handleExport} disabled={busy}
-                style={{ ...s.btn(ACCENT), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: busy ? 0.5 : 1 }}>
+              <div style={secLabel}>Étape 1 — Générer le paquet chiffré</div>
+              <Btn color={SOLID.info} size="lg" full disabled={busy} onClick={handleExport}>
                 {busy ? 'Chiffrement…' : '🔐 Générer le paquet chiffré'}
-              </button>
+              </Btn>
             </div>
 
             {blob && (
               <>
-                <div style={{ background: T.orgaDim, border: '1px solid #22c55e44', borderRadius: 12, padding: '16px', marginBottom: 16, textAlign: 'center' }}>
-                  <div style={{ color: '#22c55e', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                <div style={{ background: T.successDim, border: `1px solid ${T.success}44`, borderRadius: tk.radius.md, padding: '16px', marginBottom: 16, textAlign: 'center' }}>
+                  <div style={{ color: T.success, fontSize: tk.font.xs, fontWeight: 700, marginBottom: 8 }}>
                     🔑 Code secret — à dire verbalement à votre collègue
                   </div>
-                  <div style={{ color: '#22c55e', fontSize: 38, fontWeight: 800, fontFamily: 'monospace', letterSpacing: 6 }}>
+                  {/* Code vocal — reste en monospace (lecture chiffre par chiffre) */}
+                  <div style={{ color: T.success, fontSize: 38, fontWeight: 800, fontFamily: 'monospace', letterSpacing: 6 }}>
                     {code}
                   </div>
-                  <div style={{ color: '#4ade80', fontSize: 11, marginTop: 8 }}>
+                  <div style={{ color: T.success, fontSize: tk.font.xs, marginTop: 8 }}>
                     ⚠️ Ne pas envoyer ce code par le même canal que le paquet
                   </div>
                 </div>
 
                 <div style={{ ...card, marginBottom: 16 }}>
-                  <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Étape 2 — Copier le paquet chiffré</div>
-                  <textarea value={blob} readOnly rows={5} onFocus={e => e.target.select()} style={{ ...s.input, width: "100%", boxSizing: "border-box", fontFamily: "monospace", fontSize: 10, lineHeight: 1.4, resize: "none", wordBreak: "break-all", color: T.muted, marginBottom: 4, cursor: "text" }} />
-                  <div style={{ color: T.muted, fontSize: 10, marginBottom: 12, textAlign: "right" }}>{blob.length} caractères — {copied ? "✅ Copié" : "à copier"}</div>
-                  <button onClick={copyBlob}
-                    style={{ ...s.btn(copied ? '#22c55e' : ACCENT), width: '100%', padding: '12px', fontSize: 14, fontWeight: 700 }}>
+                  <div style={secLabel}>Étape 2 — Copier le paquet chiffré</div>
+                  <Textarea value={blob} readOnly rows={5} onFocus={e => e.target.select()}
+                    style={{ fontFamily: 'monospace', fontSize: tk.font.xs, lineHeight: 1.4, resize: 'none', wordBreak: 'break-all', color: T.muted, marginBottom: 4, cursor: 'text' }} />
+                  <div style={{ color: T.muted, fontSize: tk.font.xs, marginBottom: 12, textAlign: 'right' }}>{blob.length} caractères — {copied ? '✅ Copié' : 'à copier'}</div>
+                  <Btn color={copied ? SOLID.success : SOLID.info} full onClick={copyBlob}>
                     {copied ? '✅ Copié !' : '📋 Copier le paquet chiffré'}
-                  </button>
-                  <div style={{ color: T.muted, fontSize: 11, marginTop: 10, textAlign: 'center' }}>
+                  </Btn>
+                  <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 10, textAlign: 'center' }}>
                     Votre collègue colle ce texte dans l'onglet Import
                   </div>
                 </div>
 
-                <div style={{ background: '#1a0a12', border: '1px solid #f43f5e33', borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ color: '#f43f5e', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>⚠️ Secret professionnel</div>
-                  <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.5 }}>
-                    Communiquez le code uniquement de vive voix. Le paquet chiffré peut transiter par tout canal.
-                  </div>
-                </div>
+                <Banner kind="danger" icon="⚠️" title="Secret professionnel">
+                  Communiquez le code uniquement de vive voix. Le paquet chiffré peut transiter par tout canal.
+                </Banner>
               </>
             )}
           </>
@@ -259,72 +257,72 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
           <>
             {/* Info ce qui sera importé */}
             <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Ce qui sera importé</div>
+              <div style={secLabel}>Ce qui sera importé</div>
               {[
                 '👥 Patients + données cliniques',
                 '💊 Soins du jour',
                 '🚪 Configuration des chambres',
                 '🏥 Service créé automatiquement s\'il est absent',
               ].map((item, i) => (
-                <div key={i} style={{ color: T.muted, fontSize: 12, marginBottom: 4 }}>✓ {item}</div>
+                <div key={i} style={{ color: T.muted, fontSize: tk.font.sm, marginBottom: 4 }}>✓ {item}</div>
               ))}
             </div>
 
             <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Étape 1 — Coller le paquet chiffré</div>
-              <textarea value={pastedBlob} onChange={e => setPastedBlob(e.target.value)}
+              <div style={secLabel}>Étape 1 — Coller le paquet chiffré</div>
+              <Textarea value={pastedBlob} onChange={e => setPastedBlob(e.target.value)}
                 placeholder="Collez ici le texte copié depuis l'autre appareil…"
                 rows={4}
-                style={{ ...s.input, width: '100%', boxSizing: 'border-box', resize: 'none', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.4 }} />
+                style={{ resize: 'none', fontFamily: 'monospace', fontSize: tk.font.xs, lineHeight: 1.4 }} />
               {pastedBlob.trim().length > 0 && (
-                <div style={{ color: pastedBlob.trim().length < 200 ? '#f97316' : T.muted, fontSize: 10, marginTop: 4, textAlign: 'right' }}>
+                <div style={{ color: pastedBlob.trim().length < 200 ? T.warning : T.muted, fontSize: tk.font.xs, marginTop: 4, textAlign: 'right' }}>
                   {pastedBlob.trim().length} car.{pastedBlob.trim().length < 200 ? ' ⚠️ Trop court' : ' ✓'}
                 </div>
               )}
             </div>
 
             <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Étape 2 — Code secret (8 chiffres)</div>
-              <input value={inputCode} onChange={e => setInputCode(e.target.value.replace(/[^\d\s]/g, ''))}
+              <div style={secLabel}>Étape 2 — Code secret (8 chiffres)</div>
+              {/* Code de transfert 8 chiffres — monospace conservé */}
+              <Input value={inputCode} onChange={e => setInputCode(e.target.value.replace(/[^\d\s]/g, ''))}
                 placeholder="Ex : 1234 5678" maxLength={9} inputMode="numeric"
-                style={{ ...s.input, width: '100%', boxSizing: 'border-box', fontFamily: 'monospace', fontSize: 22, textAlign: 'center', letterSpacing: 4 }} />
-              <div style={{ color: T.muted, fontSize: 11, marginTop: 8, textAlign: 'center' }}>
+                style={{ fontFamily: 'monospace', fontSize: tk.font.xxl, textAlign: 'center', letterSpacing: 4 }} />
+              <div style={{ color: T.muted, fontSize: tk.font.xs, marginTop: 8, textAlign: 'center' }}>
                 Code communiqué verbalement par votre collègue
               </div>
             </div>
 
-            <button onClick={handleDecrypt}
-              disabled={busy || !pastedBlob.trim() || inputCode.replace(/\s/g, '').length !== 8}
-              style={{ ...s.btn(ACCENT), width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, opacity: (pastedBlob.trim() && inputCode.replace(/\s/g, '').length === 8 && !busy) ? 1 : 0.4 }}>
+            <Btn color={SOLID.info} size="lg" full onClick={handleDecrypt}
+              disabled={busy || !pastedBlob.trim() || inputCode.replace(/\s/g, '').length !== 8}>
               {busy ? 'Déchiffrement…' : '🔓 Déchiffrer et prévisualiser'}
-            </button>
+            </Btn>
           </>
         )}
 
         {/* ── Prévisualisation ── */}
         {tab === 'import' && preview && (
           <>
-            <div style={{ background: T.orgaDim, border: '1px solid #22c55e44', borderRadius: 12, padding: '14px', marginBottom: 16 }}>
-              <div style={{ color: '#22c55e', fontSize: 13, fontWeight: 700, marginBottom: 10 }}>✅ Déchiffrement réussi — Aperçu</div>
+            <div style={{ background: T.successDim, border: `1px solid ${T.success}44`, borderRadius: tk.radius.md, padding: '14px', marginBottom: 16 }}>
+              <div style={{ color: T.success, fontSize: tk.font.base, fontWeight: 700, marginBottom: 10 }}>✅ Déchiffrement réussi — Aperçu</div>
 
               <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                <span style={{ background: '#166534', color: '#4ade80', fontSize: 11, borderRadius: 8, padding: '3px 10px' }}>
+                <span style={{ background: T.surface, border: `1px solid ${T.success}44`, color: T.success, fontSize: tk.font.xs, borderRadius: tk.radius.sm, padding: '4px 10px' }}>
                   🏥 {preview.service?.name}
                 </span>
-                <span style={{ background: '#166534', color: '#4ade80', fontSize: 11, borderRadius: 8, padding: '3px 10px' }}>
+                <span style={{ background: T.surface, border: `1px solid ${T.success}44`, color: T.success, fontSize: tk.font.xs, borderRadius: tk.radius.sm, padding: '4px 10px' }}>
                   👥 {preview.patients?.length || 0} patient(s)
                 </span>
-                <span style={{ background: '#166534', color: '#4ade80', fontSize: 11, borderRadius: 8, padding: '3px 10px' }}>
+                <span style={{ background: T.surface, border: `1px solid ${T.success}44`, color: T.success, fontSize: tk.font.xs, borderRadius: tk.radius.sm, padding: '4px 10px' }}>
                   🚪 {(preview.service?.bedRooms || []).length || preview.service?.bedCount || 0} chambre(s)
                 </span>
               </div>
 
-              <div style={{ color: T.muted, fontSize: 11, marginBottom: 10 }}>
+              <div style={{ color: T.muted, fontSize: tk.font.xs, marginBottom: 10 }}>
                 Exporté le {preview.exportedAt ? new Date(preview.exportedAt).toLocaleString('fr-FR') : '—'}
               </div>
 
               {(preview.patients || []).slice(0, 5).map(p => (
-                <div key={p.id} style={{ background: T.surface, borderRadius: 8, padding: '6px 10px', marginBottom: 6, fontSize: 12, display: 'flex', gap: 6 }}>
+                <div key={p.id} style={{ background: T.surface, borderRadius: tk.radius.sm, padding: '8px 10px', marginBottom: 6, fontSize: tk.font.sm, display: 'flex', gap: 6 }}>
                   <span style={{ color: T.muted }}>Lit {p.bedNumber}</span>
                   <span style={{ color: T.text, fontWeight: 700 }}>{p.initials}</span>
                   <span style={{ color: T.muted }}>{p.gender} {p.age}a</span>
@@ -332,35 +330,33 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
                 </div>
               ))}
               {(preview.patients || []).length > 5 && (
-                <div style={{ color: T.muted, fontSize: 11, textAlign: 'center' }}>… et {preview.patients.length - 5} autre(s)</div>
+                <div style={{ color: T.muted, fontSize: tk.font.xs, textAlign: 'center' }}>… et {preview.patients.length - 5} autre(s)</div>
               )}
             </div>
 
-            <div style={{ background: '#1a0a12', border: '1px solid #f43f5e33', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-              <div style={{ color: '#f43f5e', fontSize: 12, fontWeight: 700, marginBottom: 6 }}>⚠️ Action irréversible</div>
-              <div style={{ color: T.muted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+            <Banner kind="danger" icon="⚠️" title="Action irréversible" style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 10 }}>
                 Les patients et soins du jour du service <strong style={{ color: T.text }}>{preview.service?.name}</strong> seront remplacés sur cet appareil.
                 La configuration des chambres sera mise à jour.
                 {!true && ' Le service sera créé s\'il est absent.'}
               </div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '4px 0' }}>
                 <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
-                  style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
-                <span style={{ color: T.text, fontSize: 12 }}>
+                  style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0 }} />
+                <span style={{ color: T.text, fontSize: tk.font.sm }}>
                   Je confirme vouloir importer et remplacer les données locales
                 </span>
               </label>
-            </div>
+            </Banner>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setPreview(null); setPastedBlob(''); setInputCode(''); setConfirmed(false); }}
-                style={{ flex: 1, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 14, padding: '12px', cursor: 'pointer' }}>
+              <Btn variant="outline" color={T.muted} size="lg" style={{ flex: 1 }}
+                onClick={() => { setPreview(null); setPastedBlob(''); setInputCode(''); setConfirmed(false); }}>
                 Annuler
-              </button>
-              <button onClick={handleImport} disabled={!confirmed || busy}
-                style={{ ...s.btn(confirmed ? '#22c55e' : T.muted), flex: 2, padding: '12px', fontSize: 14, fontWeight: 700, opacity: (confirmed && !busy) ? 1 : 0.4 }}>
+              </Btn>
+              <Btn color={SOLID.success} size="lg" style={{ flex: 2 }} disabled={!confirmed || busy} onClick={handleImport}>
                 {busy ? 'Import…' : '✅ Confirmer l\'import'}
-              </button>
+              </Btn>
             </div>
           </>
         )}
