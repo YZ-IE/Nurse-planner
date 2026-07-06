@@ -18,6 +18,7 @@ import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
 import GanttView      from './GanttView.jsx';
 import OcrScanner     from './OcrScanner.jsx';
+import HandoverReport from './HandoverReport.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
 import ModuleSettings from './ModuleSettings.jsx';
 import NavDrawer      from './NavDrawer.jsx';
@@ -120,7 +121,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   function goBack() {
     const screen = nav.screen;
-    const serviceScoped = ['patient', 'quick', 'dayoverview', 'gantt', 'ocr', 'transfer', 'log', 'moduleSettings'];
+    const serviceScoped = ['patient', 'quick', 'dayoverview', 'gantt', 'ocr', 'handover', 'transfer', 'log', 'moduleSettings'];
     if (serviceScoped.includes(screen)) {
       if (hasService()) goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
       else goTo('services', { service: null }, 'back');
@@ -156,6 +157,10 @@ export default function AideMemoire({ onBack, onBackOverride }) {
         break;
       case 'gantt':
         if (hasService()) goTo('gantt', {});
+        else goTo('services', { service: null });
+        break;
+      case 'handover':
+        if (hasService()) goTo('handover', {});
         else goTo('services', { service: null });
         break;
       case 'log':
@@ -317,6 +322,13 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'gantt' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <GanttView service={nav.service} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} selectedDate={nav.selectedDate || dateStrOffset(0)} />
+    </>
+  );
+
+  // ── Générateur de relève ─────────────────────────────────────────────────
+  if (nav.screen === 'handover' && nav.service) return screenWrap(
+    <>{TimeoutBanner}
+      <HandoverReport service={nav.service} cryptoKey={cryptoKey} onBack={goBack} onMenu={() => setDrawerOpen(true)} selectedDate={nav.selectedDate || dateStrOffset(0)} />
     </>
   );
 

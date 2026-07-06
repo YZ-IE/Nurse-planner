@@ -11,6 +11,7 @@ const DRAWER_ITEMS = [
   { key: 'dayoverview', icon: '📆', label: 'Suivi Quotidien' },
   { key: 'clinical',    icon: '🩺', label: 'Profil Clinique' },
   { key: 'gantt',       icon: '📊', label: 'Vue Gantt' },
+  { key: 'handover',    icon: '📝', label: 'Relève' },
   { key: 'log',         icon: '🗒️', label: "Journal d'accès" },
   { key: 'transfer',    icon: '🔄', label: 'Transfert sécurisé' },
   { key: 'settings',    icon: '⚙️', label: 'Paramètres' },
@@ -40,13 +41,26 @@ export default function NavDrawer({ open, onClose, currentScreen, onSelect, onLo
           display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
         }}
       >
-        <div style={{ padding: '22px 20px 16px', borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ color: T.muted, fontSize: 10, fontFamily: 'monospace', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
-            Aide-Mémoire
+        <div style={{ padding: '22px 20px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: T.muted, fontSize: 10, fontFamily: 'monospace', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
+              Aide-Mémoire
+            </div>
+            <div style={{ color: T.text, fontSize: 18, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {serviceName || 'Menu'}
+            </div>
           </div>
-          <div style={{ color: T.text, fontSize: 18, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {serviceName || 'Menu'}
-          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fermer le menu"
+            style={{
+              flexShrink: 0, width: 40, height: 40, borderRadius: 20, background: 'none',
+              border: `1px solid ${T.border}`, color: T.muted, fontSize: 20, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
