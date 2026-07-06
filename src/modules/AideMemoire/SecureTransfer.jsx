@@ -10,10 +10,11 @@ import { useState } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet, encryptForTransfer, decryptFromTransfer, generateTransferCode } from './crypto.js';
 import { todayStr } from './utils.jsx';
+import MenuButton from './MenuButton.jsx';
 
 const ACCENT = '#6366f1';
 
-export default function SecureTransfer({ service, cryptoKey, onBack }) {
+export default function SecureTransfer({ service, cryptoKey, onBack, onMenu }) {
   const [tab,      setTab]      = useState(service ? 'export' : 'import');
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState('');
@@ -164,6 +165,7 @@ export default function SecureTransfer({ service, cryptoKey, onBack }) {
       {/* Header */}
       <div style={{ padding: '12px 16px', background: T.bg, borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>🔐 Transfert sécurisé</div>
