@@ -23,7 +23,7 @@
 
 import { useState, useEffect } from 'react';
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
-import { Filesystem } from '@capacitor/filesystem';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TextRecognition } from '@capacitor-mlkit/text-recognition';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
@@ -84,21 +84,28 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
   async function handleCapture(fromGallery) {
     setError('');
     setStep('busy');
-    let tempPath = null;
+    let tempName = null;
     try {
       await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
+      // Base64 (comme WoundPhotos) plutôt que CameraResultType.Uri : évite de
+      // dépendre du FileProvider natif pour renvoyer un chemin exploitable,
+      // seul le fichier temporaire ci-dessous — écrit et supprimé par nous —
+      // sert de support à la reconnaissance de texte locale.
       const photo = await Camera.getPhoto({
-        resultType:         CameraResultType.Uri,
-        source:              fromGallery ? CameraSource.Photos : CameraSource.Camera,
-        quality:             90,
-        allowEditing:        false,
-        saveToGallery:       false,
-        correctOrientation:  true,
+        resultType:          CameraResultType.Base64,
+        source:               fromGallery ? CameraSource.Photos : CameraSource.Camera,
+        quality:              90,
+        allowEditing:         false,
+        saveToGallery:        false,
+        correctOrientation:   true,
       });
-      if (!photo.path) { setError('Photo vide.'); setStep('intro'); return; }
-      tempPath = photo.path;
+      if (!photo.base64String) { setError('Photo vide.'); setStep('intro'); return; }
 
-      const { text } = await TextRecognition.processImage({ path: photo.path });
+      tempName = `nplanr_ocr_tmp_${Date.now()}.jpg`;
+      await Filesystem.writeFile({ path: tempName, data: photo.base64String, directory: Directory.Cache });
+      const { uri } = await Filesystem.getUri({ path: tempName, directory: Directory.Cache });
+
+      const { text } = await TextRecognition.processImage({ path: uri });
 
       const parsed = parseTransmissionSheet(text || '');
       if (parsed.length === 0) {
@@ -114,7 +121,7 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
       setStep('error');
     } finally {
       // La photo n'est jamais conservée : elle n'a servi qu'à l'OCR local.
-      if (tempPath) { try { await Filesystem.deleteFile({ path: tempPath }); } catch {} }
+      if (tempName) { try { await Filesystem.deleteFile({ path: tempName, directory: Directory.Cache }); } catch {} }
     }
   }
 
