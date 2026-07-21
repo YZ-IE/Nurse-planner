@@ -23,7 +23,7 @@
 
 import { useState, useEffect } from 'react';
 import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem } from '@capacitor/filesystem';
 import { TextRecognition } from '@capacitor-mlkit/text-recognition';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
@@ -84,37 +84,29 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
   async function handleCapture(fromGallery) {
     setError('');
     setStep('busy');
-    let tempName = null;
+    let tempPath = null;
     try {
       await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
-      // Base64 (comme WoundPhotos) plutôt que CameraResultType.Uri : évite de
-      // dépendre du FileProvider natif pour renvoyer un chemin exploitable,
-      // seul le fichier temporaire ci-dessous — écrit et supprimé par nous —
-      // sert de support à la reconnaissance de texte locale.
+      // CameraResultType.Uri : seul un chemin de fichier (petite chaîne)
+      // traverse le pont JS↔natif Capacitor, jamais l'image elle-même.
+      // Avec Base64, une photo de plusieurs Mo (gonflée d'1/3 par
+      // l'encodage) devait transiter en un seul message — c'est ce qui
+      // provoquait le plantage à la prise de photo, y compris à
+      // résolution réduite : ce n'était pas un problème de mémoire de
+      // décodage mais de taille de message inter-pont.
       const photo = await Camera.getPhoto({
-        resultType:          CameraResultType.Base64,
+        resultType:          CameraResultType.Uri,
         source:               fromGallery ? CameraSource.Photos : CameraSource.Camera,
         quality:              90,
-        // Sans cette limite, le plugin décode le Bitmap à la résolution
-        // native du capteur (souvent 12 Mpx+) juste après le déclenchement,
-        // ce qui peut provoquer un OutOfMemoryError sur de nombreux
-        // appareils — d'où le plantage observé au moment de la prise de
-        // photo. La suppression du fichier après lecture ne change rien à
-        // ce risque : le pic mémoire a lieu pendant le décodage, avant
-        // toute suppression. 3000px améliore la lisibilité OCR (texte
-        // petit/manuscrit) tout en restant loin de ce seuil.
         width:                3000,
         allowEditing:         false,
         saveToGallery:        false,
         correctOrientation:   true,
       });
-      if (!photo.base64String) { setError('Photo vide.'); setStep('intro'); return; }
+      if (!photo.path) { setError('Photo vide.'); setStep('intro'); return; }
+      tempPath = photo.path;
 
-      tempName = `nplanr_ocr_tmp_${Date.now()}.jpg`;
-      await Filesystem.writeFile({ path: tempName, data: photo.base64String, directory: Directory.Cache });
-      const { uri } = await Filesystem.getUri({ path: tempName, directory: Directory.Cache });
-
-      const { text } = await TextRecognition.processImage({ path: uri });
+      const { text } = await TextRecognition.processImage({ path: photo.path });
 
       const parsed = parseTransmissionSheet(text || '');
       if (parsed.length === 0) {
@@ -130,7 +122,7 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
       setStep('error');
     } finally {
       // La photo n'est jamais conservée : elle n'a servi qu'à l'OCR local.
-      if (tempName) { try { await Filesystem.deleteFile({ path: tempName, directory: Directory.Cache }); } catch {} }
+      if (tempPath) { try { await Filesystem.deleteFile({ path: tempPath }); } catch {} }
     }
   }
 
