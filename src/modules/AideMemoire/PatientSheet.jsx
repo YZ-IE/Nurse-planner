@@ -6,11 +6,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { T, s, loadDarkPref } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
-import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, FieldInput, isReadOnly, formatDateLabel, dateStrOffset } from './utils.jsx';
 import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
 import WoundPhotos, { deleteAllWoundPhotos } from './WoundPhotos.jsx';
 import { computeSlots } from './ServiceView.jsx';
+import { appendLog } from './AccessLog.jsx';
 
 // ─── Palette étendue ──────────────────────────────────────────────────────────
 const P = new Proxy({}, {
@@ -267,6 +268,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
   const [loading,      setLoading]      = useState(true);
   const [newEvent,     setNewEvent]     = useState('');
   const [confirmExit,  setConfirmExit]  = useState(false);
+  const [confirmErase, setConfirmErase] = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [showEdit,     setShowEdit]     = useState(false);
   const [showMove,     setShowMove]     = useState(false);
@@ -335,6 +337,30 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
       await savePatientData({ ...patient, present: false, dischargedAt: Date.now() });
       onBack();
     } finally { setSaving(false); setConfirmExit(false); }
+  }
+
+  /**
+   * Effacement définitif (RGPD art. 17) — distinct de la sortie : supprime
+   * réellement la fiche patient, ses entrées journalières (72h) et ses
+   * photos de plaies, au lieu de se contenter de marquer present=false.
+   */
+  async function handleEraseData() {
+    setSaving(true);
+    try {
+      await deleteAllWoundPhotos(service.id, patient.id);
+      for (const offset of [0, -1, -2]) {
+        const d = dateStrOffset(offset);
+        const daily = await secureGet(`daily_${service.id}_${d}`, cryptoKey);
+        if (daily && patientId in daily) {
+          const { [patientId]: _omit, ...rest } = daily;
+          await secureSet(`daily_${service.id}_${d}`, rest, cryptoKey);
+        }
+      }
+      const pts = await secureGet(`patients_${service.id}`, cryptoKey) || [];
+      await secureSet(`patients_${service.id}`, pts.filter(p => p.id !== patientId), cryptoKey);
+      appendLog('ERASE_PATIENT', 'Effacement définitif (art. 17)');
+      onBack();
+    } finally { setSaving(false); setConfirmErase(false); }
   }
 
   if (loading) return (
@@ -477,19 +503,42 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
                   style={{ width: '100%', background: P.glass, border: '1px solid rgba(244,63,94,0.3)', borderRadius: 12, color: '#f43f5e', padding: '13px', fontSize: 14, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
                   🚪 Sortie du patient
                 </button>
-              ) : (
+              ) : !confirmErase ? (
                 <div style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 14, padding: 16 }}>
                   <div style={{ color: T.text, fontSize: 14, marginBottom: 12, textAlign: 'center' }}>
-                    Confirmer la sortie de <strong>{patient.initials}</strong> ?
+                    Que souhaitez-vous faire pour <strong>{patient.initials}</strong> ?
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button onClick={handleDischarge} disabled={saving}
+                      style={{ background: 'linear-gradient(135deg, #f43f5e, #e11d48)', border: 'none', borderRadius: 10, color: '#fff', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                      {saving ? '…' : '🚪 Sortie (historique conservé)'}
+                    </button>
+                    <button onClick={() => setConfirmErase(true)} disabled={saving}
+                      style={{ background: 'none', border: '1px solid rgba(244,63,94,0.4)', borderRadius: 10, color: '#f43f5e', padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      🗑 Supprimer définitivement ses données (droit à l'effacement, art. 17)
+                    </button>
+                    <button onClick={() => setConfirmExit(false)}
+                      style={{ background: P.glass, border: `1px solid ${P.glassBdr}`, borderRadius: 10, color: T.text, padding: '11px', fontSize: 14, cursor: 'pointer' }}>
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.4)', borderRadius: 14, padding: 16 }}>
+                  <div style={{ color: T.text, fontSize: 14, marginBottom: 4, textAlign: 'center', fontWeight: 700 }}>
+                    ⚠️ Effacement définitif et irréversible
+                  </div>
+                  <div style={{ color: T.muted, fontSize: 12.5, marginBottom: 12, textAlign: 'center', lineHeight: 1.5 }}>
+                    Fiche, journal, plaies : tout sera supprimé pour {patient.initials}. Cette action est différente de la sortie et ne peut pas être annulée.
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => setConfirmExit(false)}
+                    <button onClick={() => setConfirmErase(false)}
                       style={{ flex: 1, background: P.glass, border: `1px solid ${P.glassBdr}`, borderRadius: 10, color: T.text, padding: '11px', fontSize: 14, cursor: 'pointer' }}>
                       Annuler
                     </button>
-                    <button onClick={handleDischarge} disabled={saving}
-                      style={{ flex: 1, background: 'linear-gradient(135deg, #f43f5e, #e11d48)', border: 'none', borderRadius: 10, color: '#fff', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-                      {saving ? '…' : 'Confirmer'}
+                    <button onClick={handleEraseData} disabled={saving}
+                      style={{ flex: 1, background: '#f43f5e', border: 'none', borderRadius: 10, color: '#fff', padding: '11px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                      {saving ? '…' : 'Confirmer l\'effacement'}
                     </button>
                   </div>
                 </div>

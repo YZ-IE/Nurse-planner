@@ -43,6 +43,8 @@ const EVENT_META = {
   EXPORT_TEXT:     { label: 'Export texte confirmé',     color: '#f97316' },
   TRANSFER_EXPORT: { label: 'Transfert exporté',         color: '#06b6d4' },
   TRANSFER_IMPORT: { label: 'Transfert importé',         color: '#06b6d4' },
+  IMPORT_TRANSMISSION: { label: 'Import photo transmission', color: '#22c55e' },
+  ERASE_PATIENT:   { label: 'Effacement patient (art. 17)', color: '#f43f5e' },
   PURGE:           { label: 'Purge données',             color: '#a78bfa' },
 };
 
@@ -103,7 +105,7 @@ export default function AccessLog({ onBack }) {
 
         {/* Filtre */}
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          {['all', 'LOGIN_OK', 'LOGIN_FAIL', 'LOCKOUT', 'SESSION_EXPIRED', 'EXPORT_TEXT', 'TRANSFER_EXPORT', 'TRANSFER_IMPORT', 'PURGE'].map(f => (
+          {['all', 'LOGIN_OK', 'LOGIN_FAIL', 'LOCKOUT', 'SESSION_EXPIRED', 'EXPORT_TEXT', 'TRANSFER_EXPORT', 'TRANSFER_IMPORT', 'IMPORT_TRANSMISSION', 'ERASE_PATIENT', 'PURGE'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               style={{ background: filter === f ? ACCENT + '22' : T.surface, border: `1px solid ${filter === f ? ACCENT : T.border}`, borderRadius: 12, color: filter === f ? ACCENT : T.muted, fontSize: 11, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {f === 'all' ? 'Tous' : meta(f).label}

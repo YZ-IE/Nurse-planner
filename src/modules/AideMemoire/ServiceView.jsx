@@ -151,7 +151,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onServiceUpdate, onTransfer, onLog, refreshKey, selectedDate: selDate, onDateChange }) {
+export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onServiceUpdate, onTransfer, onLog, onImportTransmission, refreshKey, selectedDate: selDate, onDateChange }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -236,6 +236,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
             { icon: '⚙️', fn: () => setShowBedsCfg(true), col: T.muted,   bg: T.surface,   title: 'Config chambres'    },
             { icon: '📋', fn: onDayOverview,               col: T.muted,   bg: T.surface,   title: 'Vue du jour'        },
             { icon: '⚡', fn: readOnly ? null : onQuickEntry, col: readOnly ? T.muted : C, bg: readOnly ? T.surface : C + '22', title: 'Saisie rapide' },
+            { icon: '📷', fn: readOnly ? null : onImportTransmission, col: readOnly ? T.muted : '#22c55e', bg: readOnly ? T.surface : '#22c55e22', title: 'Import photo transmission' },
             { icon: '🔄', fn: onTransfer,                  col: '#6366f1', bg: '#6366f122', title: 'Transfert sécurisé' },
             { icon: '🗒️', fn: onLog,                       col: T.muted,   bg: T.surface,   title: 'Journal accès'      },
           ].map((b, i) => (

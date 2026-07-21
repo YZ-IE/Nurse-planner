@@ -17,6 +17,7 @@ import PatientSheet   from './PatientSheet.jsx';
 import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
+import TransmissionImport from './TransmissionImport.jsx';
 import { dateStrOffset } from './utils.jsx';
 
 const ACCENT = '#6366f1';
@@ -113,7 +114,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
 
   function goBack() {
     const screen = nav.screen;
-    if (screen === 'patient' || screen === 'quick' || screen === 'dayoverview' || screen === 'transfer' || screen === 'log') {
+    if (screen === 'patient' || screen === 'quick' || screen === 'dayoverview' || screen === 'transfer' || screen === 'log' || screen === 'importTransmission') {
       goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
     } else if (screen === 'service') {
       goTo('services', { service: null }, 'back');
@@ -214,7 +215,15 @@ export default function AideMemoire({ onBack, onBackOverride }) {
         onServiceUpdate={handleServiceUpdate}
         onTransfer={() => goTo('transfer')}
         onLog={() => goTo('log')}
+        onImportTransmission={() => goTo('importTransmission')}
       />
+    </>
+  );
+
+  // ── Import feuille de transmission (OCR local) ────────────────────────────
+  if (nav.screen === 'importTransmission' && nav.service) return screenWrap(
+    <>{TimeoutBanner}
+      <TransmissionImport service={nav.service} cryptoKey={cryptoKey} onBack={goBack} />
     </>
   );
 

@@ -11,16 +11,16 @@
 import { useState } from 'react';
 import { T, s } from '../../theme.js';
 
-export const CONSENT_KEY = 'am_consent_v2';
+export const CONSENT_KEY = 'am_consent_v3';
 
 export function isConsentGiven() {
-  try { return !!localStorage.getItem('am_consent_v2'); } catch { return false; }
+  try { return !!localStorage.getItem('am_consent_v3'); } catch { return false; }
 }
 
 function saveConsent() {
   localStorage.setItem(CONSENT_KEY, JSON.stringify({
     date:    new Date().toISOString(),
-    version: 2,
+    version: 3,
   }));
 }
 
@@ -47,17 +47,22 @@ const SECTIONS = [
   {
     icon: '📋',
     title: 'Catégories de données traitées',
-    content: "Données de santé pseudonymisées : initiales, âge, sexe, motif d'hospitalisation, antécédents, constantes vitales, soins planifiés. Aucun nom, numéro de sécurité sociale ou identifiant national.",
+    content: "Données de santé pseudonymisées : initiales, âge, sexe, motif d'hospitalisation, antécédents, constantes vitales, soins planifiés. Aucun nom, numéro de sécurité sociale ou identifiant national n'est enregistré — y compris lors de l'import par photo (voir ci-dessous).",
+  },
+  {
+    icon: '📷',
+    title: 'Import de feuille de transmission par photo',
+    content: "Vous pouvez photographier une feuille de transmission papier pour pré-remplir chambre/âge/motif. La reconnaissance de texte s'exécute entièrement sur votre appareil (aucun serveur, aucun cloud) : la photo est supprimée immédiatement après l'extraction du texte et n'est jamais enregistrée. Le nom complet éventuellement lu par la reconnaissance de texte n'est jamais stocké : seules des initiales, que vous validez, sont conservées. Aucune donnée n'est écrite avant votre validation explicite ligne par ligne, et les patients déjà suivis absents de la photo ne sont jamais supprimés automatiquement.",
   },
   {
     icon: '🗓️',
     title: 'Durée de conservation',
-    content: "Données journalières : conservées 24h (effacées au reset quotidien). Données patient : jusqu'à la sortie du patient (suppression manuelle recommandée). Vous êtes responsable de la purge régulière.",
+    content: "Données journalières : conservées 24h (effacées au reset quotidien). Données patient : jusqu'à la sortie du patient. Depuis la fiche d'un patient, le bouton « Supprimer définitivement ses données » efface immédiatement et irréversiblement sa fiche, son historique journalier et ses photos de plaies (droit à l'effacement, art. 17) — distinct de la simple sortie, qui conserve l'historique.",
   },
   {
     icon: '🔒',
     title: 'Sécurité',
-    content: "Chiffrement AES-256-GCM. Accès protégé par PIN avec verrouillage après 5 tentatives. Timeout automatique après 5 min d'inactivité. Aucune donnée transmise sur le réseau.",
+    content: "Chiffrement AES-256-GCM des données patients. Accès protégé par PIN avec verrouillage après 5 tentatives, et par déverrouillage biométrique si activé. Timeout automatique après 5 min d'inactivité — pensez à activer le verrouillage automatique de votre appareil en complément. Aucune donnée (y compris les photos importées) n'est transmise sur le réseau.",
   },
   {
     icon: '👤',
@@ -212,7 +217,7 @@ export default function ConsentScreen({ onAccepted }) {
 
         <div style={{ color: T.border, fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
           Ce consentement est enregistré localement sur votre appareil.{'\n'}
-          Version 2 · {new Date().toLocaleDateString('fr-FR')}
+          Version 3 · {new Date().toLocaleDateString('fr-FR')}
         </div>
       </div>
     </div>
