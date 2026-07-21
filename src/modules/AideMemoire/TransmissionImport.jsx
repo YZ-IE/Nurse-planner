@@ -99,9 +99,11 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
         // native du capteur (souvent 12 Mpx+) juste après le déclenchement,
         // ce qui peut provoquer un OutOfMemoryError sur de nombreux
         // appareils — d'où le plantage observé au moment de la prise de
-        // photo. 2000px reste largement suffisant pour l'OCR d'un texte
-        // manuscrit/imprimé sur une feuille de transmission.
-        width:                2000,
+        // photo. La suppression du fichier après lecture ne change rien à
+        // ce risque : le pic mémoire a lieu pendant le décodage, avant
+        // toute suppression. 3000px améliore la lisibilité OCR (texte
+        // petit/manuscrit) tout en restant loin de ce seuil.
+        width:                3000,
         allowEditing:         false,
         saveToGallery:        false,
         correctOrientation:   true,
