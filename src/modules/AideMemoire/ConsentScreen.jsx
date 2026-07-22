@@ -52,7 +52,7 @@ const SECTIONS = [
   {
     icon: '📷',
     title: 'Import de feuille de transmission par photo',
-    content: "Vous pouvez photographier une feuille de transmission papier pour pré-remplir chambre/âge/motif. La reconnaissance de texte s'exécute entièrement sur votre appareil (aucun serveur, aucun cloud) : la photo est supprimée immédiatement après l'extraction du texte et n'est jamais enregistrée. Le nom complet éventuellement lu par la reconnaissance de texte n'est jamais stocké : seules des initiales, que vous validez, sont conservées. Aucune donnée n'est écrite avant votre validation explicite ligne par ligne, et les patients déjà suivis absents de la photo ne sont jamais supprimés automatiquement.",
+    content: "Vous pouvez photographier une feuille de transmission papier (ou choisir une photo depuis votre galerie) pour pré-remplir chambre/âge/motif. La reconnaissance de texte s'exécute entièrement sur votre appareil (aucun serveur, aucun cloud) : une photo prise depuis l'app est supprimée immédiatement après l'extraction du texte ; une photo choisie dans votre galerie n'est ni copiée ni modifiée, seulement lue. Dans tous les cas, l'image elle-même n'est jamais enregistrée par l'app. Le nom complet éventuellement lu par la reconnaissance de texte n'est jamais stocké : seules des initiales, que vous validez, sont conservées. Aucune donnée n'est écrite avant votre validation explicite ligne par ligne, et les patients déjà suivis absents de la photo ne sont jamais supprimés automatiquement.",
   },
   {
     icon: '🗓️',

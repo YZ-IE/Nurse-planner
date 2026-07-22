@@ -22,7 +22,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Camera, CameraSource, CameraResultType } from '@capacitor/camera';
+import { Camera, MediaTypeSelection } from '@capacitor/camera';
 import { Filesystem } from '@capacitor/filesystem';
 import { TextRecognition } from '@capacitor-mlkit/text-recognition';
 import { T, s, loadDarkPref } from '../../theme.js';
@@ -84,29 +84,35 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
   async function handleCapture(fromGallery) {
     setError('');
     setStep('busy');
-    let tempPath = null;
+    let tempPath = null; // uniquement pour une photo QU'ON a fait prendre — jamais pour une photo déjà existante choisie dans la galerie de l'utilisateur
     try {
-      await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
-      // CameraResultType.Uri : seul un chemin de fichier (petite chaîne)
-      // traverse le pont JS↔natif Capacitor, jamais l'image elle-même.
-      // Avec Base64, une photo de plusieurs Mo (gonflée d'1/3 par
-      // l'encodage) devait transiter en un seul message — c'est ce qui
-      // provoquait le plantage à la prise de photo, y compris à
-      // résolution réduite : ce n'était pas un problème de mémoire de
-      // décodage mais de taille de message inter-pont.
-      const photo = await Camera.getPhoto({
-        resultType:          CameraResultType.Uri,
-        source:               fromGallery ? CameraSource.Photos : CameraSource.Camera,
-        quality:              90,
-        width:                3000,
-        allowEditing:         false,
-        saveToGallery:        false,
-        correctOrientation:   true,
-      });
-      if (!photo.path) { setError('Photo vide.'); setStep('intro'); return; }
-      tempPath = photo.path;
+      // getPhoto() est dépréciée par Capacitor lui-même (au profit de
+      // takePhoto/chooseFromGallery) : son ancien mécanisme peut, sur
+      // certains appareils/versions d'Android récentes, ne déclencher
+      // aucune UI et ne jamais résoudre ni rejeter l'appel — exactement le
+      // blocage silencieux observé ("Analyse en cours…" qui ne se termine
+      // jamais). On utilise donc les méthodes actuelles, non dépréciées.
+      let uri;
+      if (fromGallery) {
+        const { results } = await Camera.chooseFromGallery({
+          mediaType: MediaTypeSelection.Photo,
+          allowMultipleSelection: false,
+        });
+        uri = results?.[0]?.uri;
+      } else {
+        const photo = await Camera.takePhoto({
+          quality:            90,
+          targetWidth:        3000,
+          targetHeight:       3000,
+          correctOrientation: true,
+          saveToGallery:      false,
+        });
+        uri = photo.uri;
+        tempPath = uri;
+      }
+      if (!uri) { setError('Photo vide ou sélection annulée.'); setStep('intro'); return; }
 
-      const { text } = await TextRecognition.processImage({ path: photo.path });
+      const { text } = await TextRecognition.processImage({ path: uri });
 
       const parsed = parseTransmissionSheet(text || '');
       if (parsed.length === 0) {
@@ -121,7 +127,8 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
       setError('Erreur : ' + msg.slice(0, 140));
       setStep('error');
     } finally {
-      // La photo n'est jamais conservée : elle n'a servi qu'à l'OCR local.
+      // Seule une photo qu'on a fait prendre nous-mêmes est supprimée —
+      // jamais une photo existante de la galerie de l'utilisateur.
       if (tempPath) { try { await Filesystem.deleteFile({ path: tempPath }); } catch {} }
     }
   }
@@ -211,7 +218,7 @@ export default function TransmissionImport({ service, cryptoKey, onBack }) {
           <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 13, marginBottom: 6 }}>🔒 Traitement 100% local sur votre appareil</div>
           <div style={{ color: T.muted, fontSize: 12.5, lineHeight: 1.6 }}>
             La photo est analysée hors-ligne (reconnaissance de texte embarquée). Ni l'image ni le texte reconnu ne quittent votre téléphone — aucun serveur, aucun cloud.
-            La photo est <strong>supprimée immédiatement</strong> après l'extraction du texte.
+            Une photo prise ici est <strong>supprimée immédiatement</strong> après l'extraction du texte ; une photo choisie depuis votre galerie n'est ni copiée ni modifiée, seulement lue.
           </div>
         </div>
 
