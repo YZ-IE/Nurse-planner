@@ -6,14 +6,18 @@
  *
  * L'écriture manuscrite reste peu fiable pour un OCR généraliste : ceci sert
  * de PRÉ-REMPLISSAGE à vérifier, jamais de lecture automatique de confiance.
- * Deux renforts sans données d'entraînement :
- *   - relecture ciblée en "chiffres seuls" des colonnes n° de lit / âge
- *   - correction floue des mots-clés métier contre un lexique connu
+ *
+ * Approche validée sur une vraie feuille de transmission photographiée :
+ * une passe "page entière" ne repère quasiment aucun n° de lit de façon
+ * fiable (numéros petits, fond parasite autour de la feuille). En revanche,
+ * une passe CIBLÉE sur la seule colonne "N° de lit" (chiffres uniquement,
+ * segmentation "texte épars") les retrouve correctement dans la grande
+ * majorité des cas. La stratégie retenue part donc des n° de lit détectés
+ * par cette passe ciblée, et rattache le contexte (âge, mots-clés) trouvé
+ * à proximité verticale dans la passe page entière — plutôt que l'inverse.
  */
 
 import { createWorker } from 'tesseract.js';
-
-const NUMERIC_RE = /^\d{2,4}$/;
 
 const WORKER_OPTIONS = {
   workerPath: 'tesseract/worker.min.js',
@@ -22,7 +26,12 @@ const WORKER_OPTIONS = {
   gzip: true,
 };
 
-// ─── Worker réutilisable (une passe page entière + passes ciblées chiffres) ──
+// Fraction de la largeur de l'image occupée par la colonne "N° de lit" —
+// généreuse pour tolérer un cadrage plus ou moins serré de la photo.
+const BED_COLUMN_WIDTH_RATIO = 0.18;
+const BED_COLUMN_MIN_CONF = 55;
+
+// ─── Worker réutilisable ──────────────────────────────────────────────────────
 
 export async function createOcrWorker(onProgress) {
   return createWorker('fra', 1, { ...WORKER_OPTIONS, logger: onProgress || (() => {}) });
@@ -33,28 +42,35 @@ export async function recognizePage(worker, dataUrl) {
   return { text: data.text || '', words: parseTsvWords(data.tsv || '') };
 }
 
-/**
- * Relit une zone rectangulaire de l'image en forçant un jeu de caractères
- * "chiffres uniquement" — bien plus fiable que la passe pleine page pour les
- * colonnes qu'on sait numériques (n° de lit, âge).
- */
-export async function recognizeDigits(worker, dataUrl, rect) {
-  await worker.setParameters({ tessedit_char_whitelist: '0123456789' });
-  try {
-    const { data } = await worker.recognize(dataUrl, { rectangle: rect }, { text: true });
-    return (data.text || '').replace(/\D/g, '');
-  } finally {
-    await worker.setParameters({ tessedit_char_whitelist: '' });
-  }
+function loadImageSize(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
-// Conservé pour compatibilité (une passe = un worker jetable)
-export async function runOcr(dataUrl, onProgress) {
-  const worker = await createOcrWorker(onProgress);
+/**
+ * Relit uniquement la colonne "N° de lit" (chiffres seuls, texte épars) —
+ * bien plus fiable qu'une lecture alphanumérique pleine page pour ces
+ * numéros imprimés. Retourne les lits triés de haut en bas.
+ */
+export async function detectBedNumberColumn(worker, dataUrl) {
+  const { width, height } = await loadImageSize(dataUrl);
+  await worker.setParameters({ tessedit_char_whitelist: '0123456789', tessedit_pageseg_mode: '11' });
   try {
-    return await recognizePage(worker, dataUrl);
+    const { data } = await worker.recognize(
+      dataUrl,
+      { rectangle: { left: 0, top: 0, width: Math.round(width * BED_COLUMN_WIDTH_RATIO), height } },
+      { text: true, tsv: true },
+    );
+    return parseTsvWords(data.tsv || '')
+      .filter(w => w.conf >= BED_COLUMN_MIN_CONF && /^\d{2,4}$/.test(w.text))
+      .map(w => ({ bedNumber: w.text, top: (w.y0 + w.y1) / 2 }))
+      .sort((a, b) => a.top - b.top);
   } finally {
-    await worker.terminate();
+    await worker.setParameters({ tessedit_char_whitelist: '', tessedit_pageseg_mode: '3' });
   }
 }
 
@@ -131,72 +147,33 @@ function extractKeywords(rawText) {
   return { patch, correctedText: text };
 }
 
-// ─── Détection des lignes "lit" ──────────────────────────────────────────────
-
-function median(nums) {
-  const s = [...nums].sort((a, b) => a - b);
-  return s[Math.floor(s.length / 2)];
-}
+const DEFAULT_HALF_ROW = 150; // px, utilisé en haut/bas de tableau où il n'y a pas de voisin
+const MAX_HALF_ROW = 260; // px — plafond : mieux vaut un contexte incomplet qu'une ligne voisine happée
 
 /**
- * Regroupe les mots reconnus en lignes (par proximité verticale), repère la
- * colonne "N° de lit" (colonne numérique la plus à gauche, répétée sur
- * plusieurs lignes) et la colonne "Age" (colonne numérique suivante), puis
- * relève quelques mots-clés par ligne. Heuristique — à vérifier ligne par
- * ligne, pas une lecture fiable du tableau. Chaque ligne renvoie aussi la
- * bbox des tokens n° de lit / âge pour une relecture ciblée en chiffres.
+ * Associe à chaque n° de lit détecté (passe ciblée) le contexte trouvé à
+ * proximité verticale dans la passe page entière : âge (nombre isolé le
+ * plus proche), mots-clés métier, texte brut de la ligne. La fenêtre de
+ * chaque ligne s'arrête à mi-chemin du lit détecté précédent/suivant (et
+ * non à une hauteur de ligne moyenne) pour ne pas déborder sur la ligne
+ * voisine quand un lit intermédiaire n'a pas été détecté ; elle est en
+ * plus plafonnée (MAX_HALF_ROW) pour qu'un grand écart dû à un lit manqué
+ * ne fasse pas remonter les données d'un tout autre patient.
  */
-export function detectBedRows(words) {
-  const goodWords = words.filter(w => w.conf >= 35 && w.text.trim());
-  if (goodWords.length === 0) return [];
+export function attachRowContext(bedNumbers, pageWords) {
+  if (bedNumbers.length === 0) return [];
+  const goodWords = pageWords.filter(w => w.conf >= 35 && w.text.trim());
 
-  const binWidth = 40; // px — échelle de la photo compressée (~1600px de large)
-  const numericBins = new Map();
-  for (const w of goodWords) {
-    if (!NUMERIC_RE.test(w.text)) continue;
-    const key = Math.round(w.x0 / binWidth);
-    if (!numericBins.has(key)) numericBins.set(key, []);
-    numericBins.get(key).push(w);
-  }
-  const candidateBins = [...numericBins.entries()]
-    .filter(([, ws]) => ws.length >= 3)
-    .sort((a, b) => median(a[1].map(w => w.x0)) - median(b[1].map(w => w.x0)));
-
-  const bedX = candidateBins[0] ? median(candidateBins[0][1].map(w => w.x0)) : null;
-  const ageX = candidateBins[1] ? median(candidateBins[1][1].map(w => w.x0)) : null;
-  if (bedX === null) return []; // pas de colonne numérique répétée détectée
-
-  const sorted = [...goodWords].sort((a, b) => a.y0 - b.y0);
-  const heights = sorted.map(w => w.y1 - w.y0).filter(h => h > 0);
-  const medHeight = heights.length ? median(heights) : 20;
-
-  const bands = [];
-  let current = null;
-  for (const w of sorted) {
-    const yc = (w.y0 + w.y1) / 2;
-    if (!current || yc - current.yc > medHeight * 1.4) {
-      current = { yc, words: [] };
-      bands.push(current);
-    }
-    current.words.push(w);
-    current.yc = (current.yc * (current.words.length - 1) + yc) / current.words.length;
-  }
-
-  const rows = [];
-  for (const band of bands) {
-    const bedCand = band.words.find(w => NUMERIC_RE.test(w.text) && Math.abs(w.x0 - bedX) < binWidth * 1.5);
-    if (!bedCand) continue;
-    const ageCand = ageX !== null
-      ? band.words.find(w => NUMERIC_RE.test(w.text) && Math.abs(w.x0 - ageX) < binWidth * 1.5)
-      : null;
-    const lineText = band.words.map(w => w.text).join(' ');
-    const { patch, correctedText } = extractKeywords(lineText);
-    rows.push({
-      bedNumber: bedCand.text, age: ageCand ? ageCand.text : '', rawText: correctedText,
-      bedBox: { left: bedCand.x0, top: bedCand.y0, width: bedCand.x1 - bedCand.x0, height: bedCand.y1 - bedCand.y0 },
-      ageBox: ageCand ? { left: ageCand.x0, top: ageCand.y0, width: ageCand.x1 - ageCand.x0, height: ageCand.y1 - ageCand.y0 } : null,
-      ...patch,
+  return bedNumbers.map(({ bedNumber, top }, i) => {
+    const upHalf   = Math.min(MAX_HALF_ROW, i > 0 ? (top - bedNumbers[i - 1].top) / 2 : DEFAULT_HALF_ROW);
+    const downHalf = Math.min(MAX_HALF_ROW, i < bedNumbers.length - 1 ? (bedNumbers[i + 1].top - top) / 2 : DEFAULT_HALF_ROW);
+    const nearby = goodWords.filter(w => {
+      const yc = (w.y0 + w.y1) / 2;
+      return yc >= top - upHalf && yc <= top + downHalf;
     });
-  }
-  return rows;
+    const ageCand = nearby.find(w => /^\d{1,3}$/.test(w.text) && w.text !== bedNumber);
+    const lineText = nearby.map(w => w.text).join(' ');
+    const { patch, correctedText } = extractKeywords(lineText);
+    return { bedNumber, age: ageCand ? ageCand.text : '', rawText: correctedText, ...patch };
+  });
 }

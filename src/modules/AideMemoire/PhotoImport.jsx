@@ -13,7 +13,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { genId, todayStr, FieldInput } from './utils.jsx';
-import { createOcrWorker, recognizePage, recognizeDigits, detectBedRows } from './ocrImport.js';
+import { createOcrWorker, recognizePage, detectBedNumberColumn, attachRowContext } from './ocrImport.js';
 
 // ─── Dates ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ function formatFR(dateStr) {
 
 // ─── Photo ────────────────────────────────────────────────────────────────────
 
-function compressForPreview(base64, maxPx = 1600, quality = 0.82) {
+function resizeToDataUrl(src, maxPx, quality) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -52,8 +52,17 @@ function compressForPreview(base64, maxPx = 1600, quality = 0.82) {
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = reject;
-    img.src = `data:image/jpeg;base64,${base64}`;
+    img.src = src;
   });
+}
+
+// Aperçu écran (léger) et copie haute résolution dédiée à l'OCR — la
+// détection des n° de lit a besoin de bien plus de détail que l'affichage.
+function compressForPreview(base64, maxPx = 1600, quality = 0.82) {
+  return resizeToDataUrl(`data:image/jpeg;base64,${base64}`, maxPx, quality);
+}
+function compressForOcr(base64, maxPx = 2600, quality = 0.92) {
+  return resizeToDataUrl(`data:image/jpeg;base64,${base64}`, maxPx, quality);
 }
 
 function rotateDataUrl(dataUrl, deg) {
@@ -69,7 +78,7 @@ function rotateDataUrl(dataUrl, deg) {
       ctx.translate(w / 2, h / 2);
       ctx.rotate(deg * Math.PI / 180);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
     };
     img.onerror = reject;
     img.src = dataUrl;
@@ -319,13 +328,16 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
     try {
       await Camera.requestPermissions({ permissions: fromGallery ? ['photos'] : ['camera'] });
       const photo = await Camera.getPhoto({
-        quality: 80, width: 1600, resultType: CameraResultType.Base64,
+        quality: 90, width: 2600, resultType: CameraResultType.Base64,
         source: fromGallery ? CameraSource.Photos : CameraSource.Camera,
         allowEditing: false, saveToGallery: false, correctOrientation: true,
       });
       if (!photo.base64String) { setError('Photo vide.'); return; }
-      const dataUrl = await compressForPreview(photo.base64String);
-      setPhotos(prev => [...prev, { id: genId(), dataUrl }]);
+      const [dataUrl, ocrDataUrl] = await Promise.all([
+        compressForPreview(photo.base64String),
+        compressForOcr(photo.base64String),
+      ]);
+      setPhotos(prev => [...prev, { id: genId(), dataUrl, ocrDataUrl }]);
     } catch (e) {
       const msg = e?.message || String(e);
       if (msg.includes('cancel') || msg.includes('User cancelled')) return;
@@ -336,8 +348,11 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
   async function handleRotate(id, deg) {
     const p = photos.find(x => x.id === id);
     if (!p) return;
-    const rotated = await rotateDataUrl(p.dataUrl, deg);
-    setPhotos(prev => prev.map(x => x.id === id ? { ...x, dataUrl: rotated } : x));
+    const [dataUrl, ocrDataUrl] = await Promise.all([
+      rotateDataUrl(p.dataUrl, deg),
+      rotateDataUrl(p.ocrDataUrl, deg),
+    ]);
+    setPhotos(prev => prev.map(x => x.id === id ? { ...x, dataUrl, ocrDataUrl } : x));
   }
 
   async function handleDetect() {
@@ -351,28 +366,14 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
       });
       let allRows = [];
       for (const p of photos) {
-        const { words } = await recognizePage(worker, p.dataUrl);
-        const detected = detectBedRows(words);
-        // Relecture ciblée "chiffres seuls" du n° de lit et de l'âge — bien
-        // plus fiable que la passe pleine page pour ces deux colonnes.
-        for (const row of detected) {
-          const pad = 6;
-          const boxToRect = box => ({
-            left: Math.max(0, box.left - pad), top: Math.max(0, box.top - pad),
-            width: box.width + pad * 2, height: box.height + pad * 2,
-          });
-          try {
-            const cleanBed = await recognizeDigits(worker, p.dataUrl, boxToRect(row.bedBox));
-            if (cleanBed) row.bedNumber = cleanBed;
-          } catch { /* garde la lecture de la passe pleine page */ }
-          if (row.ageBox) {
-            try {
-              const cleanAge = await recognizeDigits(worker, p.dataUrl, boxToRect(row.ageBox));
-              if (cleanAge) row.age = cleanAge;
-            } catch { /* garde la lecture de la passe pleine page */ }
-          }
-        }
-        allRows = allRows.concat(detected);
+        // 1. Passe ciblée "chiffres seuls" sur la colonne N° de lit — c'est
+        //    elle qui définit les lignes (bien plus fiable qu'une lecture
+        //    alphanumérique pleine page pour ces numéros imprimés).
+        const bedNumbers = await detectBedNumberColumn(worker, p.ocrDataUrl);
+        // 2. Passe pleine page — sert uniquement à retrouver l'âge et les
+        //    mots-clés métier à proximité de chaque n° de lit détecté.
+        const { words } = await recognizePage(worker, p.ocrDataUrl);
+        allRows = allRows.concat(attachRowContext(bedNumbers, words));
       }
       setDetectedRows(allRows);
       setRowsSeeded(false); // permet de re-remplir "rows" si la détection est relancée
