@@ -1,9 +1,10 @@
 /**
  * PhotoImport.jsx — Aide-Mémoire
  * Import d'un service à partir d'une photo de feuille de transmission papier.
- * Pas d'OCR (appli 100% locale/chiffrée, zéro réseau) : la photo sert de
- * référence visuelle pendant la saisie manuelle assistée (calculs auto
- * J post-op ↔ date, reprise d'appui, soins programmés).
+ * Appli 100% locale/chiffrée, zéro réseau : la détection automatique des
+ * lits (Tesseract.js + wasm embarqués, aucune photo envoyée) est une aide au
+ * pré-remplissage, pas une lecture fiable de l'écriture manuscrite — la
+ * photo reste la référence visuelle pendant la vérification manuelle.
  */
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { genId, todayStr, FieldInput } from './utils.jsx';
+import { runOcr, detectBedRows } from './ocrImport.js';
 
 // ─── Dates ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,26 @@ function compressForPreview(base64, maxPx = 1600, quality = 0.82) {
     };
     img.onerror = reject;
     img.src = `data:image/jpeg;base64,${base64}`;
+  });
+}
+
+function rotateDataUrl(dataUrl, deg) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const swap = deg % 180 !== 0;
+      const w = swap ? img.height : img.width;
+      const h = swap ? img.width : img.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(deg * Math.PI / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
   });
 }
 
@@ -278,7 +300,13 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
   const [newSvcForm,     setNewSvcForm]     = useState({ name: '', specialty: 'traumato', bedCount: 20 });
   const [targetService,  setTargetService]  = useState(null);
 
-  const [rows, setRows] = useState([emptyRow()]);
+  const [rows,        setRows]        = useState([emptyRow()]);
+  const [rowsSeeded,  setRowsSeeded]  = useState(false);
+
+  const [ocrBusy,      setOcrBusy]      = useState(false);
+  const [ocrProgress,  setOcrProgress]  = useState(0);
+  const [ocrStatus,    setOcrStatus]    = useState('');
+  const [detectedRows, setDetectedRows] = useState(null);
 
   const weekMonday = mondayOfWeek(sheetDate);
 
@@ -305,6 +333,39 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
     }
   }
 
+  async function handleRotate(id, deg) {
+    const p = photos.find(x => x.id === id);
+    if (!p) return;
+    const rotated = await rotateDataUrl(p.dataUrl, deg);
+    setPhotos(prev => prev.map(x => x.id === id ? { ...x, dataUrl: rotated } : x));
+  }
+
+  async function handleDetect() {
+    if (photos.length === 0) return;
+    setOcrBusy(true); setError(''); setSuccess(''); setOcrProgress(0); setOcrStatus('Initialisation…');
+    try {
+      let allRows = [];
+      for (const p of photos) {
+        const { words } = await runOcr(p.dataUrl, m => {
+          if (m.status) setOcrStatus(m.status);
+          if (typeof m.progress === 'number') setOcrProgress(m.progress);
+        });
+        allRows = allRows.concat(detectBedRows(words));
+      }
+      setDetectedRows(allRows);
+      setRowsSeeded(false); // permet de re-remplir "rows" si la détection est relancée
+      if (allRows.length === 0) {
+        setError('Aucun lit détecté automatiquement (écriture manuscrite, orientation…) — la saisie manuelle reste nécessaire.');
+      } else {
+        setSuccess(`🔍 ${allRows.length} ligne(s) détectée(s) — à vérifier à l'étape suivante.`);
+      }
+    } catch (e) {
+      setError('Erreur de reconnaissance : ' + (e?.message || String(e)).slice(0, 100));
+    } finally {
+      setOcrBusy(false); setOcrStatus('');
+    }
+  }
+
   // ── Étape cible ──────────────────────────────────────────────────────────────
 
   async function confirmTarget() {
@@ -321,6 +382,18 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
         bedConfig: {}, createdAt: Date.now(),
       };
       setTargetService(svc);
+    }
+    if (!rowsSeeded) {
+      if (detectedRows && detectedRows.length) {
+        setRows(detectedRows.map(d => ({
+          ...emptyRow(),
+          bedNumber: d.bedNumber, age: d.age || '',
+          hbpm: !!d.hbpm, douleur: d.douleur || '', avq: d.avq || '', appui: d.appui || '',
+          jPostop: d.jPostop || '',
+          observations: d.rawText ? `🔍 OCR (à vérifier) : ${d.rawText}` : '',
+        })));
+      }
+      setRowsSeeded(true);
     }
     setStep('rows');
   }
@@ -482,9 +555,27 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
                 <button onClick={() => handleCapture(true)} style={{ flex: 1, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>🖼 Galerie</button>
               </div>
               <div style={{ color: T.muted, fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
-                Plusieurs photos possibles (feuille pliée, recto/verso). La photo reste en mémoire le temps de la saisie, elle n'est jamais enregistrée sur l'appareil.
+                Plusieurs photos possibles (feuille pliée, recto/verso). La photo reste en mémoire le temps de la saisie, elle n'est jamais enregistrée sur l'appareil. Si le tableau est de travers, ouvrez la photo (🖼) pour la pivoter avant de lancer la détection.
               </div>
             </div>
+
+            {photos.length > 0 && (
+              <div style={card}>
+                <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Détection automatique des lits (bêta)</div>
+                <div style={{ color: T.muted, fontSize: 11, lineHeight: 1.5, marginBottom: 10 }}>
+                  Reconnaissance 100% locale sur l'appareil, aucune photo envoyée. L'écriture manuscrite reste difficile à lire : vérifiez chaque ligne à l'étape suivante.
+                </div>
+                <button onClick={handleDetect} disabled={ocrBusy}
+                  style={{ ...s.btn('#a78bfa'), width: '100%', padding: 12, fontSize: 14, opacity: ocrBusy ? 0.6 : 1 }}>
+                  {ocrBusy ? `${ocrStatus || 'Analyse…'} ${Math.round(ocrProgress * 100)}%` : '🔍 Détecter les lits automatiquement'}
+                </button>
+                {detectedRows !== null && !ocrBusy && (
+                  <div style={{ color: detectedRows.length ? '#22c55e' : '#f97316', fontSize: 12, marginTop: 8 }}>
+                    {detectedRows.length ? `${detectedRows.length} ligne(s) détectée(s)` : 'Aucune ligne détectée'}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={card}>
               <div style={{ color: T.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Date de la feuille</div>
@@ -583,7 +674,8 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 8px' }}>
             <button onClick={() => setViewerIdx(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer' }}>←</button>
             {photos.length > 1 && <div style={{ color: '#fff', fontSize: 13 }}>{viewerIdx + 1} / {photos.length}</div>}
-            <span style={{ width: 22 }} />
+            <button onClick={() => handleRotate(photos[viewerIdx].id, 90)}
+              style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 18, padding: '6px 10px', cursor: 'pointer' }}>↻</button>
           </div>
           <div style={{ flex: 1, overflow: 'auto', touchAction: 'pinch-zoom', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src={photos[viewerIdx].dataUrl} alt="" style={{ maxWidth: '100%', minHeight: '100%', objectFit: 'contain' }} />
