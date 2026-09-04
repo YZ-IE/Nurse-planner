@@ -17,6 +17,7 @@ import PatientSheet   from './PatientSheet.jsx';
 import QuickEntry     from './QuickEntry.jsx';
 import DayOverview    from './DayOverview.jsx';
 import SecureTransfer from './SecureTransfer.jsx';
+import PhotoImport    from './PhotoImport.jsx';
 import { dateStrOffset } from './utils.jsx';
 
 const ACCENT = '#6366f1';
@@ -115,7 +116,7 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     const screen = nav.screen;
     if (screen === 'patient' || screen === 'quick' || screen === 'dayoverview' || screen === 'transfer' || screen === 'log') {
       goTo('service', { refreshKey: nav.refreshKey + 1 }, 'back');
-    } else if (screen === 'service') {
+    } else if (screen === 'service' || screen === 'photoimport') {
       goTo('services', { service: null }, 'back');
     } else {
       appendLog('LOGOUT', 'Déconnexion manuelle');
@@ -196,7 +197,8 @@ export default function AideMemoire({ onBack, onBackOverride }) {
     <>{TimeoutBanner}
       <ServicesScreen cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
         onSelectService={service => goTo('service', { service, patientId: null })}
-        onImport={() => goTo('transfer', { service: '__import__' })} />
+        onImport={() => goTo('transfer', { service: '__import__' })}
+        onPhotoImport={() => goTo('photoimport')} />
     </>
   );
 
@@ -241,6 +243,14 @@ export default function AideMemoire({ onBack, onBackOverride }) {
   if (nav.screen === 'dayoverview' && nav.service) return screenWrap(
     <>{TimeoutBanner}
       <DayOverview service={nav.service} cryptoKey={cryptoKey} onBack={goBack} selectedDate={nav.selectedDate || dateStrOffset(0)} />
+    </>
+  );
+
+  // ── Import depuis photo ───────────────────────────────────────────────────
+  if (nav.screen === 'photoimport') return screenWrap(
+    <>{TimeoutBanner}
+      <PhotoImport cryptoKey={cryptoKey} accentColor={ACCENT} onBack={goBack}
+        onImported={() => goTo('services', {}, 'back')} />
     </>
   );
 
