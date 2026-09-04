@@ -13,7 +13,7 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { genId, todayStr, FieldInput } from './utils.jsx';
-import { runOcr, detectBedRows } from './ocrImport.js';
+import { createOcrWorker, recognizePage, recognizeDigits, detectBedRows } from './ocrImport.js';
 
 // ─── Dates ────────────────────────────────────────────────────────────────────
 
@@ -343,14 +343,36 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
   async function handleDetect() {
     if (photos.length === 0) return;
     setOcrBusy(true); setError(''); setSuccess(''); setOcrProgress(0); setOcrStatus('Initialisation…');
+    let worker = null;
     try {
+      worker = await createOcrWorker(m => {
+        if (m.status) setOcrStatus(m.status);
+        if (typeof m.progress === 'number') setOcrProgress(m.progress);
+      });
       let allRows = [];
       for (const p of photos) {
-        const { words } = await runOcr(p.dataUrl, m => {
-          if (m.status) setOcrStatus(m.status);
-          if (typeof m.progress === 'number') setOcrProgress(m.progress);
-        });
-        allRows = allRows.concat(detectBedRows(words));
+        const { words } = await recognizePage(worker, p.dataUrl);
+        const detected = detectBedRows(words);
+        // Relecture ciblée "chiffres seuls" du n° de lit et de l'âge — bien
+        // plus fiable que la passe pleine page pour ces deux colonnes.
+        for (const row of detected) {
+          const pad = 6;
+          const boxToRect = box => ({
+            left: Math.max(0, box.left - pad), top: Math.max(0, box.top - pad),
+            width: box.width + pad * 2, height: box.height + pad * 2,
+          });
+          try {
+            const cleanBed = await recognizeDigits(worker, p.dataUrl, boxToRect(row.bedBox));
+            if (cleanBed) row.bedNumber = cleanBed;
+          } catch { /* garde la lecture de la passe pleine page */ }
+          if (row.ageBox) {
+            try {
+              const cleanAge = await recognizeDigits(worker, p.dataUrl, boxToRect(row.ageBox));
+              if (cleanAge) row.age = cleanAge;
+            } catch { /* garde la lecture de la passe pleine page */ }
+          }
+        }
+        allRows = allRows.concat(detected);
       }
       setDetectedRows(allRows);
       setRowsSeeded(false); // permet de re-remplir "rows" si la détection est relancée
@@ -362,6 +384,7 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
     } catch (e) {
       setError('Erreur de reconnaissance : ' + (e?.message || String(e)).slice(0, 100));
     } finally {
+      if (worker) await worker.terminate();
       setOcrBusy(false); setOcrStatus('');
     }
   }
