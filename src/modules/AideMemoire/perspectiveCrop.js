@@ -51,12 +51,22 @@ export function computeInverseMapping(dstQuad, srcQuad) {
   };
 }
 
+function nextFrame() {
+  return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
 /**
  * Redresse `source` (image ou canvas) selon les 4 coins `srcQuad` (en
  * pixels de `source`) vers un rectangle `outWidth`×`outHeight`.
  * Retourne un canvas.
+ *
+ * Le calcul (boucle pixel par pixel avec interpolation bilinéaire) est
+ * découpé en tranches de lignes, avec un retour à la boucle d'événements
+ * entre chaque tranche : sur une image de plusieurs millions de pixels,
+ * un seul bloc synchrone gèlerait l'interface plusieurs secondes sur un
+ * téléphone d'entrée de gamme. `onProgress(fraction)` est optionnel.
  */
-export function warpPerspective(source, srcQuad, outWidth, outHeight) {
+export async function warpPerspective(source, srcQuad, outWidth, outHeight, onProgress) {
   const sw = source.naturalWidth || source.width;
   const sh = source.naturalHeight || source.height;
   const srcCanvas = document.createElement('canvas');
@@ -74,24 +84,30 @@ export function warpPerspective(source, srcQuad, outWidth, outHeight) {
   const outImg = outCtx.createImageData(outWidth, outHeight);
   const outData = outImg.data;
 
-  for (let y = 0; y < outHeight; y += 1) {
-    for (let x = 0; x < outWidth; x += 1) {
-      const { x: sx, y: sy } = mapToSource(x, y);
-      const di = (y * outWidth + x) * 4;
-      if (sx < 0 || sy < 0 || sx >= sw - 1 || sy >= sh - 1) {
-        outData[di] = 255; outData[di + 1] = 255; outData[di + 2] = 255; outData[di + 3] = 255;
-        continue;
+  const ROWS_PER_SLICE = 60;
+  for (let sliceStart = 0; sliceStart < outHeight; sliceStart += ROWS_PER_SLICE) {
+    const sliceEnd = Math.min(outHeight, sliceStart + ROWS_PER_SLICE);
+    for (let y = sliceStart; y < sliceEnd; y += 1) {
+      for (let x = 0; x < outWidth; x += 1) {
+        const { x: sx, y: sy } = mapToSource(x, y);
+        const di = (y * outWidth + x) * 4;
+        if (sx < 0 || sy < 0 || sx >= sw - 1 || sy >= sh - 1) {
+          outData[di] = 255; outData[di + 1] = 255; outData[di + 2] = 255; outData[di + 3] = 255;
+          continue;
+        }
+        const x0 = Math.floor(sx), y0 = Math.floor(sy);
+        const fx = sx - x0, fy = sy - y0;
+        const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
+        for (let ch = 0; ch < 3; ch += 1) {
+          const top = srcData[i00 + ch] + (srcData[i10 + ch] - srcData[i00 + ch]) * fx;
+          const bot = srcData[i01 + ch] + (srcData[i11 + ch] - srcData[i01 + ch]) * fx;
+          outData[di + ch] = top + (bot - top) * fy;
+        }
+        outData[di + 3] = 255;
       }
-      const x0 = Math.floor(sx), y0 = Math.floor(sy);
-      const fx = sx - x0, fy = sy - y0;
-      const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
-      for (let ch = 0; ch < 3; ch += 1) {
-        const top = srcData[i00 + ch] + (srcData[i10 + ch] - srcData[i00 + ch]) * fx;
-        const bot = srcData[i01 + ch] + (srcData[i11 + ch] - srcData[i01 + ch]) * fx;
-        outData[di + ch] = top + (bot - top) * fy;
-      }
-      outData[di + 3] = 255;
     }
+    onProgress?.(sliceEnd / outHeight);
+    await nextFrame();
   }
   outCtx.putImageData(outImg, 0, 0);
   return outCanvas;

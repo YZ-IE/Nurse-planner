@@ -14,10 +14,20 @@ const DEFAULT_QUAD = [
 ];
 const LABELS = ['Haut-gauche', 'Haut-droit', 'Bas-droit', 'Bas-gauche'];
 
-export default function CornerCrop({ imageUrl, onConfirm, onCancel }) {
+export default function CornerCrop({ imageUrl, onConfirm, onCancel, busy, progress }) {
   const [quad, setQuad] = useState(DEFAULT_QUAD);
   const [dragIdx, setDragIdx] = useState(null);
   const imgRef = useRef(null);
+
+  if (busy) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div style={{ width: 44, height: 44, border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'corner-crop-spin 0.8s linear infinite' }} />
+        <div style={{ color: '#fff', fontSize: 14 }}>Redressement en cours… {Math.round((progress || 0) * 100)}%</div>
+        <style>{'@keyframes corner-crop-spin { to { transform: rotate(360deg); } }'}</style>
+      </div>
+    );
+  }
 
   function clampedFraction(clientX, clientY) {
     const rect = imgRef.current.getBoundingClientRect();

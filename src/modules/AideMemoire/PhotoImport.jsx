@@ -301,6 +301,8 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
   const [photos,     setPhotos]     = useState([]);
   const [viewerIdx,    setViewerIdx]    = useState(null);
   const [cropTargetId, setCropTargetId] = useState(null);
+  const [cropBusy,     setCropBusy]     = useState(false);
+  const [cropProgress, setCropProgress] = useState(0);
   const [sheetDate,  setSheetDate]  = useState(todayStr());
   const [busy,       setBusy]       = useState(false);
   const [error,      setError]      = useState('');
@@ -371,6 +373,7 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
     const id = cropTargetId;
     const photo = photos.find(p => p.id === id);
     if (!photo) { setCropTargetId(null); return; }
+    setCropBusy(true); setCropProgress(0);
     try {
       const img = await loadImageEl(photo.ocrDataUrl);
       const w = img.naturalWidth, h = img.naturalHeight;
@@ -378,14 +381,14 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
       const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
       const outW = Math.round(Math.min(2600, Math.max(200, (dist(pts[0], pts[1]) + dist(pts[3], pts[2])) / 2)));
       const outH = Math.round(Math.min(2600, Math.max(200, (dist(pts[0], pts[3]) + dist(pts[1], pts[2])) / 2)));
-      const warpedCanvas = warpPerspective(img, pts, outW, outH);
+      const warpedCanvas = await warpPerspective(img, pts, outW, outH, setCropProgress);
       const ocrDataUrl = warpedCanvas.toDataURL('image/jpeg', 0.92);
       const dataUrl = await resizeToDataUrl(ocrDataUrl, 1400, 0.82);
       setPhotos(prev => prev.map(p => p.id === id ? { ...p, dataUrl, ocrDataUrl } : p));
     } catch (e) {
       setError('Erreur lors du redressement : ' + (e?.message || String(e)).slice(0, 100));
     } finally {
-      setCropTargetId(null);
+      setCropBusy(false); setCropTargetId(null);
     }
   }
 
@@ -760,6 +763,8 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
           imageUrl={photos.find(p => p.id === cropTargetId).dataUrl}
           onCancel={() => setCropTargetId(null)}
           onConfirm={applyCorners}
+          busy={cropBusy}
+          progress={cropProgress}
         />
       )}
     </div>

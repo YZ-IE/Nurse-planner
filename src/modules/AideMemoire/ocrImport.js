@@ -71,7 +71,14 @@ export async function detectBedNumberColumn(worker, dataUrl, pageWords) {
   const contentLeft  = xs.length ? xs[Math.floor(xs.length * 0.05)] : 0;
   const contentRight = xs.length ? xs[Math.floor(xs.length * 0.95)] : width;
   const contentWidth = Math.max(1, contentRight - contentLeft);
-  const left = Math.max(0, Math.round(contentLeft - contentWidth * 0.02));
+
+  // Ancrage préféré : le mot d'en-tête lui-même ("Lits", "N°"...), quand la
+  // passe pleine page l'a lu — plus fiable que l'estimation statistique
+  // ci-dessus, qui peut inclure du texte hors tableau (annotations, fond).
+  const headerWord = pageWords.find(w => w.conf >= 25 && w.y0 < height * 0.12 && /^(lits?|n[o°]s?)$/i.test(w.text.replace(/[.:]/g, '')));
+  const left = headerWord
+    ? Math.max(0, Math.round(headerWord.x0 - contentWidth * 0.02))
+    : Math.max(0, Math.round(contentLeft - contentWidth * 0.02));
   const colWidth = Math.min(width - left, Math.round(contentWidth * BED_COLUMN_WIDTH_RATIO));
 
   await worker.setParameters({ tessedit_char_whitelist: '0123456789PF', tessedit_pageseg_mode: '11' });
