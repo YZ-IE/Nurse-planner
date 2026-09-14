@@ -26,10 +26,14 @@ const WORKER_OPTIONS = {
   gzip: true,
 };
 
-// Fraction de la largeur de l'image occupée par la colonne "N° de lit" —
-// généreuse pour tolérer un cadrage plus ou moins serré de la photo.
-const BED_COLUMN_WIDTH_RATIO = 0.18;
+// Largeur de la colonne "N° de lit", en fraction de la largeur du contenu
+// détecté (pas de l'image entière — la marge de fond avant le bord de la
+// feuille varie énormément d'une photo à l'autre, de ~7% à ~29% observés).
+const BED_COLUMN_WIDTH_RATIO = 0.20;
 const BED_COLUMN_MIN_CONF = 55;
+// Certaines feuilles notent directement "126P"/"126F" (porte/fenêtre) dans
+// la cellule du n° de lit plutôt que dans une colonne séparée.
+const BED_NUMBER_RE = /^\d{2,4}[PF]?$/;
 
 // ─── Worker réutilisable ──────────────────────────────────────────────────────
 
@@ -52,21 +56,33 @@ function loadImageSize(dataUrl) {
 }
 
 /**
- * Relit uniquement la colonne "N° de lit" (chiffres seuls, texte épars) —
+ * Relit uniquement la colonne "N° de lit" (chiffres + P/F, texte épars) —
  * bien plus fiable qu'une lecture alphanumérique pleine page pour ces
- * numéros imprimés. Retourne les lits triés de haut en bas.
+ * numéros imprimés. La zone recadrée s'ancre sur le contenu réellement
+ * détecté par la passe pleine page (`pageWords`) plutôt que sur le bord
+ * gauche de la photo : la marge de fond avant la feuille varie énormément
+ * d'un cadrage à l'autre. Retourne les lits triés de haut en bas.
  */
-export async function detectBedNumberColumn(worker, dataUrl) {
+export async function detectBedNumberColumn(worker, dataUrl, pageWords) {
   const { width, height } = await loadImageSize(dataUrl);
-  await worker.setParameters({ tessedit_char_whitelist: '0123456789', tessedit_pageseg_mode: '11' });
+  // Les mots d'1 seul caractère sont souvent du bruit (traits de grille,
+  // faux positifs) et faussent l'estimation du bord gauche du contenu.
+  const xs = pageWords.filter(w => w.conf >= 40 && w.text.length >= 2).map(w => w.x0).sort((a, b) => a - b);
+  const contentLeft  = xs.length ? xs[Math.floor(xs.length * 0.05)] : 0;
+  const contentRight = xs.length ? xs[Math.floor(xs.length * 0.95)] : width;
+  const contentWidth = Math.max(1, contentRight - contentLeft);
+  const left = Math.max(0, Math.round(contentLeft - contentWidth * 0.02));
+  const colWidth = Math.min(width - left, Math.round(contentWidth * BED_COLUMN_WIDTH_RATIO));
+
+  await worker.setParameters({ tessedit_char_whitelist: '0123456789PF', tessedit_pageseg_mode: '11' });
   try {
     const { data } = await worker.recognize(
       dataUrl,
-      { rectangle: { left: 0, top: 0, width: Math.round(width * BED_COLUMN_WIDTH_RATIO), height } },
+      { rectangle: { left, top: 0, width: colWidth, height } },
       { text: true, tsv: true },
     );
     return parseTsvWords(data.tsv || '')
-      .filter(w => w.conf >= BED_COLUMN_MIN_CONF && /^\d{2,4}$/.test(w.text))
+      .filter(w => w.conf >= BED_COLUMN_MIN_CONF && BED_NUMBER_RE.test(w.text))
       .map(w => ({ bedNumber: w.text, top: (w.y0 + w.y1) / 2 }))
       .sort((a, b) => a.top - b.top);
   } finally {

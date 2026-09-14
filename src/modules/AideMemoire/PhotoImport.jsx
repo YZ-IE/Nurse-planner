@@ -14,6 +14,8 @@ import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { genId, todayStr, FieldInput } from './utils.jsx';
 import { createOcrWorker, recognizePage, detectBedNumberColumn, attachRowContext } from './ocrImport.js';
+import { warpPerspective } from './perspectiveCrop.js';
+import CornerCrop from './CornerCrop.jsx';
 
 // ─── Dates ────────────────────────────────────────────────────────────────────
 
@@ -297,7 +299,8 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
 
   const [step,       setStep]       = useState('photo');
   const [photos,     setPhotos]     = useState([]);
-  const [viewerIdx,  setViewerIdx]  = useState(null);
+  const [viewerIdx,    setViewerIdx]    = useState(null);
+  const [cropTargetId, setCropTargetId] = useState(null);
   const [sheetDate,  setSheetDate]  = useState(todayStr());
   const [busy,       setBusy]       = useState(false);
   const [error,      setError]      = useState('');
@@ -355,6 +358,37 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
     setPhotos(prev => prev.map(x => x.id === id ? { ...x, dataUrl, ocrDataUrl } : x));
   }
 
+  function loadImageEl(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function applyCorners(quad) {
+    const id = cropTargetId;
+    const photo = photos.find(p => p.id === id);
+    if (!photo) { setCropTargetId(null); return; }
+    try {
+      const img = await loadImageEl(photo.ocrDataUrl);
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const pts = quad.map(p => ({ x: p.x * w, y: p.y * h }));
+      const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      const outW = Math.round(Math.min(2600, Math.max(200, (dist(pts[0], pts[1]) + dist(pts[3], pts[2])) / 2)));
+      const outH = Math.round(Math.min(2600, Math.max(200, (dist(pts[0], pts[3]) + dist(pts[1], pts[2])) / 2)));
+      const warpedCanvas = warpPerspective(img, pts, outW, outH);
+      const ocrDataUrl = warpedCanvas.toDataURL('image/jpeg', 0.92);
+      const dataUrl = await resizeToDataUrl(ocrDataUrl, 1400, 0.82);
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, dataUrl, ocrDataUrl } : p));
+    } catch (e) {
+      setError('Erreur lors du redressement : ' + (e?.message || String(e)).slice(0, 100));
+    } finally {
+      setCropTargetId(null);
+    }
+  }
+
   async function handleDetect() {
     if (photos.length === 0) return;
     setOcrBusy(true); setError(''); setSuccess(''); setOcrProgress(0); setOcrStatus('Initialisation…');
@@ -366,13 +400,15 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
       });
       let allRows = [];
       for (const p of photos) {
-        // 1. Passe ciblée "chiffres seuls" sur la colonne N° de lit — c'est
-        //    elle qui définit les lignes (bien plus fiable qu'une lecture
-        //    alphanumérique pleine page pour ces numéros imprimés).
-        const bedNumbers = await detectBedNumberColumn(worker, p.ocrDataUrl);
-        // 2. Passe pleine page — sert uniquement à retrouver l'âge et les
-        //    mots-clés métier à proximité de chaque n° de lit détecté.
+        // 1. Passe pleine page — sert à repérer où commence le contenu réel
+        //    (la marge de fond avant la feuille varie selon le cadrage) et à
+        //    retrouver l'âge et les mots-clés métier près de chaque lit.
         const { words } = await recognizePage(worker, p.ocrDataUrl);
+        // 2. Passe ciblée "chiffres + P/F" sur la colonne N° de lit, ancrée
+        //    sur ce contenu — bien plus fiable qu'une lecture alphanumérique
+        //    pleine page pour ces numéros imprimés. C'est elle qui définit
+        //    les lignes.
+        const bedNumbers = await detectBedNumberColumn(worker, p.ocrDataUrl, words);
         allRows = allRows.concat(attachRowContext(bedNumbers, words));
       }
       setDetectedRows(allRows);
@@ -579,7 +615,7 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
                 <button onClick={() => handleCapture(true)} style={{ flex: 1, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>🖼 Galerie</button>
               </div>
               <div style={{ color: T.muted, fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
-                Plusieurs photos possibles (feuille pliée, recto/verso). La photo reste en mémoire le temps de la saisie, elle n'est jamais enregistrée sur l'appareil. Si le tableau est de travers, ouvrez la photo (🖼) pour la pivoter avant de lancer la détection.
+                Plusieurs photos possibles (feuille pliée, recto/verso). La photo reste en mémoire le temps de la saisie, elle n'est jamais enregistrée sur l'appareil. Si la feuille est prise de travers ou en perspective, ouvrez la photo (🖼) puis "✂️ Redresser" pour caler les 4 coins avant de lancer la détection.
               </div>
             </div>
 
@@ -698,8 +734,12 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 8px' }}>
             <button onClick={() => setViewerIdx(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer' }}>←</button>
             {photos.length > 1 && <div style={{ color: '#fff', fontSize: 13 }}>{viewerIdx + 1} / {photos.length}</div>}
-            <button onClick={() => handleRotate(photos[viewerIdx].id, 90)}
-              style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 18, padding: '6px 10px', cursor: 'pointer' }}>↻</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setCropTargetId(photos[viewerIdx].id)}
+                style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, padding: '6px 10px', cursor: 'pointer' }}>✂️ Redresser</button>
+              <button onClick={() => handleRotate(photos[viewerIdx].id, 90)}
+                style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 18, padding: '6px 10px', cursor: 'pointer' }}>↻</button>
+            </div>
           </div>
           <div style={{ flex: 1, overflow: 'auto', touchAction: 'pinch-zoom', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src={photos[viewerIdx].dataUrl} alt="" style={{ maxWidth: '100%', minHeight: '100%', objectFit: 'contain' }} />
@@ -713,6 +753,14 @@ export default function PhotoImport({ cryptoKey, accentColor, onBack, onImported
             </div>
           )}
         </div>
+      )}
+
+      {cropTargetId && photos.find(p => p.id === cropTargetId) && (
+        <CornerCrop
+          imageUrl={photos.find(p => p.id === cropTargetId).dataUrl}
+          onCancel={() => setCropTargetId(null)}
+          onConfirm={applyCorners}
+        />
       )}
     </div>
   );
