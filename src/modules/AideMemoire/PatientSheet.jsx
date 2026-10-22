@@ -11,6 +11,7 @@ import { getSpecialty, SPECIALTIES, getAllFieldsAlpha } from './templates.js';
 import CareSchedule from './CareSchedule.jsx';
 import WoundPhotos, { deleteAllWoundPhotos } from './WoundPhotos.jsx';
 import { computeSlots } from './ServiceView.jsx';
+import MenuButton from './MenuButton.jsx';
 
 // ─── Palette étendue ──────────────────────────────────────────────────────────
 const P = new Proxy({}, {
@@ -258,7 +259,7 @@ function AddCustomFieldModal({ service, patient, onAdd, onClose }) {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-export default function PatientSheet({ selectedDate: selDate, patientId, service, cryptoKey, accentColor, onBack, onNavigate }) {
+export default function PatientSheet({ selectedDate: selDate, patientId, service, cryptoKey, accentColor, onBack, onMenu, onNavigate, initialTab }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -271,7 +272,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
   const [showEdit,     setShowEdit]     = useState(false);
   const [showMove,     setShowMove]     = useState(false);
   const [showAddField, setShowAddField] = useState(false);
-  const [activeTab,    setActiveTab]    = useState(0);
+  const [activeTab,    setActiveTab]    = useState(initialTab ?? 0);
   const [allPatients,  setAllPatients]  = useState([]);
 
   const swipeRef = useRef({});
@@ -400,6 +401,7 @@ export default function PatientSheet({ selectedDate: selDate, patientId, service
 
         {/* Ligne 1 : retour + infos + edit */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 8px', overflow: 'hidden' }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4, flexShrink: 0 }}>←</button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: T.text, fontSize: 17, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

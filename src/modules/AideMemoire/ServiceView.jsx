@@ -9,9 +9,27 @@ import { useState, useEffect, useCallback } from 'react';
 import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { getSpecialty } from './templates.js';
-import { todayStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
+import { todayStr, timeStr, genId, isFlagActive, activeFlagsEmoji, dateStrOffset, isReadOnly, formatDateLabel } from './utils.jsx';
+import MenuButton from './MenuButton.jsx';
+import SpringCheck from './SpringCheck.jsx';
 
 const SURVEILLANCE_TYPES = new Set(['constantes_vitales','hgt','bilan','diurese','ecg','poids']);
+
+// Couleurs et emojis des soins (dupliqués ici, cf. DayOverview.jsx, pour éviter la dépendance circulaire)
+const CARE_META = {
+  constantes_vitales: { emoji: '📊', color: '#06b6d4' },
+  antalgie:           { emoji: '💊', color: '#f43f5e' },
+  bilan:              { emoji: '🧪', color: '#a78bfa' },
+  diurese:            { emoji: '💧', color: '#06b6d4' },
+  ecg:                { emoji: '📈', color: '#a78bfa' },
+  hgt:                { emoji: '🩸', color: '#f97316' },
+  injection:          { emoji: '💉', color: '#a78bfa' },
+  pansement:          { emoji: '🩹', color: '#06b6d4' },
+  perfusion:          { emoji: '🫙', color: '#22c55e' },
+  poids:              { emoji: '⚖️', color: '#22c55e' },
+  autre:              { emoji: '📋', color: '#64748b' },
+};
+function careMeta(type) { return CARE_META[type] || CARE_META.autre; }
 
 // ── computeSlots — source unique de vérité ────────────────────────────────────
 // Priorité : bedRooms → bedConfig non-vide → bedCount
@@ -151,7 +169,7 @@ function BedsConfigModal({ service, onSave, onClose }) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onServiceUpdate, onTransfer, onLog, refreshKey, selectedDate: selDate, onDateChange }) {
+export default function ServiceView({ service, cryptoKey, accentColor, onSelectPatient, onQuickEntry, onDayOverview, onBack, onMenu, onServiceUpdate, onTransfer, onLog, onOcr, refreshKey, selectedDate: selDate, onDateChange }) {
   const C  = accentColor;
   const sp = getSpecialty(service.specialty);
 
@@ -163,6 +181,7 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
   const [saving,       setSaving]       = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [showBedsCfg,  setShowBedsCfg] = useState(false);
+  const [justValidated, setJustValidated] = useState(false);
 
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -199,6 +218,27 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
 
   async function handleBedsSave(rooms) { await onServiceUpdate({ ...service, bedRooms: rooms }); }
 
+  // ── Feuille de tournée : validation immédiate d'un soin via badge pilule ──
+  async function handleTogglePill(patientId, careId) {
+    if (readOnly) return;
+    const entry = dailyData[patientId] || {};
+    let becameDone = false;
+    const next = {
+      ...entry,
+      careEntries: (entry.careEntries || []).map(e => {
+        if (e.id !== careId) return e;
+        if (e.done) return { ...e, done: false, doneTime: null, doneValue: null };
+        becameDone = true;
+        return { ...e, done: true, doneTime: timeStr() };
+      }),
+    };
+    await saveDailyData({ ...dailyData, [patientId]: next });
+    if (becameDone) {
+      setJustValidated(true);
+      setTimeout(() => setJustValidated(false), 650);
+    }
+  }
+
   async function handleAddPatient() {
     if (!addForm.initials.trim() || !addForm.age) return;
     setSaving(true);
@@ -223,7 +263,8 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
 
       {/* Header */}
       <div style={{ padding: '14px 16px 0', background: T.bg, position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: T.text, fontSize: 17, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -232,15 +273,19 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
             </div>
             <div style={{ color: T.muted, fontSize: 12 }}>{sp.label} · {presentPts.length}/{slots.length} lits</div>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10, overflowX: 'auto' }}>
           {[
             { icon: '⚙️', fn: () => setShowBedsCfg(true), col: T.muted,   bg: T.surface,   title: 'Config chambres'    },
             { icon: '📋', fn: onDayOverview,               col: T.muted,   bg: T.surface,   title: 'Vue du jour'        },
             { icon: '⚡', fn: readOnly ? null : onQuickEntry, col: readOnly ? T.muted : C, bg: readOnly ? T.surface : C + '22', title: 'Saisie rapide' },
+            { icon: '📄', fn: readOnly ? null : onOcr,     col: readOnly ? T.muted : '#f97316', bg: readOnly ? T.surface : '#f9731622', title: 'Scanner transmission' },
             { icon: '🔄', fn: onTransfer,                  col: '#6366f1', bg: '#6366f122', title: 'Transfert sécurisé' },
             { icon: '🗒️', fn: onLog,                       col: T.muted,   bg: T.surface,   title: 'Journal accès'      },
           ].map((b, i) => (
             <button key={i} onClick={b.fn} title={b.title}
-              style={{ background: b.bg, border: `1px solid ${T.border}`, borderRadius: 8, color: b.col, fontSize: 16, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>
+              style={{ background: b.bg, border: `1px solid ${T.border}`, borderRadius: 8, color: b.col, fontSize: 16, minWidth: 40, minHeight: 40, padding: '6px 9px', cursor: 'pointer', flexShrink: 0 }}>
               {b.icon}
             </button>
           ))}
@@ -316,10 +361,38 @@ export default function ServiceView({ service, cryptoKey, accentColor, onSelectP
                   {keyFields.map(f => { const v = (patient.fieldValues || {})[f.id]; if (!v && v !== true) return null; return <span key={f.id} style={{ color: C, fontSize: 11, background: C + '11', borderRadius: 4, padding: '1px 6px' }}>{f.label}: {String(v)}</span>; })}
                 </div>
               )}
+              {/* Badges pilule — tap = validation immédiate du soin, sans changement de page */}
+              {(daily.careEntries || []).length > 0 && (
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, marginLeft: 80, flexWrap: 'wrap' }}>
+                  {daily.careEntries.map(entry => {
+                    const meta = careMeta(entry.type);
+                    const col  = entry.done ? '#22c55e' : meta.color;
+                    return (
+                      <button
+                        key={entry.id}
+                        onClick={e => { e.stopPropagation(); handleTogglePill(patient.id, entry.id); }}
+                        disabled={readOnly}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4, minHeight: 32,
+                          background: col + '18', border: `1px solid ${col}55`, borderRadius: 100,
+                          color: col, fontSize: 11, fontWeight: 700, padding: '5px 10px',
+                          cursor: readOnly ? 'default' : 'pointer', opacity: readOnly ? 0.6 : 1,
+                          WebkitTapHighlightColor: 'transparent',
+                        }}>
+                        <span>{meta.emoji}</span>
+                        <span>{entry.plannedTime}</span>
+                        {entry.done && <span>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      <SpringCheck show={justValidated} />
 
       {/* Modal ajout patient */}
       {addBed !== null && (() => {

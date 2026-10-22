@@ -9,6 +9,8 @@ import { secureGet, secureSet } from './crypto.js';
 import { todayStr, timeStr, isReadOnly, formatDateLabel } from './utils.jsx';
 import { getSpecialty } from './templates.js';
 import { computeSlots } from './ServiceView.jsx';
+import MenuButton from './MenuButton.jsx';
+import SpringCheck from './SpringCheck.jsx';
 
 // ─── Modal validation soin ────────────────────────────────────────────────────
 
@@ -130,7 +132,7 @@ function slotDisplay(service, bedNumber) {
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 
-export default function DayOverview({ service, cryptoKey, onBack, selectedDate: selDate }) {
+export default function DayOverview({ service, cryptoKey, onBack, onMenu, selectedDate: selDate }) {
   const sp    = getSpecialty(service.specialty);
   const today        = todayStr();
   const selectedDate = selDate || today;
@@ -142,6 +144,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
   const [tab,       setTab]       = useState('soins');
   const [groupMode,  setGroupMode]  = useState('patient'); // 'patient' | 'chrono'
   const [validating,setValidating]= useState(null); // entry en cours de validation
+  const [justValidated, setJustValidated] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -176,6 +179,8 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
       e.id === careId ? { ...e, done: true, doneTime, doneValue } : e
     )};
     await saveDailyData({ ...dailyData, [pid]: next });
+    setJustValidated(true);
+    setTimeout(() => setJustValidated(false), 650);
   }
 
   async function handleUndo(patientId, careId) {
@@ -248,6 +253,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
       {/* Header */}
       <div style={{ padding: '14px 16px 0', background: T.bg, position: 'sticky', top: 0, zIndex: 10, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div style={{ flex: 1 }}>
             <div style={{ color: T.text, fontSize: 17, fontWeight: 700 }}>Vue du jour</div>
@@ -414,6 +420,7 @@ export default function DayOverview({ service, cryptoKey, onBack, selectedDate: 
           onClose={() => setValidating(null)}
         />
       )}
+      <SpringCheck show={justValidated} />
     </div>
   );
 }

@@ -8,8 +8,9 @@ import { T, s } from '../../theme.js';
 import { secureGet, secureSet } from './crypto.js';
 import { SPECIALTIES, getTemplateFields, getSpecialty } from './templates.js';
 import { formatDateFR } from './utils.jsx';
+import MenuButton from './MenuButton.jsx';
 
-export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelectService, onImport }) {
+export default function ServicesScreen({ cryptoKey, accentColor, onBack, onMenu, onSelectService, onImport }) {
   const C = accentColor;
 
   const [services,       setServices]       = useState([]);
@@ -114,6 +115,7 @@ export default function ServicesScreen({ cryptoKey, accentColor, onBack, onSelec
     <div style={{ background: T.bg, position: 'absolute', inset: 0, overflowY: 'auto', padding: '20px 20px 50px', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div>
             <div style={{ color: T.text, fontSize: 18, fontWeight: 700 }}>Aide-Mémoire</div>

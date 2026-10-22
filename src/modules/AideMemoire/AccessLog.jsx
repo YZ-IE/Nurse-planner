@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { T } from '../../theme.js';
+import MenuButton from './MenuButton.jsx';
 
 const ACCENT = '#6366f1';
 
@@ -50,7 +51,7 @@ function meta(event) {
   return EVENT_META[event] || { label: event, color: '#64748b' };
 }
 
-export default function AccessLog({ onBack }) {
+export default function AccessLog({ onBack, onMenu }) {
   const [logs,    setLogs]    = useState(() => readLog());
   const [filter,  setFilter]  = useState('all');
   const [copied,  setCopied]  = useState(false);
@@ -90,6 +91,7 @@ export default function AccessLog({ onBack }) {
       {/* Header */}
       <div style={{ padding: '12px 16px', background: T.bg, borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <MenuButton onClick={onMenu} />
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 22, cursor: 'pointer', padding: 4 }}>←</button>
           <div style={{ flex: 1 }}>
             <div style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>📋 Journal d'accès</div>
